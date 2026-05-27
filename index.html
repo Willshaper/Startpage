@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e1018'/%3E%3Ccircle cx='16' cy='16' r='4.5' fill='none' stroke='%234fc4a8' stroke-width='2.5'/%3E%3Cpath d='M16 4v3M16 25v3M4 16h3M25 16h3' stroke='%23f0a04b' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:         #07080d;
+    --bg2:        #0e1018;
+    --bg3:        #161822;
+    --border:     #1f2230;
+    --border2:    #2a2d42;
+    --accent:     #e8615a;
+    --accent2:    #f0a04b;
+    --teal:       #4fc4a8;
+    --text:       #d4d6e8;
+    --text-dim:   #8088a8;
+    --text-dimmer:#4a4f6a;
+    --mono:   'DM Mono', monospace;
+    --sans:   'Noto Sans JP', sans-serif;
+    --display:'Syne', sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg:         #dde0ec;
+    --bg2:        #eceef8;
+    --bg3:        #d4d8ea;
+    --border:     #b8bcd4;
+    --border2:    #9aa0be;
+    --accent:     #c43c36;
+    --accent2:    #9e5e08;
+    --teal:       #1e9070;
+    --text:       #0e1020;
+    --text-dim:   #4a5070;
+    --text-dimmer:#8088a8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  html, body { transition: background-color 0.25s; }
+
+  /* Atmospheric glow (becomes a readability scrim when a custom bg is set) */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 0%, rgba(79,196,168,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 85% 100%, rgba(232,97,90,0.05) 0%, transparent 55%);
+    pointer-events: none; z-index: 0;
+  }
+  [data-theme="light"] body::before {
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 0%, rgba(30,144,112,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 85% 100%, rgba(196,60,54,0.04) 0%, transparent 55%);
+  }
+  .has-bg body::before { background: linear-gradient(rgba(7,8,13,0.5), rgba(7,8,13,0.64)); }
+  [data-theme="light"].has-bg body::before { background: linear-gradient(rgba(220,224,236,0.4), rgba(220,224,236,0.58)); }
+
+  .page {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center;
+    padding: 28px 24px 60px;
+  }
+
+  /* ── Top controls ── */
+  .top-controls {
+    position: fixed; top: 18px; right: 20px;
+    display: flex; gap: 8px; z-index: 50;
+  }
+  .icon-btn {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 8px; color: var(--text-dim); cursor: pointer;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--text-dimmer); }
+
+  /* ── Center stack ── */
+  .center {
+    width: 100%; max-width: 880px;
+    margin: auto 0;
+    display: flex; flex-direction: column; align-items: center;
+    padding-top: 6vh;
+  }
+
+  .greeting {
+    font-family: var(--display); font-weight: 600;
+    font-size: 17px; letter-spacing: 0.01em;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .greeting b { color: var(--accent2); font-weight: 700; }
+
+  .clock {
+    font-family: var(--mono); font-weight: 500;
+    font-size: clamp(52px, 10.5vw, 92px);
+    line-height: 1; letter-spacing: 0.01em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .clock .sec { color: var(--teal); font-size: 0.38em; vertical-align: super; margin-left: 5px; font-weight: 400; }
+
+  .date {
+    font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-dim); margin-top: 10px;
+  }
+
+  /* ── Search ── */
+  .search {
+    display: flex; align-items: center;
+    width: 100%; max-width: 560px;
+    margin-top: 34px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 4px 4px 4px 6px;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+  .search:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(79,196,168,0.1); }
+
+  .search-engine {
+    background: transparent; border: none; outline: none;
+    color: var(--text-dim); font-family: var(--mono); font-size: 11px;
+    padding: 8px 6px; cursor: pointer; border-radius: 8px;
+  }
+  .search-engine option { background: var(--bg3); color: var(--text); }
+
+  .search-input {
+    flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    padding: 10px 8px;
+  }
+  .search-input::placeholder { color: var(--text-dimmer); }
+
+  .search-go {
+    background: var(--teal); border: none; border-radius: 8px;
+    width: 38px; height: 38px; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #07080d; transition: filter 0.15s;
+  }
+  .search-go:hover { filter: brightness(1.1); }
+
+  /* ── Tiles ── */
+  .tiles {
+    margin-top: 40px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(98px, 1fr));
+    gap: 14px;
+    justify-content: center;
+  }
+
+  .tile {
+    display: flex; flex-direction: column; align-items: center; gap: 9px;
+    padding: 16px 8px 13px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    text-decoration: none; color: var(--text);
+    cursor: pointer;
+    transition: transform 0.14s, border-color 0.14s, background 0.14s;
+    position: relative;
+    animation: pop 0.2s ease backwards;
+  }
+  .tile:hover {
+    transform: translateY(-3px);
+    border-color: var(--border2);
+    background: var(--bg3);
+  }
+
+  .tile-icon {
+    width: 44px; height: 44px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+    font-family: var(--display); font-weight: 800; font-size: 20px; color: #fff;
+    flex-shrink: 0;
+  }
+  .tile-icon img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; background: #fff;
+  }
+  .tile-name {
+    font-size: 12px; color: var(--text-dim);
+    text-align: center; line-height: 1.25;
+    max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    width: 100%;
+  }
+  .tile:hover .tile-name { color: var(--text); }
+
+  .tile-add {
+    border-style: dashed;
+    color: var(--text-dimmer);
+    justify-content: center;
+  }
+  .tile-add:hover { border-color: var(--teal); color: var(--teal); background: var(--bg2); }
+  .tile-add .plus {
+    width: 44px; height: 44px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 300;
+  }
+
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(6px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; animation: fade 0.15s ease; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    width: 100%; max-width: 380px;
+    max-height: calc(100vh - 40px); overflow-y: auto;
+    padding: 22px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    animation: rise 0.18s ease;
+  }
+  @keyframes rise { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .modal-title { font-family: var(--display); font-size: 16px; font-weight: 700; color: var(--text); }
+  .modal-close {
+    background: none; border: none; cursor: pointer; color: var(--text-dimmer);
+    font-size: 18px; line-height: 1; padding: 2px 4px; transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--accent); }
+
+  .field { margin-bottom: 13px; }
+  .field label {
+    display: block; font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+  .field input, .field select {
+    width: 100%; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: 8px;
+    color: var(--text); font-family: var(--sans); font-size: 14px;
+    padding: 9px 11px; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--teal); box-shadow: 0 0 0 2px rgba(79,196,168,0.12);
+  }
+  .field select option { background: var(--bg3); }
+
+  /* Icon editor */
+  .icon-edit { display: flex; gap: 11px; align-items: center; }
+  .icon-preview {
+    width: 46px; height: 46px; border-radius: 11px; flex-shrink: 0;
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-weight: 800; font-size: 20px; color: #fff;
+  }
+  .icon-preview img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; background: #fff;
+  }
+  .icon-edit-controls { display: flex; gap: 6px; flex: 1; }
+  .icon-edit-controls .btn { flex: 1; text-align: center; }
+
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0; cursor: pointer;
+  }
+  .toggle-row span { font-size: 13px; color: var(--text); }
+  .toggle {
+    width: 38px; height: 22px; border-radius: 11px; flex-shrink: 0;
+    background: var(--border2); position: relative; transition: background 0.18s;
+  }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 16px; height: 16px; border-radius: 50%; background: #fff;
+    transition: transform 0.18s;
+  }
+  .toggle.on { background: var(--teal); }
+  .toggle.on::after { transform: translateX(16px); }
+
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .btn {
+    border-radius: 8px; cursor: pointer; font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.06em; padding: 9px 16px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, filter 0.15s;
+  }
+  .btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text-dim); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-dimmer); }
+  .btn-primary { background: var(--teal); border: 1px solid var(--teal); color: #07080d; font-weight: 500; }
+  .btn-primary:hover { filter: brightness(1.1); }
+
+  .settings-section { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 14px; }
+  .settings-section-title {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-dimmer); margin-bottom: 8px;
+  }
+  .io-row { display: flex; gap: 8px; }
+  .io-row .btn { flex: 1; text-align: center; }
+  input[type="file"] { display: none; }
+  .file-label { display: inline-flex; align-items: center; justify-content: center; }
+
+  /* ── Context menu ── */
+  #ctx-menu {
+    position: fixed; z-index: 200;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 9px; padding: 4px; min-width: 140px;
+    box-shadow: 0 10px 34px rgba(0,0,0,0.5);
+    display: none;
+  }
+  #ctx-menu.open { display: block; animation: rise 0.1s ease; }
+  .ctx-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 12px; border-radius: 6px; cursor: pointer;
+    font-size: 13px; color: var(--text); transition: background 0.1s;
+  }
+  .ctx-item:hover { background: var(--bg2); }
+  .ctx-item.danger { color: var(--accent); }
+  .ctx-item.danger:hover { background: rgba(232,97,90,0.1); }
+  .ctx-divider { height: 1px; background: var(--border); margin: 3px 4px; }
+
+  .hint {
+    margin-top: 30px; font-family: var(--mono); font-size: 10px;
+    color: var(--text-dimmer); letter-spacing: 0.05em; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="top-controls">
+    <button class="icon-btn" id="btn-settings" title="Settings">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2.2" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1v1.8M7.5 12.2V14M14 7.5h-1.8M2.8 7.5H1M12.1 2.9l-1.3 1.3M4.2 10.8l-1.3 1.3M12.1 12.1l-1.3-1.3M4.2 4.2L2.9 2.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-theme" title="Toggle theme">
+      <svg id="theme-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"></svg>
+    </button>
+  </div>
+
+  <main class="center">
+    <div class="greeting" id="greeting"></div>
+    <div class="clock" id="clock"></div>
+    <div class="date" id="date"></div>
+
+    <form class="search" id="search-form">
+      <select class="search-engine" id="search-engine" title="Search engine"></select>
+      <input class="search-input" id="search-input" type="text" placeholder="Search the web…" autocomplete="off" spellcheck="false">
+      <button class="search-go" type="submit" title="Search">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+
+    <div class="tiles" id="tiles"></div>
+
+    <div class="hint">right-click a tile to edit or remove · drag to reorder</div>
+  </main>
+</div>
+
+<!-- Link modal -->
+<div class="modal-overlay" id="link-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="link-modal-title">Add Link</span>
+      <button class="modal-close" onclick="closeLinkModal()">✕</button>
+    </div>
+    <div class="field">
+      <label>Name</label>
+      <input id="link-name" type="text" placeholder="GitHub" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>URL</label>
+      <input id="link-url" type="text" placeholder="github.com" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Icon</label>
+      <div class="icon-edit">
+        <div class="icon-preview" id="icon-preview"><span id="icon-preview-letter">?</span><img id="icon-preview-img" alt="" style="display:none"></div>
+        <div class="icon-edit-controls">
+          <label class="btn btn-ghost file-label">Upload<input type="file" id="icon-file" accept="image/*"></label>
+          <button class="btn btn-ghost" type="button" onclick="resetModalIcon()">Default</button>
+        </div>
+      </div>
+      <input id="link-icon-url" type="text" placeholder="…or paste image URL" autocomplete="off" style="margin-top:8px">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeLinkModal()">Cancel</button>
+      <button class="btn btn-primary" id="link-save" onclick="saveLink()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Settings</span>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="field">
+      <label>Your name (for the greeting)</label>
+      <input id="set-name" type="text" placeholder="optional" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Default search engine</label>
+      <select id="set-engine"></select>
+    </div>
+    <div class="toggle-row" id="set-newtab-row">
+      <span>Open links in a new tab</span>
+      <div class="toggle" id="set-newtab"></div>
+    </div>
+    <div class="toggle-row" id="set-seconds-row">
+      <span>Show seconds on clock</span>
+      <div class="toggle" id="set-seconds"></div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Background</div>
+      <div class="io-row">
+        <label class="btn btn-ghost file-label">Upload image<input type="file" id="bg-file" accept="image/*"></label>
+        <button class="btn btn-ghost" onclick="resetBackground()">Default</button>
+      </div>
+      <div class="field" style="margin-top:8px; margin-bottom:0">
+        <input id="set-bg-url" type="text" placeholder="…or paste image URL" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Backup</div>
+      <div class="io-row">
+        <button class="btn btn-ghost" onclick="exportData()">Export</button>
+        <label class="btn btn-ghost file-label">Import<input type="file" id="import-file" accept=".json"></label>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeSettings()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context menu -->
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="ctxEdit()">
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Edit
+  </div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item danger" onclick="ctxRemove()">
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 3.5h10M5.5 3.5V2.5h3v1M5.5 6v4M8.5 6v4M3 3.5l.7 7.5h6.6l.7-7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Remove
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'startpage_v1';
+const ENGINES = {
+  google:     { name: 'Google',     url: 'https://www.google.com/search?q=' },
+  duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
+  bing:       { name: 'Bing',       url: 'https://www.bing.com/search?q=' },
+  brave:      { name: 'Brave',      url: 'https://search.brave.com/search?q=' },
+  ecosia:     { name: 'Ecosia',     url: 'https://www.ecosia.org/search?q=' },
+};
+const DEFAULT_LINKS = [
+  { name: 'Gmail',     url: 'https://mail.google.com' },
+  { name: 'YouTube',   url: 'https://youtube.com' },
+  { name: 'GitHub',    url: 'https://github.com' },
+  { name: 'Reddit',    url: 'https://reddit.com' },
+  { name: 'Wikipedia', url: 'https://wikipedia.org' },
+  { name: 'Maps',      url: 'https://maps.google.com' },
+];
+const DEFAULT_SETTINGS = { greetingName: '', engine: 'google', newTab: false, seconds: true, theme: 'dark', background: '' };
+
+let links     = [];
+let nextId     = 1;
+let settings   = { ...DEFAULT_SETTINGS };
+let ctxId      = null;
+let editingId  = null;
+let modalIcon  = '';   // working icon value while the link modal is open
+
+// ── Cached DOM ────────────────────────────────────────────────────────────────
+const $ = {
+  greeting:  document.getElementById('greeting'),
+  clock:     document.getElementById('clock'),
+  date:      document.getElementById('date'),
+  tiles:     document.getElementById('tiles'),
+  searchForm:document.getElementById('search-form'),
+  searchEng: document.getElementById('search-engine'),
+  searchIn:  document.getElementById('search-input'),
+  themeIcon: document.getElementById('theme-icon'),
+  ctxMenu:   document.getElementById('ctx-menu'),
+  linkModal: document.getElementById('link-modal'),
+  linkTitle: document.getElementById('link-modal-title'),
+  linkName:  document.getElementById('link-name'),
+  linkUrl:   document.getElementById('link-url'),
+  linkSave:  document.getElementById('link-save'),
+  iconUrl:   document.getElementById('link-icon-url'),
+  iconPrev:  document.getElementById('icon-preview'),
+  iconPrevImg:   document.getElementById('icon-preview-img'),
+  iconPrevLetter:document.getElementById('icon-preview-letter'),
+  setModal:  document.getElementById('settings-modal'),
+  setName:   document.getElementById('set-name'),
+  setEngine: document.getElementById('set-engine'),
+  setNewtab: document.getElementById('set-newtab'),
+  setSeconds:document.getElementById('set-seconds'),
+  setBgUrl:  document.getElementById('set-bg-url'),
+};
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+function normalizeLink(l) {
+  if (typeof l.id !== 'number') return null;
+  return {
+    id:   l.id,
+    name: typeof l.name === 'string' ? l.name : '',
+    url:  typeof l.url  === 'string' ? l.url  : '',
+    icon: typeof l.icon === 'string' ? l.icon : '',
+  };
+}
+function safeNextId(stored) {
+  const maxId = links.reduce((m, l) => Math.max(m, l.id), 0);
+  return Math.max(Number(stored) || 0, maxId + 1);
+}
+function load() {
+  let data = null;
+  try { data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch {}
+  if (data && Array.isArray(data.links)) {
+    links    = data.links.map(normalizeLink).filter(Boolean);
+    nextId   = safeNextId(data.nextId);
+    settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
+  } else {
+    links  = DEFAULT_LINKS.map((l, i) => ({ id: i + 1, name: l.name, url: l.url, icon: '' }));
+    nextId = links.length + 1;
+  }
+}
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ links, nextId, settings }));
+    return true;
+  } catch { return false; }
+}
+
+// ── Image helper — downscale to keep localStorage small ───────────────────────
+function processImageFile(file, maxDim, mime, quality, cb) {
+  if (!file || !file.type.startsWith('image/')) { cb(null); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        const r = Math.min(maxDim / w, maxDim / h);
+        w = Math.round(w * r); h = Math.round(h * r);
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      try { cb(c.toDataURL(mime, quality)); } catch { cb(null); }
+    };
+    img.onerror = () => cb(null);
+    img.src = e.target.result;
+  };
+  reader.onerror = () => cb(null);
+  reader.readAsDataURL(file);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function withProtocol(url) { return /^https?:\/\//i.test(url) ? url : 'https://' + url; }
+function faviconSources(url) {
+  let host = '';
+  try { host = new URL(withProtocol(url)).hostname; } catch { return []; }
+  if (!host) return [];
+  return [
+    `https://icons.duckduckgo.com/ip3/${host}.ico`,      // real site favicon, fails cleanly when absent
+    `https://www.google.com/s2/favicons?domain=${host}&sz=64`, // broad fallback
+  ];
+}
+// Advance an <img> through its remaining favicon sources; hide it (revealing the letter) when exhausted
+function nextIcon(img) {
+  const list = img.dataset.fb ? img.dataset.fb.split('|').filter(Boolean) : [];
+  if (list.length) {
+    img.dataset.fb = list.slice(1).join('|');
+    img.src = list[0];
+  } else {
+    img.style.display = 'none';
+  }
+}
+function colorFor(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+  return `hsl(${Math.abs(h) % 360}, 42%, 46%)`;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Background ────────────────────────────────────────────────────────────────
+function applyBackground() {
+  if (settings.background) {
+    document.body.style.backgroundImage = `url("${settings.background.replace(/"/g,'%22')}")`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundAttachment = 'fixed';
+    document.documentElement.classList.add('has-bg');
+  } else {
+    document.body.style.backgroundImage = '';
+    document.documentElement.classList.remove('has-bg');
+  }
+}
+function setBackground(value) {
+  const prev = settings.background;
+  settings.background = value;
+  if (!save()) {
+    settings.background = prev; save();
+    alert('That image is too large to save. Try a smaller one or use a URL instead.');
+    return false;
+  }
+  applyBackground();
+  return true;
+}
+function resetBackground() {
+  setBackground('');
+  $.setBgUrl.value = '';
+}
+
+// ── Render tiles ──────────────────────────────────────────────────────────────
+function renderTiles() {
+  let html = '';
+  links.forEach((l, i) => {
+    const letter  = (l.name.trim()[0] || '?').toUpperCase();
+    const sources = l.icon ? [l.icon, ...faviconSources(l.url)] : faviconSources(l.url);
+    const target  = settings.newTab ? ' target="_blank" rel="noopener"' : '';
+    const imgTag  = sources.length
+      ? `<img src="${esc(sources[0])}" data-fb="${esc(sources.slice(1).join('|'))}" alt="" onerror="nextIcon(this)">`
+      : '';
+    html += `<a class="tile" href="${esc(withProtocol(l.url))}"${target}
+        style="animation-delay:${Math.min(i, 30) * 20}ms"
+        draggable="true" data-id="${l.id}"
+        oncontextmenu="openCtx(event, ${l.id})">
+      <div class="tile-icon" style="background:${colorFor(l.name)}">
+        <span>${esc(letter)}</span>
+        ${imgTag}
+      </div>
+      <span class="tile-name">${esc(l.name)}</span>
+    </a>`;
+  });
+  html += `<button class="tile tile-add" style="animation-delay:${Math.min(links.length, 30) * 20}ms" onclick="openLinkModal()">
+      <div class="plus">+</div>
+      <span class="tile-name">Add</span>
+    </button>`;
+  $.tiles.innerHTML = html;
+  attachDrag();
+}
+
+// ── Drag to reorder ───────────────────────────────────────────────────────────
+let dragId = null;
+function attachDrag() {
+  $.tiles.querySelectorAll('.tile[draggable]').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      dragId = Number(el.dataset.id);
+      el.style.opacity = '0.4';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => { el.style.opacity = ''; dragId = null; });
+    el.addEventListener('dragover', e => e.preventDefault());
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      const targetId = Number(el.dataset.id);
+      if (dragId === null || dragId === targetId) return;
+      const from = links.findIndex(l => l.id === dragId);
+      const to   = links.findIndex(l => l.id === targetId);
+      if (from < 0 || to < 0) return;
+      const [moved] = links.splice(from, 1);
+      links.splice(to, 0, moved);
+      save(); renderTiles();
+    });
+  });
+}
+
+// ── Context menu ──────────────────────────────────────────────────────────────
+function openCtx(evt, id) {
+  evt.preventDefault();
+  ctxId = id;
+  const m = $.ctxMenu;
+  m.style.visibility = 'hidden';
+  m.classList.add('open');
+  const mw = m.offsetWidth, mh = m.offsetHeight;
+  m.classList.remove('open');
+  m.style.visibility = '';
+  m.style.left = Math.min(evt.clientX, innerWidth  - mw - 6) + 'px';
+  m.style.top  = Math.min(evt.clientY, innerHeight - mh - 6) + 'px';
+  m.classList.add('open');
+}
+function closeCtx() { $.ctxMenu.classList.remove('open'); ctxId = null; }
+function ctxEdit() {
+  if (ctxId === null) return;
+  const l = links.find(x => x.id === ctxId);
+  if (l) openLinkModal(l);
+  closeCtx();
+}
+function ctxRemove() {
+  if (ctxId === null) return;
+  links = links.filter(x => x.id !== ctxId);
+  save(); renderTiles();
+  closeCtx();
+}
+document.addEventListener('click',       e => { if (!$.ctxMenu.contains(e.target)) closeCtx(); });
+document.addEventListener('contextmenu', e => { if (!$.ctxMenu.contains(e.target) && !e.target.closest('.tile')) closeCtx(); });
+
+// ── Link modal (add / edit) ───────────────────────────────────────────────────
+function openLinkModal(link) {
+  editingId = link ? link.id : null;
+  modalIcon = link ? link.icon : '';
+  $.linkTitle.textContent = link ? 'Edit Link' : 'Add Link';
+  $.linkSave.textContent  = link ? 'Save' : 'Add';
+  $.linkName.value = link ? link.name : '';
+  $.linkUrl.value  = link ? link.url  : '';
+  // show a pasted icon URL in the field; hide data: URLs (too long)
+  $.iconUrl.value  = (modalIcon && !modalIcon.startsWith('data:')) ? modalIcon : '';
+  updateIconPreview();
+  $.linkModal.classList.add('open');
+  setTimeout(() => $.linkName.focus(), 30);
+}
+function closeLinkModal() { $.linkModal.classList.remove('open'); editingId = null; modalIcon = ''; }
+function updateIconPreview() {
+  const nameVal = $.linkName.value.trim();
+  $.iconPrevLetter.textContent = (nameVal[0] || '?').toUpperCase();
+  $.iconPrev.style.background = colorFor(nameVal || '?');
+  const sources = modalIcon
+    ? [modalIcon, ...faviconSources($.linkUrl.value.trim())]
+    : faviconSources($.linkUrl.value.trim());
+  if (sources.length) {
+    $.iconPrevImg.dataset.fb = sources.slice(1).join('|');
+    $.iconPrevImg.onerror = () => nextIcon($.iconPrevImg);
+    $.iconPrevImg.style.display = 'block';
+    $.iconPrevImg.src = sources[0];
+  } else {
+    $.iconPrevImg.style.display = 'none';
+  }
+}
+function resetModalIcon() { modalIcon = ''; $.iconUrl.value = ''; updateIconPreview(); }
+function saveLink() {
+  const name = $.linkName.value.trim();
+  const url  = $.linkUrl.value.trim();
+  if (!name || !url) { (!name ? $.linkName : $.linkUrl).focus(); return; }
+  if (editingId !== null) {
+    const l = links.find(x => x.id === editingId);
+    if (l) { l.name = name; l.url = url; l.icon = modalIcon; }
+  } else {
+    links.push({ id: nextId++, name, url, icon: modalIcon });
+  }
+  if (!save()) { alert('Could not save — the icon may be too large.'); return; }
+  renderTiles(); closeLinkModal();
+}
+$.iconUrl.addEventListener('input', () => { modalIcon = $.iconUrl.value.trim(); updateIconPreview(); });
+$.linkUrl.addEventListener('input',  () => { if (!modalIcon || !modalIcon.startsWith('data:')) updateIconPreview(); });
+$.linkName.addEventListener('input', updateIconPreview);
+document.getElementById('icon-file').addEventListener('change', function () {
+  const f = this.files[0]; this.value = '';
+  if (!f) return;
+  processImageFile(f, 128, 'image/png', undefined, dataUrl => {
+    if (!dataUrl) { alert('Could not read that image.'); return; }
+    modalIcon = dataUrl; $.iconUrl.value = ''; updateIconPreview();
+  });
+});
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function openSettings() {
+  $.setName.value = settings.greetingName;
+  buildEngineSelect($.setEngine, settings.engine);
+  $.setNewtab.classList.toggle('on', settings.newTab);
+  $.setSeconds.classList.toggle('on', settings.seconds);
+  $.setBgUrl.value = (settings.background && !settings.background.startsWith('data:')) ? settings.background : '';
+  $.setModal.classList.add('open');
+}
+function closeSettings() { $.setModal.classList.remove('open'); }
+
+document.getElementById('set-newtab-row').addEventListener('click', () => {
+  settings.newTab = !settings.newTab;
+  $.setNewtab.classList.toggle('on', settings.newTab);
+  save(); renderTiles();
+});
+document.getElementById('set-seconds-row').addEventListener('click', () => {
+  settings.seconds = !settings.seconds;
+  $.setSeconds.classList.toggle('on', settings.seconds);
+  save(); tick();
+});
+$.setName.addEventListener('input', () => {
+  settings.greetingName = $.setName.value.trim();
+  save(); updateGreeting();
+});
+$.setEngine.addEventListener('change', () => {
+  settings.engine = $.setEngine.value;
+  $.searchEng.value = settings.engine;
+  save();
+});
+$.setBgUrl.addEventListener('input', () => { setBackground($.setBgUrl.value.trim()); });
+document.getElementById('bg-file').addEventListener('change', function () {
+  const f = this.files[0]; this.value = '';
+  if (!f) return;
+  processImageFile(f, 1600, 'image/jpeg', 0.85, dataUrl => {
+    if (!dataUrl) { alert('Could not read that image.'); return; }
+    if (setBackground(dataUrl)) $.setBgUrl.value = '';
+  });
+});
+
+// ── Search ────────────────────────────────────────────────────────────────────
+function buildEngineSelect(sel, current) {
+  sel.innerHTML = Object.entries(ENGINES)
+    .map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('');
+  sel.value = current;
+}
+$.searchForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const q = $.searchIn.value.trim();
+  if (!q) return;
+  if (/^https?:\/\//i.test(q) || /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(q)) {
+    location.href = withProtocol(q);
+  } else {
+    location.href = ENGINES[settings.engine].url + encodeURIComponent(q);
+  }
+});
+$.searchEng.addEventListener('change', () => {
+  settings.engine = $.searchEng.value;
+  save();
+});
+
+// ── Export / Import ───────────────────────────────────────────────────────────
+function exportData() {
+  const blob = new Blob([JSON.stringify({ links, nextId, settings }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'startpage-backup.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (!Array.isArray(d.links)) throw 0;
+      links    = d.links.map(normalizeLink).filter(Boolean);
+      nextId   = safeNextId(d.nextId);
+      settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) };
+      if (!save()) { alert('Imported data is too large to store (likely a big background image).'); }
+      applyTheme(settings.theme);
+      applyBackground();
+      buildEngineSelect($.searchEng, settings.engine);
+      renderTiles(); tick(); updateGreeting();
+      closeSettings();
+    } catch { alert('Import failed: invalid file.'); }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+document.getElementById('import-file').addEventListener('change', function () { importData(this); });
+
+// ── Theme ─────────────────────────────────────────────────────────────────────
+const MOON = '<circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 2A5.5 5.5 0 0 0 7.5 13 5.5 5.5 0 0 1 7.5 2z" fill="currentColor"/>';
+const SUN  = '<circle cx="7.5" cy="7.5" r="2.8" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1v1.4M7.5 12.6V14M1 7.5h1.4M12.6 7.5H14M3.2 3.2l1 1M10.8 10.8l1 1M11.8 3.2l-1 1M4.2 10.8l-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>';
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  $.themeIcon.innerHTML = theme === 'light' ? MOON : SUN;
+}
+function toggleTheme() {
+  settings.theme = settings.theme === 'light' ? 'dark' : 'light';
+  applyTheme(settings.theme);
+  save();
+}
+
+// ── Clock & greeting ──────────────────────────────────────────────────────────
+const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function greetingText() {
+  const h = new Date().getHours();
+  if (h < 5)  return 'Good night';
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  if (h < 22) return 'Good evening';
+  return 'Good night';
+}
+function updateGreeting() {
+  const n = settings.greetingName;
+  $.greeting.innerHTML = greetingText() + (n ? `, <b>${esc(n)}</b>` : '');
+}
+function tick() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  const hm = `${p(d.getHours())}:${p(d.getMinutes())}`;
+  $.clock.innerHTML = settings.seconds ? `${hm}<span class="sec">${p(d.getSeconds())}</span>` : hm;
+  $.date.textContent = `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+// ── Global listeners ──────────────────────────────────────────────────────────
+document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+document.getElementById('btn-settings').addEventListener('click', openSettings);
+[$.linkModal, $.setModal].forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+$.linkName.addEventListener('keydown', e => { if (e.key === 'Enter') saveLink(); });
+$.linkUrl .addEventListener('keydown', e => { if (e.key === 'Enter') saveLink(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeCtx(); closeLinkModal(); closeSettings(); }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+load();
+applyTheme(settings.theme);
+applyBackground();
+buildEngineSelect($.searchEng, settings.engine);
+renderTiles();
+updateGreeting();
+tick();
+setInterval(tick, 1000);
+setInterval(updateGreeting, 60000);
+window.addEventListener('load', () => $.searchIn.focus());
+</script>
+</body>
+</html>
