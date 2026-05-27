@@ -348,7 +348,7 @@
 
   <div class="top-controls">
     <button class="icon-btn" id="btn-settings" title="Settings">
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2.2" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1v1.8M7.5 12.2V14M14 7.5h-1.8M2.8 7.5H1M12.1 2.9l-1.3 1.3M4.2 10.8l-1.3 1.3M12.1 12.1l-1.3-1.3M4.2 4.2L2.9 2.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
     <button class="icon-btn" id="btn-theme" title="Toggle theme">
       <svg id="theme-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"></svg>
@@ -362,7 +362,7 @@
 
     <form class="search" id="search-form">
       <select class="search-engine" id="search-engine" title="Search engine"></select>
-      <input class="search-input" id="search-input" type="text" placeholder="Search the web…" autocomplete="off" spellcheck="false">
+      <input class="search-input" id="search-input" type="text" placeholder="Search the web…" data-i18n-ph="searchPlaceholder" autocomplete="off" spellcheck="false">
       <button class="search-go" type="submit" title="Search">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
@@ -370,7 +370,7 @@
 
     <div class="tiles" id="tiles"></div>
 
-    <div class="hint">right-click a tile to edit or remove · drag to reorder</div>
+    <div class="hint" data-i18n="hint">right-click a tile to edit or remove · drag to reorder</div>
   </main>
 </div>
 
@@ -382,26 +382,26 @@
       <button class="modal-close" onclick="closeLinkModal()">✕</button>
     </div>
     <div class="field">
-      <label>Name</label>
+      <label data-i18n="name">Name</label>
       <input id="link-name" type="text" placeholder="GitHub" autocomplete="off">
     </div>
     <div class="field">
-      <label>URL</label>
+      <label data-i18n="url">URL</label>
       <input id="link-url" type="text" placeholder="github.com" autocomplete="off">
     </div>
     <div class="field">
-      <label>Icon</label>
+      <label data-i18n="icon">Icon</label>
       <div class="icon-edit">
         <div class="icon-preview" id="icon-preview"><span id="icon-preview-letter">?</span><img id="icon-preview-img" alt="" style="display:none"></div>
         <div class="icon-edit-controls">
-          <label class="btn btn-ghost file-label">Upload<input type="file" id="icon-file" accept="image/*"></label>
-          <button class="btn btn-ghost" type="button" onclick="resetModalIcon()">Default</button>
+          <label class="btn btn-ghost file-label"><span data-i18n="upload">Upload</span><input type="file" id="icon-file" accept="image/*"></label>
+          <button class="btn btn-ghost" type="button" data-i18n="default" onclick="resetModalIcon()">Default</button>
         </div>
       </div>
-      <input id="link-icon-url" type="text" placeholder="…or paste image URL" autocomplete="off" style="margin-top:8px">
+      <input id="link-icon-url" type="text" placeholder="…or paste image URL" data-i18n-ph="pasteImageUrl" autocomplete="off" style="margin-top:8px">
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeLinkModal()">Cancel</button>
+      <button class="btn btn-ghost" data-i18n="cancel" onclick="closeLinkModal()">Cancel</button>
       <button class="btn btn-primary" id="link-save" onclick="saveLink()">Add</button>
     </div>
   </div>
@@ -411,47 +411,54 @@
 <div class="modal-overlay" id="settings-modal">
   <div class="modal">
     <div class="modal-head">
-      <span class="modal-title">Settings</span>
+      <span class="modal-title" data-i18n="settings">Settings</span>
       <button class="modal-close" onclick="closeSettings()">✕</button>
     </div>
     <div class="field">
-      <label>Your name (for the greeting)</label>
-      <input id="set-name" type="text" placeholder="optional" autocomplete="off">
+      <label data-i18n="yourName">Your name (for the greeting)</label>
+      <input id="set-name" type="text" placeholder="optional" data-i18n-ph="optional" autocomplete="off">
     </div>
     <div class="field">
-      <label>Default search engine</label>
+      <label data-i18n="language">Language</label>
+      <select id="set-lang">
+        <option value="en">English</option>
+        <option value="da">Dansk</option>
+      </select>
+    </div>
+    <div class="field">
+      <label data-i18n="defaultEngine">Default search engine</label>
       <select id="set-engine"></select>
     </div>
     <div class="toggle-row" id="set-newtab-row">
-      <span>Open links in a new tab</span>
+      <span data-i18n="openNewTab">Open links in a new tab</span>
       <div class="toggle" id="set-newtab"></div>
     </div>
     <div class="toggle-row" id="set-seconds-row">
-      <span>Show seconds on clock</span>
+      <span data-i18n="showSeconds">Show seconds on clock</span>
       <div class="toggle" id="set-seconds"></div>
     </div>
 
     <div class="settings-section">
-      <div class="settings-section-title">Background</div>
+      <div class="settings-section-title" data-i18n="background">Background</div>
       <div class="io-row">
-        <label class="btn btn-ghost file-label">Upload image<input type="file" id="bg-file" accept="image/*"></label>
-        <button class="btn btn-ghost" onclick="resetBackground()">Default</button>
+        <label class="btn btn-ghost file-label"><span data-i18n="uploadImage">Upload image</span><input type="file" id="bg-file" accept="image/*"></label>
+        <button class="btn btn-ghost" data-i18n="default" onclick="resetBackground()">Default</button>
       </div>
       <div class="field" style="margin-top:8px; margin-bottom:0">
-        <input id="set-bg-url" type="text" placeholder="…or paste image URL" autocomplete="off">
+        <input id="set-bg-url" type="text" placeholder="…or paste image URL" data-i18n-ph="pasteImageUrl" autocomplete="off">
       </div>
     </div>
 
     <div class="settings-section">
-      <div class="settings-section-title">Backup</div>
+      <div class="settings-section-title" data-i18n="backup">Backup</div>
       <div class="io-row">
-        <button class="btn btn-ghost" onclick="exportData()">Export</button>
-        <label class="btn btn-ghost file-label">Import<input type="file" id="import-file" accept=".json"></label>
+        <button class="btn btn-ghost" data-i18n="export" onclick="exportData()">Export</button>
+        <label class="btn btn-ghost file-label"><span data-i18n="import">Import</span><input type="file" id="import-file" accept=".json"></label>
       </div>
     </div>
 
     <div class="modal-actions">
-      <button class="btn btn-primary" onclick="closeSettings()">Done</button>
+      <button class="btn btn-primary" data-i18n="done" onclick="closeSettings()">Done</button>
     </div>
   </div>
 </div>
@@ -460,12 +467,12 @@
 <div id="ctx-menu">
   <div class="ctx-item" onclick="ctxEdit()">
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    Edit
+    <span data-i18n="edit">Edit</span>
   </div>
   <div class="ctx-divider"></div>
   <div class="ctx-item danger" onclick="ctxRemove()">
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 3.5h10M5.5 3.5V2.5h3v1M5.5 6v4M8.5 6v4M3 3.5l.7 7.5h6.6l.7-7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    Remove
+    <span data-i18n="remove">Remove</span>
   </div>
 </div>
 
@@ -486,7 +493,79 @@ const DEFAULT_LINKS = [
   { name: 'Wikipedia', url: 'https://wikipedia.org' },
   { name: 'Maps',      url: 'https://maps.google.com' },
 ];
-const DEFAULT_SETTINGS = { greetingName: '', engine: 'google', newTab: false, seconds: true, theme: 'dark', background: '' };
+const DEFAULT_SETTINGS = { greetingName: '', engine: 'google', newTab: false, seconds: true, theme: 'dark', background: '', lang: 'en' };
+
+// ── Translations ──────────────────────────────────────────────────────────────
+const I18N = {
+  en: {
+    searchPlaceholder: 'Search the web…',
+    hint: 'right-click a tile to edit or remove · drag to reorder',
+    add: 'Add',
+    greetings: { night: 'Good night', morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },
+    addLink: 'Add Link', editLink: 'Edit Link',
+    name: 'Name', url: 'URL', icon: 'Icon',
+    upload: 'Upload', default: 'Default',
+    pasteImageUrl: '…or paste image URL',
+    cancel: 'Cancel', save: 'Save',
+    settings: 'Settings',
+    yourName: 'Your name (for the greeting)',
+    optional: 'optional',
+    language: 'Language',
+    defaultEngine: 'Default search engine',
+    openNewTab: 'Open links in a new tab',
+    showSeconds: 'Show seconds on clock',
+    background: 'Background', uploadImage: 'Upload image',
+    backup: 'Backup', export: 'Export', import: 'Import', done: 'Done',
+    edit: 'Edit', remove: 'Remove',
+    alertImageTooLarge: 'That image is too large to save. Try a smaller one or use a URL instead.',
+    alertSaveFailed: 'Could not save — the icon may be too large.',
+    alertReadFailed: 'Could not read that image.',
+    alertImportTooLarge: 'Imported data is too large to store (likely a big background image).',
+    alertImportInvalid: 'Import failed: invalid file.',
+    days:   ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+    months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+  },
+  da: {
+    searchPlaceholder: 'Søg på nettet…',
+    hint: 'højreklik på en flise for at redigere eller fjerne · træk for at omarrangere',
+    add: 'Tilføj',
+    greetings: { night: 'Godnat', morning: 'Godmorgen', afternoon: 'God eftermiddag', evening: 'God aften' },
+    addLink: 'Tilføj link', editLink: 'Rediger link',
+    name: 'Navn', url: 'URL', icon: 'Ikon',
+    upload: 'Upload', default: 'Standard',
+    pasteImageUrl: '…eller indsæt billed-URL',
+    cancel: 'Annuller', save: 'Gem',
+    settings: 'Indstillinger',
+    yourName: 'Dit navn (til hilsenen)',
+    optional: 'valgfrit',
+    language: 'Sprog',
+    defaultEngine: 'Standard søgemaskine',
+    openNewTab: 'Åbn links i ny fane',
+    showSeconds: 'Vis sekunder på uret',
+    background: 'Baggrund', uploadImage: 'Upload billede',
+    backup: 'Sikkerhedskopi', export: 'Eksportér', import: 'Importér', done: 'Færdig',
+    edit: 'Rediger', remove: 'Fjern',
+    alertImageTooLarge: 'Billedet er for stort til at gemme. Prøv et mindre billede eller brug en URL.',
+    alertSaveFailed: 'Kunne ikke gemme — ikonet er muligvis for stort.',
+    alertReadFailed: 'Kunne ikke læse billedet.',
+    alertImportTooLarge: 'Importerede data er for store til at gemme (sandsynligvis et stort baggrundsbillede).',
+    alertImportInvalid: 'Import mislykkedes: ugyldig fil.',
+    days:   ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'],
+    months: ['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'],
+  },
+};
+function L() { return I18N[settings.lang] || I18N.en; }
+function applyLanguage() {
+  const t = L();
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (t[k] !== undefined) el.textContent = t[k];
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const k = el.dataset.i18nPh;
+    if (t[k] !== undefined) el.placeholder = t[k];
+  });
+}
 
 let links     = [];
 let nextId     = 1;
@@ -521,6 +600,7 @@ const $ = {
   setNewtab: document.getElementById('set-newtab'),
   setSeconds:document.getElementById('set-seconds'),
   setBgUrl:  document.getElementById('set-bg-url'),
+  setLang:   document.getElementById('set-lang'),
 };
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -628,7 +708,7 @@ function setBackground(value) {
   settings.background = value;
   if (!save()) {
     settings.background = prev; save();
-    alert('That image is too large to save. Try a smaller one or use a URL instead.');
+    alert(L().alertImageTooLarge);
     return false;
   }
   applyBackground();
@@ -662,7 +742,7 @@ function renderTiles() {
   });
   html += `<button class="tile tile-add" style="animation-delay:${Math.min(links.length, 30) * 20}ms" onclick="openLinkModal()">
       <div class="plus">+</div>
-      <span class="tile-name">Add</span>
+      <span class="tile-name">${esc(L().add)}</span>
     </button>`;
   $.tiles.innerHTML = html;
   attachDrag();
@@ -727,8 +807,8 @@ document.addEventListener('contextmenu', e => { if (!$.ctxMenu.contains(e.target
 function openLinkModal(link) {
   editingId = link ? link.id : null;
   modalIcon = link ? link.icon : '';
-  $.linkTitle.textContent = link ? 'Edit Link' : 'Add Link';
-  $.linkSave.textContent  = link ? 'Save' : 'Add';
+  $.linkTitle.textContent = link ? L().editLink : L().addLink;
+  $.linkSave.textContent  = link ? L().save     : L().add;
   $.linkName.value = link ? link.name : '';
   $.linkUrl.value  = link ? link.url  : '';
   // show a pasted icon URL in the field; hide data: URLs (too long)
@@ -765,7 +845,7 @@ function saveLink() {
   } else {
     links.push({ id: nextId++, name, url, icon: modalIcon });
   }
-  if (!save()) { alert('Could not save — the icon may be too large.'); return; }
+  if (!save()) { alert(L().alertSaveFailed); return; }
   renderTiles(); closeLinkModal();
 }
 $.iconUrl.addEventListener('input', () => { modalIcon = $.iconUrl.value.trim(); updateIconPreview(); });
@@ -775,7 +855,7 @@ document.getElementById('icon-file').addEventListener('change', function () {
   const f = this.files[0]; this.value = '';
   if (!f) return;
   processImageFile(f, 128, 'image/png', undefined, dataUrl => {
-    if (!dataUrl) { alert('Could not read that image.'); return; }
+    if (!dataUrl) { alert(L().alertReadFailed); return; }
     modalIcon = dataUrl; $.iconUrl.value = ''; updateIconPreview();
   });
 });
@@ -783,6 +863,7 @@ document.getElementById('icon-file').addEventListener('change', function () {
 // ── Settings ──────────────────────────────────────────────────────────────────
 function openSettings() {
   $.setName.value = settings.greetingName;
+  $.setLang.value = settings.lang;
   buildEngineSelect($.setEngine, settings.engine);
   $.setNewtab.classList.toggle('on', settings.newTab);
   $.setSeconds.classList.toggle('on', settings.seconds);
@@ -790,6 +871,15 @@ function openSettings() {
   $.setModal.classList.add('open');
 }
 function closeSettings() { $.setModal.classList.remove('open'); }
+
+$.setLang.addEventListener('change', () => {
+  settings.lang = $.setLang.value;
+  save();
+  applyLanguage();
+  updateGreeting();
+  tick();
+  renderTiles();   // re-render so the Add tile picks up the new language
+});
 
 document.getElementById('set-newtab-row').addEventListener('click', () => {
   settings.newTab = !settings.newTab;
@@ -815,7 +905,7 @@ document.getElementById('bg-file').addEventListener('change', function () {
   const f = this.files[0]; this.value = '';
   if (!f) return;
   processImageFile(f, 1600, 'image/jpeg', 0.85, dataUrl => {
-    if (!dataUrl) { alert('Could not read that image.'); return; }
+    if (!dataUrl) { alert(L().alertReadFailed); return; }
     if (setBackground(dataUrl)) $.setBgUrl.value = '';
   });
 });
@@ -861,13 +951,14 @@ function importData(input) {
       links    = d.links.map(normalizeLink).filter(Boolean);
       nextId   = safeNextId(d.nextId);
       settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) };
-      if (!save()) { alert('Imported data is too large to store (likely a big background image).'); }
+      if (!save()) { alert(L().alertImportTooLarge); }
       applyTheme(settings.theme);
       applyBackground();
+      applyLanguage();
       buildEngineSelect($.searchEng, settings.engine);
       renderTiles(); tick(); updateGreeting();
       closeSettings();
-    } catch { alert('Import failed: invalid file.'); }
+    } catch { alert(L().alertImportInvalid); }
     input.value = '';
   };
   reader.readAsText(file);
@@ -888,26 +979,32 @@ function toggleTheme() {
 }
 
 // ── Clock & greeting ──────────────────────────────────────────────────────────
-const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 function greetingText() {
   const h = new Date().getHours();
-  if (h < 5)  return 'Good night';
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  if (h < 22) return 'Good evening';
-  return 'Good night';
+  const g = L().greetings;
+  if (h < 5)  return g.night;
+  if (h < 12) return g.morning;
+  if (h < 18) return g.afternoon;
+  if (h < 22) return g.evening;
+  return g.night;
 }
 function updateGreeting() {
   const n = settings.greetingName;
   $.greeting.innerHTML = greetingText() + (n ? `, <b>${esc(n)}</b>` : '');
 }
 function tick() {
+  const t = L();
   const d = new Date();
   const p = n => String(n).padStart(2, '0');
   const hm = `${p(d.getHours())}:${p(d.getMinutes())}`;
   $.clock.innerHTML = settings.seconds ? `${hm}<span class="sec">${p(d.getSeconds())}</span>` : hm;
-  $.date.textContent = `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+  const day = t.days[d.getDay()];
+  const date = d.getDate();
+  const month = t.months[d.getMonth()];
+  // Danish convention: "Fredag, 23. maj"; English: "Friday, May 23"
+  $.date.textContent = settings.lang === 'da'
+    ? `${day}, ${date}. ${month}`
+    : `${day}, ${month} ${date}`;
 }
 
 // ── Global listeners ──────────────────────────────────────────────────────────
@@ -926,6 +1023,7 @@ document.addEventListener('keydown', e => {
 load();
 applyTheme(settings.theme);
 applyBackground();
+applyLanguage();
 buildEngineSelect($.searchEng, settings.engine);
 renderTiles();
 updateGreeting();
