@@ -278,7 +278,7 @@
     object-fit: cover; background: #fff;
   }
   .icon-edit-controls { display: flex; gap: 6px; flex: 1; }
-  .icon-edit-controls .btn { flex: 1; text-align: center; }
+  .icon-edit-controls .btn { flex: 1; text-align: center; padding: 9px 4px; }
 
   .toggle-row {
     display: flex; align-items: center; justify-content: space-between;
@@ -315,6 +315,50 @@
   }
   .io-row { display: flex; gap: 8px; }
   .io-row .btn { flex: 1; text-align: center; }
+
+  /* Feed list manager */
+  .feed-list-label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;
+  }
+  #feed-count { color: var(--text-dimmer); }
+  .feed-list {
+    max-height: 132px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;
+  }
+  .feed-row {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 7px; padding: 6px 8px;
+  }
+  .feed-row span {
+    flex: 1; min-width: 0; font-size: 11px; color: var(--text-dim);
+    font-family: var(--mono);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .feed-row button {
+    background: none; border: none; cursor: pointer; flex-shrink: 0;
+    color: var(--text-dimmer); font-size: 14px; line-height: 1; padding: 0 2px;
+    transition: color 0.12s;
+  }
+  .feed-row button:hover { color: var(--accent); }
+  .feed-empty {
+    font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
+    padding: 6px 2px;
+  }
+  .feed-add-row { display: flex; gap: 6px; }
+  .feed-add-row input {
+    flex: 1; min-width: 0; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: 8px;
+    color: var(--text); font-family: var(--sans); font-size: 13px;
+    padding: 9px 11px; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .feed-add-row input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(79,196,168,0.12); }
+  .feed-add-row .btn { flex-shrink: 0; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .feed-add-row input:disabled { opacity: 0.45; cursor: not-allowed; }
   input[type="file"] { display: none; }
   .file-label { display: inline-flex; align-items: center; justify-content: center; }
 
@@ -455,6 +499,7 @@
         <div class="icon-preview" id="icon-preview"><span id="icon-preview-letter">?</span><img id="icon-preview-img" alt="" style="display:none"></div>
         <div class="icon-edit-controls">
           <label class="btn btn-ghost file-label"><span data-i18n="upload">Upload</span><input type="file" id="icon-file" accept="image/*"></label>
+          <button class="btn btn-ghost" type="button" data-i18n="useLetter" onclick="useModalLetter()">Letter</button>
           <button class="btn btn-ghost" type="button" data-i18n="default" onclick="resetModalIcon()">Default</button>
         </div>
       </div>
@@ -497,6 +542,10 @@
       <span data-i18n="showSeconds">Show seconds on clock</span>
       <div class="toggle" id="set-seconds"></div>
     </div>
+    <div class="toggle-row" id="set-showadd-row">
+      <span data-i18n="showAddTile">Show "Add" tile</span>
+      <div class="toggle" id="set-showadd"></div>
+    </div>
 
     <div class="settings-section">
       <div class="settings-section-title" data-i18n="background">Background</div>
@@ -515,11 +564,7 @@
         <span data-i18n="showFeed">Show RSS feed</span>
         <div class="toggle" id="set-rss"></div>
       </div>
-      <div class="field" style="margin-top:6px">
-        <label data-i18n="feedUrl">Feed URL</label>
-        <input id="set-rss-url" type="text" placeholder="https://example.com/feed.xml" autocomplete="off">
-      </div>
-      <div class="field" style="margin-bottom:0">
+      <div class="field" style="margin-top:6px; margin-bottom:12px">
         <label data-i18n="position">Position</label>
         <select id="set-rss-pos">
           <option value="tl" data-i18n="posTL">Top left</option>
@@ -529,6 +574,14 @@
           <option value="mr" data-i18n="posMR">Middle right</option>
           <option value="br" data-i18n="posBR">Bottom right</option>
         </select>
+      </div>
+      <div class="feed-list-label">
+        <span data-i18n="feeds">Feeds</span><span id="feed-count"></span>
+      </div>
+      <div class="feed-list" id="feed-list"></div>
+      <div class="feed-add-row">
+        <input id="set-rss-url" type="text" placeholder="https://example.com/feed.xml" autocomplete="off">
+        <button class="btn btn-ghost" id="feed-add-btn" data-i18n="add" onclick="addFeed()">Add</button>
       </div>
     </div>
 
@@ -561,6 +614,7 @@
 
 <script>
 const STORAGE_KEY = 'startpage_v1';
+const FORCE_LETTER = 'letter';   // sentinel for link.icon: always show the coloured letter, never a favicon
 const ENGINES = {
   google:     { name: 'Google',     url: 'https://www.google.com/search?q=' },
   duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
@@ -578,9 +632,10 @@ const DEFAULT_LINKS = [
 ];
 const DEFAULT_SETTINGS = {
   greetingName: '', engine: 'google', newTab: false, seconds: true,
-  theme: 'dark', background: '', lang: 'en',
-  rss: { enabled: false, url: '', position: 'mr' },
+  theme: 'dark', background: '', lang: 'en', hideAdd: false,
+  rss: { enabled: false, urls: [], position: 'mr' },
 };
+const MAX_FEEDS = 15;
 
 // ── Translations ──────────────────────────────────────────────────────────────
 const I18N = {
@@ -591,7 +646,7 @@ const I18N = {
     greetings: { night: 'Good night', morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },
     addLink: 'Add Link', editLink: 'Edit Link',
     name: 'Name', url: 'URL', icon: 'Icon',
-    upload: 'Upload', default: 'Default',
+    upload: 'Upload', default: 'Default', useLetter: 'Letter',
     pasteImageUrl: '…or paste image URL',
     cancel: 'Cancel', save: 'Save',
     settings: 'Settings',
@@ -604,7 +659,10 @@ const I18N = {
     background: 'Background', uploadImage: 'Upload image',
     backup: 'Backup', export: 'Export', import: 'Import', done: 'Done',
     edit: 'Edit', remove: 'Remove',
-    feed: 'Feed', showFeed: 'Show RSS feed', feedUrl: 'Feed URL', position: 'Position',
+    feed: 'Feed', showFeed: 'Show RSS feed', position: 'Position',
+    feeds: 'Feeds', noFeeds: 'No feeds added yet',
+    showAddTile: 'Show "Add" tile',
+    confirmRemove: 'Remove "{name}"?',
     posTL: 'Top left', posML: 'Middle left', posBL: 'Bottom left',
     posTR: 'Top right', posMR: 'Middle right', posBR: 'Bottom right',
     feedLoading: 'Loading…', feedEmpty: 'Set a feed URL in settings', feedError: 'Could not load feed',
@@ -623,7 +681,7 @@ const I18N = {
     greetings: { night: 'Godnat', morning: 'Godmorgen', afternoon: 'God eftermiddag', evening: 'God aften' },
     addLink: 'Tilføj link', editLink: 'Rediger link',
     name: 'Navn', url: 'URL', icon: 'Ikon',
-    upload: 'Upload', default: 'Standard',
+    upload: 'Upload', default: 'Standard', useLetter: 'Bogstav',
     pasteImageUrl: '…eller indsæt billed-URL',
     cancel: 'Annuller', save: 'Gem',
     settings: 'Indstillinger',
@@ -636,7 +694,10 @@ const I18N = {
     background: 'Baggrund', uploadImage: 'Upload billede',
     backup: 'Sikkerhedskopi', export: 'Eksportér', import: 'Importér', done: 'Færdig',
     edit: 'Rediger', remove: 'Fjern',
-    feed: 'Feed', showFeed: 'Vis RSS-feed', feedUrl: 'Feed-URL', position: 'Placering',
+    feed: 'Feed', showFeed: 'Vis RSS-feed', position: 'Placering',
+    feeds: 'Feeds', noFeeds: 'Ingen feeds tilføjet endnu',
+    showAddTile: 'Vis "Tilføj"-flise',
+    confirmRemove: 'Fjern "{name}"?',
     posTL: 'Øverst venstre', posML: 'Midt venstre', posBL: 'Nederst venstre',
     posTR: 'Øverst højre',   posMR: 'Midt højre',   posBR: 'Nederst højre',
     feedLoading: 'Indlæser…', feedEmpty: 'Angiv en feed-URL i indstillinger', feedError: 'Kunne ikke indlæse feed',
@@ -694,14 +755,19 @@ const $ = {
   setEngine: document.getElementById('set-engine'),
   setNewtab: document.getElementById('set-newtab'),
   setSeconds:document.getElementById('set-seconds'),
+  setShowAdd:document.getElementById('set-showadd'),
   setBgUrl:  document.getElementById('set-bg-url'),
   setLang:   document.getElementById('set-lang'),
+  hint:      document.querySelector('.hint'),
   rssPanel:  document.getElementById('rss-panel'),
   rssList:   document.getElementById('rss-list'),
   rssRefresh:document.getElementById('rss-refresh'),
   setRss:    document.getElementById('set-rss'),
   setRssUrl: document.getElementById('set-rss-url'),
   setRssPos: document.getElementById('set-rss-pos'),
+  feedList:  document.getElementById('feed-list'),
+  feedCount: document.getElementById('feed-count'),
+  feedAddBtn:document.getElementById('feed-add-btn'),
 };
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -712,6 +778,19 @@ function normalizeLink(l) {
     name: typeof l.name === 'string' ? l.name : '',
     url:  typeof l.url  === 'string' ? l.url  : '',
     icon: typeof l.icon === 'string' ? l.icon : '',
+  };
+}
+function normalizeRss(r) {
+  r = r || {};
+  let urls = Array.isArray(r.urls)
+    ? r.urls.filter(u => typeof u === 'string' && u.trim()).map(u => u.trim())
+    : [];
+  // Migrate the old single-URL shape ({ url: '...' }) to the new urls array
+  if (!urls.length && typeof r.url === 'string' && r.url.trim()) urls = [r.url.trim()];
+  return {
+    enabled:  !!r.enabled,
+    urls:     urls.slice(0, MAX_FEEDS),
+    position: ['tl','ml','bl','tr','mr','br'].includes(r.position) ? r.position : 'mr',
   };
 }
 function safeNextId(stored) {
@@ -725,7 +804,7 @@ function load() {
     links    = data.links.map(normalizeLink).filter(Boolean);
     nextId   = safeNextId(data.nextId);
     settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
-    settings.rss = { ...DEFAULT_SETTINGS.rss, ...(settings.rss || {}) };
+    settings.rss = normalizeRss(settings.rss);
   } else {
     links  = DEFAULT_LINKS.map((l, i) => ({ id: i + 1, name: l.name, url: l.url, icon: '' }));
     nextId = links.length + 1;
@@ -826,7 +905,9 @@ function renderTiles() {
   let html = '';
   links.forEach((l, i) => {
     const letter  = (l.name.trim()[0] || '?').toUpperCase();
-    const sources = l.icon ? [l.icon, ...faviconSources(l.url)] : faviconSources(l.url);
+    const sources = l.icon === FORCE_LETTER ? []
+                  : l.icon ? [l.icon, ...faviconSources(l.url)]
+                  : faviconSources(l.url);
     const target  = settings.newTab ? ' target="_blank" rel="noopener"' : '';
     const imgTag  = sources.length
       ? `<img src="${esc(sources[0])}" data-fb="${esc(sources.slice(1).join('|'))}" alt="" onerror="nextIcon(this)">`
@@ -842,12 +923,18 @@ function renderTiles() {
       <span class="tile-name">${esc(l.name)}</span>
     </a>`;
   });
-  html += `<button class="tile tile-add" style="animation-delay:${Math.min(links.length, 30) * 20}ms" onclick="openLinkModal()">
+  if (!settings.hideAdd) {
+    html += `<button class="tile tile-add" style="animation-delay:${Math.min(links.length, 30) * 20}ms" onclick="openLinkModal()">
       <div class="plus">+</div>
       <span class="tile-name">${esc(L().add)}</span>
     </button>`;
+  }
   $.tiles.innerHTML = html;
   attachDrag();
+}
+// Hint text is tied to the Add tile — hide both together
+function applyHint() {
+  $.hint.style.display = settings.hideAdd ? 'none' : '';
 }
 
 // ── Drag to reorder ───────────────────────────────────────────────────────────
@@ -898,9 +985,12 @@ function ctxEdit() {
 }
 function ctxRemove() {
   if (ctxId === null) return;
-  links = links.filter(x => x.id !== ctxId);
-  save(); renderTiles();
+  const l = links.find(x => x.id === ctxId);
   closeCtx();
+  if (!l) return;
+  if (!confirm(L().confirmRemove.replace('{name}', l.name || ''))) return;
+  links = links.filter(x => x.id !== l.id);
+  save(); renderTiles();
 }
 document.addEventListener('click',       e => { if (!$.ctxMenu.contains(e.target)) closeCtx(); });
 document.addEventListener('contextmenu', e => { if (!$.ctxMenu.contains(e.target) && !e.target.closest('.tile')) closeCtx(); });
@@ -913,8 +1003,8 @@ function openLinkModal(link) {
   $.linkSave.textContent  = link ? L().save     : L().add;
   $.linkName.value = link ? link.name : '';
   $.linkUrl.value  = link ? link.url  : '';
-  // show a pasted icon URL in the field; hide data: URLs (too long)
-  $.iconUrl.value  = (modalIcon && !modalIcon.startsWith('data:')) ? modalIcon : '';
+  // show a pasted icon URL in the field; hide data: URLs and the letter sentinel
+  $.iconUrl.value  = (modalIcon && modalIcon !== FORCE_LETTER && !modalIcon.startsWith('data:')) ? modalIcon : '';
   updateIconPreview();
   $.linkModal.classList.add('open');
   setTimeout(() => $.linkName.focus(), 30);
@@ -924,8 +1014,8 @@ function updateIconPreview() {
   const nameVal = $.linkName.value.trim();
   $.iconPrevLetter.textContent = (nameVal[0] || '?').toUpperCase();
   $.iconPrev.style.background = colorFor(nameVal || '?');
-  const sources = modalIcon
-    ? [modalIcon, ...faviconSources($.linkUrl.value.trim())]
+  const sources = modalIcon === FORCE_LETTER ? []
+    : modalIcon ? [modalIcon, ...faviconSources($.linkUrl.value.trim())]
     : faviconSources($.linkUrl.value.trim());
   if (sources.length) {
     $.iconPrevImg.dataset.fb = sources.slice(1).join('|');
@@ -937,6 +1027,7 @@ function updateIconPreview() {
   }
 }
 function resetModalIcon() { modalIcon = ''; $.iconUrl.value = ''; updateIconPreview(); }
+function useModalLetter() { modalIcon = FORCE_LETTER; $.iconUrl.value = ''; updateIconPreview(); }
 function saveLink() {
   const name = $.linkName.value.trim();
   const url  = $.linkUrl.value.trim();
@@ -969,10 +1060,11 @@ function openSettings() {
   buildEngineSelect($.setEngine, settings.engine);
   $.setNewtab.classList.toggle('on', settings.newTab);
   $.setSeconds.classList.toggle('on', settings.seconds);
+  $.setShowAdd.classList.toggle('on', !settings.hideAdd);
   $.setBgUrl.value = (settings.background && !settings.background.startsWith('data:')) ? settings.background : '';
   $.setRss.classList.toggle('on', settings.rss.enabled);
-  $.setRssUrl.value = settings.rss.url;
   $.setRssPos.value = RSS_POSITIONS.includes(settings.rss.position) ? settings.rss.position : 'mr';
+  renderFeedList();
   $.setModal.classList.add('open');
 }
 function closeSettings() { $.setModal.classList.remove('open'); }
@@ -996,6 +1088,11 @@ document.getElementById('set-seconds-row').addEventListener('click', () => {
   $.setSeconds.classList.toggle('on', settings.seconds);
   save(); tick();
 });
+document.getElementById('set-showadd-row').addEventListener('click', () => {
+  settings.hideAdd = !settings.hideAdd;
+  $.setShowAdd.classList.toggle('on', !settings.hideAdd);
+  save(); renderTiles(); applyHint();
+});
 $.setName.addEventListener('input', () => {
   settings.greetingName = $.setName.value.trim();
   save(); updateGreeting();
@@ -1010,18 +1107,11 @@ $.setBgUrl.addEventListener('input', () => { setBackground($.setBgUrl.value.trim
 document.getElementById('set-rss-row').addEventListener('click', () => {
   settings.rss.enabled = !settings.rss.enabled;
   $.setRss.classList.toggle('on', settings.rss.enabled);
-  save(); applyRss();
+  save();
+  rssLastSig = '';   // force a fresh fetch when (re)enabled
+  applyRss();
 });
-$.setRssUrl.addEventListener('input', () => {
-  // debounce so we don't fire a request on every keystroke
-  clearTimeout(rssUrlDebounce);
-  const url = $.setRssUrl.value.trim();
-  rssUrlDebounce = setTimeout(() => {
-    settings.rss.url = url;
-    rssLastUrl = '';  // force re-fetch with the new URL
-    save(); applyRss();
-  }, 600);
-});
+$.setRssUrl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addFeed(); } });
 $.setRssPos.addEventListener('change', () => {
   settings.rss.position = $.setRssPos.value;
   save(); applyRss();
@@ -1076,14 +1166,14 @@ function importData(input) {
       links    = d.links.map(normalizeLink).filter(Boolean);
       nextId   = safeNextId(d.nextId);
       settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) };
-      settings.rss = { ...DEFAULT_SETTINGS.rss, ...(settings.rss || {}) };
+      settings.rss = normalizeRss(settings.rss);
       if (!save()) { alert(L().alertImportTooLarge); }
       applyTheme(settings.theme);
       applyBackground();
       applyLanguage();
       applyRss();
       buildEngineSelect($.searchEng, settings.engine);
-      renderTiles(); tick(); updateGreeting();
+      renderTiles(); applyHint(); tick(); updateGreeting();
       closeSettings();
     } catch { alert(L().alertImportInvalid); }
     input.value = '';
@@ -1097,24 +1187,25 @@ const RSS_POSITIONS = ['tl','ml','bl','tr','mr','br'];
 const RSS_REFRESH_MS = 15 * 60 * 1000;  // 15 min
 const RSS_MAX_ITEMS  = 10;
 let rssTimer = null;
-let rssLastUrl = '';     // remember last URL fetched (avoids duplicate refetch)
-let rssUrlDebounce = null;
+let rssLastSig = '';     // signature of the URL set last fetched (avoids needless refetch)
 
 function applyRss() {
   const r = settings.rss;
   // strip any previous position class, then re-apply
   RSS_POSITIONS.forEach(p => $.rssPanel.classList.remove('pos-' + p));
   $.rssPanel.classList.add('pos-' + (RSS_POSITIONS.includes(r.position) ? r.position : 'mr'));
+  if (rssTimer) { clearInterval(rssTimer); rssTimer = null; }
   if (r.enabled) {
     $.rssPanel.classList.add('show');
-    if (r.url && r.url !== rssLastUrl) fetchFeed();
-    else if (!r.url) showRssState('feedEmpty');
-    // schedule periodic refresh
-    if (rssTimer) clearInterval(rssTimer);
-    if (r.url) rssTimer = setInterval(fetchFeed, RSS_REFRESH_MS);
+    if (r.urls.length) {
+      const sig = r.urls.join('|');
+      if (sig !== rssLastSig) fetchFeed();
+      rssTimer = setInterval(fetchFeed, RSS_REFRESH_MS);
+    } else {
+      showRssState('feedEmpty');
+    }
   } else {
     $.rssPanel.classList.remove('show');
-    if (rssTimer) { clearInterval(rssTimer); rssTimer = null; }
   }
 }
 
@@ -1122,11 +1213,11 @@ function showRssState(key) {
   $.rssList.innerHTML = `<div class="rss-state" data-i18n="${key}">${esc(L()[key] || '')}</div>`;
 }
 
-// Multi-source cascade — try each in order, first one that returns items wins.
+// Multi-source cascade — try each in order, first that returns items wins.
 // Free CORS proxies are flaky (especially against rate-limited sites like
 // Reddit), so we never depend on a single source.
 const FEED_FETCHERS = [
-  // 1) RSS2JSON: dedicated RSS-to-JSON service, the most reliable for RSS specifically (10k req/day free)
+  // 1) RSS2JSON: dedicated RSS-to-JSON service, the most reliable for RSS (10k req/day free)
   {
     name: 'rss2json',
     url:  u => `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(u)}`,
@@ -1134,7 +1225,7 @@ const FEED_FETCHERS = [
       const data = await res.json();
       if (!data || data.status !== 'ok' || !Array.isArray(data.items)) throw new Error('bad rss2json');
       return data.items
-        .map(i => ({ title: (i.title || '').trim(), link: (i.link || '').trim() }))
+        .map(i => ({ title: (i.title || '').trim(), link: (i.link || '').trim(), ts: Date.parse(i.pubDate || '') || 0 }))
         .filter(it => it.title && it.link);
     },
   },
@@ -1160,21 +1251,33 @@ const FEED_FETCHERS = [
   },
 ];
 
-async function fetchFeed() {
-  const url = settings.rss.url;
-  if (!url) { showRssState('feedEmpty'); return; }
-  rssLastUrl = url;
-  showRssState('feedLoading');
+// Fetch a single feed through the cascade; returns [] if every source fails
+async function fetchOneFeed(url) {
   for (const f of FEED_FETCHERS) {
     try {
       const res = await fetch(f.url(url));
       if (!res.ok) continue;
       const items = await f.parse(res);
-      if (settings.rss.url !== url) return;  // URL changed mid-flight, abandon
-      if (items.length) { renderFeed(items.slice(0, RSS_MAX_ITEMS)); return; }
+      if (items.length) return items;
     } catch { /* try next source */ }
   }
-  if (settings.rss.url === url) showRssState('feedError');
+  return [];
+}
+
+// Fetch every configured feed, combine, sort newest-first, show the last 10 overall
+async function fetchFeed() {
+  const urls = settings.rss.urls;
+  if (!urls.length) { showRssState('feedEmpty'); return; }
+  const sig = urls.join('|');
+  rssLastSig = sig;
+  showRssState('feedLoading');
+  const results = await Promise.all(urls.map(fetchOneFeed));
+  if (settings.rss.urls.join('|') !== sig) return;  // feed set changed mid-flight, abandon
+  const all = [];
+  results.forEach(items => items.forEach(it => all.push(it)));
+  if (!all.length) { showRssState('feedError'); return; }
+  all.sort((a, b) => (b.ts || 0) - (a.ts || 0));   // newest first; undated items fall to the end
+  renderFeed(all.slice(0, RSS_MAX_ITEMS));
 }
 
 function parseFeedXml(xmlText) {
@@ -1185,7 +1288,8 @@ function parseFeedXml(xmlText) {
   doc.querySelectorAll('item').forEach(node => {
     const title = (node.querySelector('title')?.textContent || '').trim();
     const link  = (node.querySelector('link')?.textContent  || '').trim();
-    if (title && link) out.push({ title, link });
+    const date  = node.querySelector('pubDate')?.textContent || '';
+    if (title && link) out.push({ title, link, ts: Date.parse(date) || 0 });
   });
   // Atom — only fall back to entries if no RSS items were found
   if (!out.length) {
@@ -1194,7 +1298,8 @@ function parseFeedXml(xmlText) {
       const links  = Array.from(node.querySelectorAll('link'));
       const altLnk = links.find(l => (l.getAttribute('rel') || 'alternate') === 'alternate') || links[0];
       const link   = altLnk ? altLnk.getAttribute('href') : '';
-      if (title && link) out.push({ title, link });
+      const date   = node.querySelector('updated')?.textContent || node.querySelector('published')?.textContent || '';
+      if (title && link) out.push({ title, link, ts: Date.parse(date) || 0 });
     });
   }
   return out;
@@ -1207,13 +1312,41 @@ function renderFeed(items) {
   ).join('');
 }
 
+// ── Feed list manager (settings) ──────────────────────────────────────────────
+function renderFeedList() {
+  const urls = settings.rss.urls;
+  $.feedCount.textContent = ` ${urls.length}/${MAX_FEEDS}`;
+  if (!urls.length) {
+    $.feedList.innerHTML = `<div class="feed-empty" data-i18n="noFeeds">${esc(L().noFeeds)}</div>`;
+  } else {
+    $.feedList.innerHTML = urls.map((u, i) =>
+      `<div class="feed-row"><span title="${esc(u)}">${esc(u)}</span>` +
+      `<button type="button" title="${esc(L().remove)}" onclick="removeFeed(${i})">✕</button></div>`
+    ).join('');
+  }
+  const atLimit = urls.length >= MAX_FEEDS;
+  $.setRssUrl.disabled = atLimit;
+  $.feedAddBtn.disabled = atLimit;
+}
+function addFeed() {
+  const url = $.setRssUrl.value.trim();
+  if (!url || settings.rss.urls.length >= MAX_FEEDS) return;
+  settings.rss.urls.push(url);
+  $.setRssUrl.value = '';
+  save(); renderFeedList(); applyRss();
+}
+function removeFeed(i) {
+  settings.rss.urls.splice(i, 1);
+  save(); renderFeedList(); applyRss();
+}
+
 // Refresh button (manual reload, with a 360° spin for feedback)
 $.rssRefresh.addEventListener('click', () => {
-  if (!settings.rss.url) return;
+  if (!settings.rss.urls.length) return;
   $.rssRefresh.classList.remove('spin');
   void $.rssRefresh.offsetWidth;  // restart the transition
   $.rssRefresh.classList.add('spin');
-  rssLastUrl = '';  // force fetch even if URL unchanged
+  rssLastSig = '';  // force fetch even if the URL set is unchanged
   fetchFeed();
 });
 
@@ -1279,6 +1412,7 @@ applyLanguage();
 applyRss();
 buildEngineSelect($.searchEng, settings.engine);
 renderTiles();
+applyHint();
 updateGreeting();
 tick();
 setInterval(tick, 1000);
