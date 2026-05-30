@@ -23,6 +23,11 @@
     --mono:   'DM Mono', monospace;
     --sans:   'Noto Sans JP', sans-serif;
     --display:'Syne', sans-serif;
+    /* Background opacity for tiles and widgets (0–1). Set via JS from settings.
+       Only fades the panel background/border/shadow — icons and text stay 100%. */
+    --tile-bg-opacity:   1;
+    --widget-bg-opacity: 1;
+    --search-bg-opacity: 1;
   }
 
   [data-theme="light"] {
@@ -57,8 +62,6 @@
       radial-gradient(ellipse 70% 50% at 50% 0%, rgba(30,144,112,0.06) 0%, transparent 60%),
       radial-gradient(ellipse 50% 40% at 85% 100%, rgba(196,60,54,0.04) 0%, transparent 55%);
   }
-  .has-bg body::before { background: linear-gradient(rgba(7,8,13,0.5), rgba(7,8,13,0.64)); }
-  [data-theme="light"].has-bg body::before { background: linear-gradient(rgba(220,224,236,0.4), rgba(220,224,236,0.58)); }
 
   .page {
     position: relative; z-index: 1;
@@ -118,8 +121,8 @@
     display: flex; align-items: center;
     width: 100%; max-width: 560px;
     margin-top: 34px;
-    background: var(--bg2);
-    border: 1px solid var(--border2);
+    background: color-mix(in srgb, var(--bg2) calc(var(--search-bg-opacity) * 100%), transparent);
+    border: 1px solid color-mix(in srgb, var(--border2) calc(var(--search-bg-opacity) * 100%), transparent);
     border-radius: 12px;
     padding: 4px 4px 4px 6px;
     transition: border-color 0.18s, box-shadow 0.18s;
@@ -172,8 +175,8 @@
   .tile {
     display: flex; flex-direction: column; align-items: center; gap: 9px;
     padding: 16px 8px 13px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg2) calc(var(--tile-bg-opacity) * 100%), transparent);
+    border: 1px solid color-mix(in srgb, var(--border) calc(var(--tile-bg-opacity) * 100%), transparent);
     border-radius: 14px;
     text-decoration: none; color: var(--text);
     cursor: pointer;
@@ -183,8 +186,8 @@
   }
   .tile:hover {
     transform: translateY(-3px);
-    border-color: var(--border2);
-    background: var(--bg3);
+    border-color: color-mix(in srgb, var(--border2) calc(var(--tile-bg-opacity) * 100%), transparent);
+    background: color-mix(in srgb, var(--bg3) calc(var(--tile-bg-opacity) * 100%), transparent);
   }
 
   .tile-icon {
@@ -212,7 +215,7 @@
     color: var(--text-dimmer);
     justify-content: center;
   }
-  .tile-add:hover { border-color: var(--teal); color: var(--teal); background: var(--bg2); }
+  .tile-add:hover { border-color: var(--teal); color: var(--teal); background: color-mix(in srgb, var(--bg2) calc(var(--tile-bg-opacity) * 100%), transparent); }
   .tile-add .plus {
     width: 44px; height: 44px; border-radius: 11px;
     display: flex; align-items: center; justify-content: center;
@@ -308,6 +311,33 @@
   .toggle.on { background: var(--teal); }
   .toggle.on::after { transform: translateX(16px); }
 
+  /* Range slider for opacity controls */
+  .slider-row { display: flex; align-items: center; gap: 12px; }
+  .slider-row input[type="range"] { flex: 1; }
+  .slider-val {
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    min-width: 38px; text-align: right;
+  }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    height: 6px; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: 4px;
+    outline: none; cursor: pointer; padding: 0; margin: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--teal); border: none; cursor: pointer;
+    transition: transform 0.12s;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--teal); border: none; cursor: pointer;
+    transition: transform 0.12s;
+  }
+  input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.15); }
+  input[type="range"]:hover::-moz-range-thumb     { transform: scale(1.15); }
+
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
   .btn {
     border-radius: 8px; cursor: pointer; font-family: var(--mono);
@@ -402,9 +432,10 @@
   /* ── Side widgets (RSS, Note) — shared positioning ── */
   .widget {
     position: fixed; width: 290px; max-height: 70vh; z-index: 30;
-    background: var(--bg2); border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg2) calc(var(--widget-bg-opacity) * 100%), transparent);
+    border: 1px solid color-mix(in srgb, var(--border) calc(var(--widget-bg-opacity) * 100%), transparent);
     border-radius: 14px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, calc(0.35 * var(--widget-bg-opacity)));
     display: none; flex-direction: column;
   }
   .widget.show { display: flex; }
@@ -584,6 +615,10 @@
       <span data-i18n="showAddTile">Show "Add" tile</span>
       <div class="toggle" id="set-showadd"></div>
     </div>
+    <div class="toggle-row" id="set-showsearch-row">
+      <span data-i18n="showSearch">Show search bar</span>
+      <div class="toggle" id="set-showsearch"></div>
+    </div>
 
     <div class="settings-section">
       <div class="settings-section-title" data-i18n="background">Background</div>
@@ -593,6 +628,31 @@
       </div>
       <div class="field" style="margin-top:8px; margin-bottom:0">
         <input id="set-bg-url" type="text" placeholder="…or paste image URL" data-i18n-ph="pasteImageUrl" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="appearance">Appearance</div>
+      <div class="field">
+        <label data-i18n="tileOpacity">Tile opacity</label>
+        <div class="slider-row">
+          <input type="range" id="set-tile-opacity" min="0" max="100" step="5">
+          <span class="slider-val" id="tile-opacity-val">100%</span>
+        </div>
+      </div>
+      <div class="field">
+        <label data-i18n="widgetOpacity">Widget opacity</label>
+        <div class="slider-row">
+          <input type="range" id="set-widget-opacity" min="0" max="100" step="5">
+          <span class="slider-val" id="widget-opacity-val">100%</span>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label data-i18n="searchOpacity">Search bar opacity</label>
+        <div class="slider-row">
+          <input type="range" id="set-search-opacity" min="0" max="100" step="5">
+          <span class="slider-val" id="search-opacity-val">100%</span>
+        </div>
       </div>
     </div>
 
@@ -702,6 +762,8 @@ const DEFAULT_LINKS = [
 const DEFAULT_SETTINGS = {
   greetingName: '', engine: 'google', newTab: false, seconds: true,
   theme: 'dark', background: '', lang: 'en', hideAdd: false,
+  searchEnabled: true,
+  tileOpacity: 1, widgetOpacity: 1, searchOpacity: 1,
   groups: [],
   rss:  { enabled: false, urls: [], position: 'mr' },
   note: { enabled: false, position: 'ml', text: '' },
@@ -738,7 +800,8 @@ const I18N = {
     tileGroups: 'Tile groups', groups: 'Groups', group: 'Group', none: 'None',
     groupName: 'Group name', noGroups: 'No groups added yet',
     confirmRemoveGroup: 'Remove group "{name}"? Tiles in it will become ungrouped.',
-    showAddTile: 'Show "Add" tile',
+    showAddTile: 'Show "Add" tile', showSearch: 'Show search bar',
+    appearance: 'Appearance', tileOpacity: 'Tile opacity', widgetOpacity: 'Widget opacity', searchOpacity: 'Search bar opacity',
     confirmRemove: 'Remove "{name}"?',
     posTL: 'Top left', posML: 'Middle left', posBL: 'Bottom left',
     posTR: 'Top right', posMR: 'Middle right', posBR: 'Bottom right',
@@ -777,7 +840,8 @@ const I18N = {
     tileGroups: 'Flisegrupper', groups: 'Grupper', group: 'Gruppe', none: 'Ingen',
     groupName: 'Gruppenavn', noGroups: 'Ingen grupper tilføjet endnu',
     confirmRemoveGroup: 'Fjern gruppen "{name}"? Fliser i den bliver ugrupperede.',
-    showAddTile: 'Vis "Tilføj"-flise',
+    showAddTile: 'Vis "Tilføj"-flise', showSearch: 'Vis søgefelt',
+    appearance: 'Udseende', tileOpacity: 'Fliseopacitet', widgetOpacity: 'Widget-opacitet', searchOpacity: 'Søgefelts opacitet',
     confirmRemove: 'Fjern "{name}"?',
     posTL: 'Øverst venstre', posML: 'Midt venstre', posBL: 'Nederst venstre',
     posTR: 'Øverst højre',   posMR: 'Midt højre',   posBR: 'Nederst højre',
@@ -860,6 +924,14 @@ const $ = {
   groupCount:document.getElementById('group-count'),
   groupInput:document.getElementById('set-group-input'),
   groupAddBtn:document.getElementById('group-add-btn'),
+  // Appearance
+  setTileOp:    document.getElementById('set-tile-opacity'),
+  setWidgetOp:  document.getElementById('set-widget-opacity'),
+  setSearchOp:  document.getElementById('set-search-opacity'),
+  tileOpVal:    document.getElementById('tile-opacity-val'),
+  widgetOpVal:  document.getElementById('widget-opacity-val'),
+  searchOpVal:  document.getElementById('search-opacity-val'),
+  setShowSearch:document.getElementById('set-showsearch'),
 };
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -908,6 +980,20 @@ function normalizeGroups(g) {
   }
   return out;
 }
+// Defensive type-coercion for top-level scalars — fixes hand-edited or stale
+// backups before they get used or save()'d back. Object subfields are handled
+// by normalizeRss / normalizeNote / normalizeGroups separately.
+function normalizeSettings(s) {
+  const asBool = (v, dflt) => typeof v === 'boolean' ? v : dflt;
+  s.newTab        = asBool(s.newTab,        false);
+  s.seconds       = asBool(s.seconds,       true);
+  s.hideAdd       = asBool(s.hideAdd,       false);
+  s.searchEnabled = asBool(s.searchEnabled, true);
+  s.tileOpacity   = clampOpacity(s.tileOpacity);
+  s.widgetOpacity = clampOpacity(s.widgetOpacity);
+  s.searchOpacity = clampOpacity(s.searchOpacity);
+  return s;
+}
 function safeNextId(stored) {
   const maxId = links.reduce((m, l) => Math.max(m, l.id), 0);
   return Math.max(Number(stored) || 0, maxId + 1);
@@ -919,6 +1005,7 @@ function load() {
     links    = data.links.map(normalizeLink).filter(Boolean);
     nextId   = safeNextId(data.nextId);
     settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
+    normalizeSettings(settings);
     settings.rss    = normalizeRss(settings.rss);
     settings.note   = normalizeNote(settings.note);
     settings.groups = normalizeGroups(settings.groups);
@@ -1078,6 +1165,47 @@ function applyHint() {
   $.hint.style.display = settings.hideAdd ? 'none' : '';
 }
 
+// ── Tile/widget background opacity ────────────────────────────────────────────
+// Drives the --tile-bg-opacity / --widget-bg-opacity CSS custom properties on
+// :root. The CSS uses color-mix() against transparent so only the background,
+// border, and shadow fade — icons, text, and tile-icon colours stay 100%.
+function clampOpacity(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 1;
+}
+function applyOpacity() {
+  const t = clampOpacity(settings.tileOpacity);
+  const w = clampOpacity(settings.widgetOpacity);
+  const s = clampOpacity(settings.searchOpacity);
+  const root = document.documentElement.style;
+  root.setProperty('--tile-bg-opacity',   t);
+  root.setProperty('--widget-bg-opacity', w);
+  root.setProperty('--search-bg-opacity', s);
+  if ($.tileOpVal)   $.tileOpVal.textContent   = Math.round(t * 100) + '%';
+  if ($.widgetOpVal) $.widgetOpVal.textContent = Math.round(w * 100) + '%';
+  if ($.searchOpVal) $.searchOpVal.textContent = Math.round(s * 100) + '%';
+}
+function applySearch() {
+  $.searchForm.style.display = settings.searchEnabled ? '' : 'none';
+}
+$.setTileOp.addEventListener('input', () => {
+  settings.tileOpacity = clampOpacity($.setTileOp.value / 100);
+  applyOpacity(); save();
+});
+$.setWidgetOp.addEventListener('input', () => {
+  settings.widgetOpacity = clampOpacity($.setWidgetOp.value / 100);
+  applyOpacity(); save();
+});
+$.setSearchOp.addEventListener('input', () => {
+  settings.searchOpacity = clampOpacity($.setSearchOp.value / 100);
+  applyOpacity(); save();
+});
+document.getElementById('set-showsearch-row').addEventListener('click', () => {
+  settings.searchEnabled = !settings.searchEnabled;
+  $.setShowSearch.classList.toggle('on', settings.searchEnabled);
+  save(); applySearch();
+});
+
 // ── Drag to reorder ───────────────────────────────────────────────────────────
 let dragId = null;
 function attachDrag() {
@@ -1211,6 +1339,11 @@ function openSettings() {
   $.setRssPos.value = ALL_POSITIONS.includes(settings.rss.position) ? settings.rss.position : 'mr';
   $.setNote.classList.toggle('on', settings.note.enabled);
   $.setNotePos.value = ALL_POSITIONS.includes(settings.note.position) ? settings.note.position : 'ml';
+  $.setTileOp.value   = Math.round(clampOpacity(settings.tileOpacity)   * 100);
+  $.setWidgetOp.value = Math.round(clampOpacity(settings.widgetOpacity) * 100);
+  $.setSearchOp.value = Math.round(clampOpacity(settings.searchOpacity) * 100);
+  $.setShowSearch.classList.toggle('on', settings.searchEnabled);
+  applyOpacity();   // refresh the % labels next to the sliders
   renderFeedList();
   renderGroupList();
   $.setModal.classList.add('open');
@@ -1335,6 +1468,7 @@ function importData(input) {
       links    = d.links.map(normalizeLink).filter(Boolean);
       nextId   = safeNextId(d.nextId);
       settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) };
+      normalizeSettings(settings);
       settings.rss    = normalizeRss(settings.rss);
       settings.note   = normalizeNote(settings.note);
       settings.groups = normalizeGroups(settings.groups);
@@ -1342,6 +1476,8 @@ function importData(input) {
       if (!save()) { alert(L().alertImportTooLarge); }
       applyTheme(settings.theme);
       applyBackground();
+      applyOpacity();
+      applySearch();
       applyLanguage();
       applyRss();
       applyNote();
@@ -1679,6 +1815,8 @@ document.addEventListener('keydown', e => {
 load();
 applyTheme(settings.theme);
 applyBackground();
+applyOpacity();
+applySearch();
 applyLanguage();
 applyRss();
 applyNote();
@@ -1689,7 +1827,7 @@ updateGreeting();
 tick();
 setInterval(tick, 1000);
 setInterval(updateGreeting, 60000);
-window.addEventListener('load', () => $.searchIn.focus());
+window.addEventListener('load', () => { if (settings.searchEnabled) $.searchIn.focus(); });
 </script>
 </body>
 </html>
