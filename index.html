@@ -152,6 +152,17 @@
   .tiles {
     margin-top: 40px;
     width: 100%;
+    display: flex; flex-direction: column;
+    gap: 22px;
+  }
+  .tile-section { display: flex; flex-direction: column; gap: 10px; }
+  .tile-section-title {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-dim);
+    padding-left: 4px;
+  }
+  .tile-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(98px, 1fr));
     gap: 14px;
@@ -332,6 +343,8 @@
     background: var(--bg3); border: 1px solid var(--border2);
     border-radius: 7px; padding: 6px 8px;
   }
+  .feed-row[draggable]        { cursor: grab; }
+  .feed-row[draggable]:active { cursor: grabbing; }
   .feed-row span {
     flex: 1; min-width: 0; font-size: 11px; color: var(--text-dim);
     font-family: var(--mono);
@@ -386,26 +399,26 @@
     color: var(--text-dimmer); letter-spacing: 0.05em; text-align: center;
   }
 
-  /* ── RSS feed panel ── */
-  .rss-panel {
+  /* ── Side widgets (RSS, Note) — shared positioning ── */
+  .widget {
     position: fixed; width: 290px; max-height: 70vh; z-index: 30;
     background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 14px; padding: 14px 14px 12px;
+    border-radius: 14px;
     box-shadow: 0 12px 40px rgba(0,0,0,0.35);
     display: none; flex-direction: column;
   }
-  .rss-panel.show { display: flex; }
-  .rss-panel.pos-tl { top: 18px;   left: 18px;  }
-  .rss-panel.pos-ml { top: 50%;    left: 18px;  transform: translateY(-50%); }
-  .rss-panel.pos-bl { bottom: 30px; left: 18px;  }
-  .rss-panel.pos-tr { top: 64px;   right: 18px; }
-  .rss-panel.pos-mr { top: 50%;    right: 18px; transform: translateY(-50%); }
-  .rss-panel.pos-br { bottom: 30px; right: 18px; }
+  .widget.show { display: flex; }
+  .widget.pos-tl { top: 18px;    left: 18px;  }
+  .widget.pos-ml { top: 50%;     left: 18px;  transform: translateY(-50%); }
+  .widget.pos-bl { bottom: 30px; left: 18px;  }
+  .widget.pos-tr { top: 64px;    right: 18px; }
+  .widget.pos-mr { top: 50%;     right: 18px; transform: translateY(-50%); }
+  .widget.pos-br { bottom: 30px; right: 18px; }
+  /* Hide widgets when there isn't room beside the centred column */
+  @media (max-width: 1280px) { .widget.show { display: none; } }
 
-  /* Hide gracefully when there isn't room beside the centred column */
-  @media (max-width: 1280px) {
-    .rss-panel.show { display: none; }
-  }
+  /* RSS panel specifics */
+  .rss-panel { padding: 14px 14px 12px; }
 
   .rss-head {
     display: flex; justify-content: space-between; align-items: center;
@@ -434,6 +447,21 @@
     padding: 14px 4px; font-size: 11px; color: var(--text-dimmer);
     text-align: center; font-family: var(--mono); letter-spacing: 0.05em;
   }
+
+  /* ── Sticky note widget ── */
+  .note-panel { padding: 14px; }
+  .note-head {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .note-text {
+    flex: 1; width: 100%; min-height: 220px;
+    background: transparent; border: none; outline: none; resize: none;
+    color: var(--text); font-family: var(--sans); font-size: 13px;
+    line-height: 1.55; padding: 0;
+  }
+  .note-text::placeholder { color: var(--text-dimmer); }
 </style>
 </head>
 <body>
@@ -468,7 +496,7 @@
 </div>
 
 <!-- RSS feed panel -->
-<aside class="rss-panel" id="rss-panel">
+<aside class="widget rss-panel" id="rss-panel">
   <div class="rss-head">
     <span data-i18n="feed">Feed</span>
     <button class="rss-refresh" id="rss-refresh" title="Refresh">
@@ -476,6 +504,12 @@
     </button>
   </div>
   <div class="rss-list" id="rss-list"></div>
+</aside>
+
+<!-- Sticky note widget -->
+<aside class="widget note-panel" id="note-panel">
+  <div class="note-head" data-i18n="note">Note</div>
+  <textarea class="note-text" id="note-text" placeholder="Notes…" data-i18n-ph="notePlaceholder" spellcheck="false"></textarea>
 </aside>
 
 <!-- Link modal -->
@@ -492,6 +526,10 @@
     <div class="field">
       <label data-i18n="url">URL</label>
       <input id="link-url" type="text" placeholder="github.com" autocomplete="off">
+    </div>
+    <div class="field">
+      <label data-i18n="group">Group</label>
+      <select id="link-group"></select>
     </div>
     <div class="field">
       <label data-i18n="icon">Icon</label>
@@ -586,6 +624,37 @@
     </div>
 
     <div class="settings-section">
+      <div class="settings-section-title" data-i18n="note">Note</div>
+      <div class="toggle-row" id="set-note-row">
+        <span data-i18n="showNote">Show sticky note</span>
+        <div class="toggle" id="set-note"></div>
+      </div>
+      <div class="field" style="margin-top:6px; margin-bottom:0">
+        <label data-i18n="position">Position</label>
+        <select id="set-note-pos">
+          <option value="tl" data-i18n="posTL">Top left</option>
+          <option value="ml" data-i18n="posML">Middle left</option>
+          <option value="bl" data-i18n="posBL">Bottom left</option>
+          <option value="tr" data-i18n="posTR">Top right</option>
+          <option value="mr" data-i18n="posMR">Middle right</option>
+          <option value="br" data-i18n="posBR">Bottom right</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="tileGroups">Tile groups</div>
+      <div class="feed-list-label">
+        <span data-i18n="groups">Groups</span><span id="group-count"></span>
+      </div>
+      <div class="feed-list" id="group-list"></div>
+      <div class="feed-add-row">
+        <input id="set-group-input" type="text" placeholder="Group name" data-i18n-ph="groupName" autocomplete="off">
+        <button class="btn btn-ghost" id="group-add-btn" data-i18n="add" onclick="addGroup()">Add</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
       <div class="settings-section-title" data-i18n="backup">Backup</div>
       <div class="io-row">
         <button class="btn btn-ghost" data-i18n="export" onclick="exportData()">Export</button>
@@ -633,9 +702,13 @@ const DEFAULT_LINKS = [
 const DEFAULT_SETTINGS = {
   greetingName: '', engine: 'google', newTab: false, seconds: true,
   theme: 'dark', background: '', lang: 'en', hideAdd: false,
-  rss: { enabled: false, urls: [], position: 'mr' },
+  groups: [],
+  rss:  { enabled: false, urls: [], position: 'mr' },
+  note: { enabled: false, position: 'ml', text: '' },
 };
-const MAX_FEEDS = 15;
+const MAX_FEEDS  = 15;
+const MAX_GROUPS = 10;
+const ALL_POSITIONS = ['tl','ml','bl','tr','mr','br'];
 
 // ── Translations ──────────────────────────────────────────────────────────────
 const I18N = {
@@ -661,6 +734,10 @@ const I18N = {
     edit: 'Edit', remove: 'Remove',
     feed: 'Feed', showFeed: 'Show RSS feed', position: 'Position',
     feeds: 'Feeds', noFeeds: 'No feeds added yet',
+    note: 'Note', showNote: 'Show sticky note', notePlaceholder: 'Notes…',
+    tileGroups: 'Tile groups', groups: 'Groups', group: 'Group', none: 'None',
+    groupName: 'Group name', noGroups: 'No groups added yet',
+    confirmRemoveGroup: 'Remove group "{name}"? Tiles in it will become ungrouped.',
     showAddTile: 'Show "Add" tile',
     confirmRemove: 'Remove "{name}"?',
     posTL: 'Top left', posML: 'Middle left', posBL: 'Bottom left',
@@ -696,6 +773,10 @@ const I18N = {
     edit: 'Rediger', remove: 'Fjern',
     feed: 'Feed', showFeed: 'Vis RSS-feed', position: 'Placering',
     feeds: 'Feeds', noFeeds: 'Ingen feeds tilføjet endnu',
+    note: 'Note', showNote: 'Vis notesblok', notePlaceholder: 'Noter…',
+    tileGroups: 'Flisegrupper', groups: 'Grupper', group: 'Gruppe', none: 'Ingen',
+    groupName: 'Gruppenavn', noGroups: 'Ingen grupper tilføjet endnu',
+    confirmRemoveGroup: 'Fjern gruppen "{name}"? Fliser i den bliver ugrupperede.',
     showAddTile: 'Vis "Tilføj"-flise',
     confirmRemove: 'Fjern "{name}"?',
     posTL: 'Øverst venstre', posML: 'Midt venstre', posBL: 'Nederst venstre',
@@ -714,12 +795,12 @@ function L() { return I18N[settings.lang] || I18N.en; }
 function applyLanguage() {
   const t = L();
   document.querySelectorAll('[data-i18n]').forEach(el => {
-    const k = el.dataset.i18n;
-    if (t[k] !== undefined) el.textContent = t[k];
+    const v = t[el.dataset.i18n];
+    if (typeof v === 'string') el.textContent = v;
   });
   document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-    const k = el.dataset.i18nPh;
-    if (t[k] !== undefined) el.placeholder = t[k];
+    const v = t[el.dataset.i18nPh];
+    if (typeof v === 'string') el.placeholder = v;
   });
 }
 
@@ -768,16 +849,28 @@ const $ = {
   feedList:  document.getElementById('feed-list'),
   feedCount: document.getElementById('feed-count'),
   feedAddBtn:document.getElementById('feed-add-btn'),
+  // Note widget
+  notePanel: document.getElementById('note-panel'),
+  noteText:  document.getElementById('note-text'),
+  setNote:   document.getElementById('set-note'),
+  setNotePos:document.getElementById('set-note-pos'),
+  // Tile groups
+  linkGroup: document.getElementById('link-group'),
+  groupList: document.getElementById('group-list'),
+  groupCount:document.getElementById('group-count'),
+  groupInput:document.getElementById('set-group-input'),
+  groupAddBtn:document.getElementById('group-add-btn'),
 };
 
 // ── Storage ───────────────────────────────────────────────────────────────────
 function normalizeLink(l) {
   if (typeof l.id !== 'number') return null;
   return {
-    id:   l.id,
-    name: typeof l.name === 'string' ? l.name : '',
-    url:  typeof l.url  === 'string' ? l.url  : '',
-    icon: typeof l.icon === 'string' ? l.icon : '',
+    id:    l.id,
+    name:  typeof l.name  === 'string' ? l.name  : '',
+    url:   typeof l.url   === 'string' ? l.url   : '',
+    icon:  typeof l.icon  === 'string' ? l.icon  : '',
+    group: typeof l.group === 'string' ? l.group : '',
   };
 }
 function normalizeRss(r) {
@@ -785,13 +878,35 @@ function normalizeRss(r) {
   let urls = Array.isArray(r.urls)
     ? r.urls.filter(u => typeof u === 'string' && u.trim()).map(u => u.trim())
     : [];
-  // Migrate the old single-URL shape ({ url: '...' }) to the new urls array
   if (!urls.length && typeof r.url === 'string' && r.url.trim()) urls = [r.url.trim()];
   return {
     enabled:  !!r.enabled,
     urls:     urls.slice(0, MAX_FEEDS),
-    position: ['tl','ml','bl','tr','mr','br'].includes(r.position) ? r.position : 'mr',
+    position: ALL_POSITIONS.includes(r.position) ? r.position : 'mr',
   };
+}
+function normalizeNote(n) {
+  n = n || {};
+  return {
+    enabled:  !!n.enabled,
+    position: ALL_POSITIONS.includes(n.position) ? n.position : 'ml',
+    text:     typeof n.text === 'string' ? n.text : '',
+  };
+}
+function normalizeGroups(g) {
+  if (!Array.isArray(g)) return [];
+  // Keep only non-empty strings, dedupe preserving order, cap at MAX_GROUPS
+  const seen = new Set();
+  const out  = [];
+  for (const v of g) {
+    if (typeof v !== 'string') continue;
+    const name = v.trim();
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    out.push(name);
+    if (out.length >= MAX_GROUPS) break;
+  }
+  return out;
 }
 function safeNextId(stored) {
   const maxId = links.reduce((m, l) => Math.max(m, l.id), 0);
@@ -804,9 +919,12 @@ function load() {
     links    = data.links.map(normalizeLink).filter(Boolean);
     nextId   = safeNextId(data.nextId);
     settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
-    settings.rss = normalizeRss(settings.rss);
+    settings.rss    = normalizeRss(settings.rss);
+    settings.note   = normalizeNote(settings.note);
+    settings.groups = normalizeGroups(settings.groups);
+    ensureWidgetSides('rss');  // resolve any conflicting positions from imported/old data
   } else {
-    links  = DEFAULT_LINKS.map((l, i) => ({ id: i + 1, name: l.name, url: l.url, icon: '' }));
+    links  = DEFAULT_LINKS.map((l, i) => ({ id: i + 1, name: l.name, url: l.url, icon: '', group: '' }));
     nextId = links.length + 1;
   }
 }
@@ -901,33 +1019,56 @@ function resetBackground() {
 }
 
 // ── Render tiles ──────────────────────────────────────────────────────────────
+function buildTileHtml(l, i) {
+  const letter  = (l.name.trim()[0] || '?').toUpperCase();
+  const sources = l.icon === FORCE_LETTER ? []
+                : l.icon ? [l.icon, ...faviconSources(l.url)]
+                : faviconSources(l.url);
+  const target  = settings.newTab ? ' target="_blank" rel="noopener"' : '';
+  const imgTag  = sources.length
+    ? `<img src="${esc(sources[0])}" data-fb="${esc(sources.slice(1).join('|'))}" alt="" onerror="nextIcon(this)">`
+    : '';
+  return `<a class="tile" href="${esc(withProtocol(l.url))}"${target}
+      style="animation-delay:${Math.min(i, 30) * 20}ms"
+      draggable="true" data-id="${l.id}"
+      oncontextmenu="openCtx(event, ${l.id})">
+    <div class="tile-icon" style="background:${colorFor(l.name)}">
+      <span>${esc(letter)}</span>
+      ${imgTag}
+    </div>
+    <span class="tile-name">${esc(l.name)}</span>
+  </a>`;
+}
+
 function renderTiles() {
+  // Group links by their .group field (links pointing at a deleted group fall to ungrouped)
+  const byGroup = new Map();
+  byGroup.set('', []);                          // ungrouped bucket always exists
+  for (const g of settings.groups) byGroup.set(g, []);
+  for (const l of links) {
+    const g = settings.groups.includes(l.group) ? l.group : '';
+    byGroup.get(g).push(l);
+  }
+
   let html = '';
-  links.forEach((l, i) => {
-    const letter  = (l.name.trim()[0] || '?').toUpperCase();
-    const sources = l.icon === FORCE_LETTER ? []
-                  : l.icon ? [l.icon, ...faviconSources(l.url)]
-                  : faviconSources(l.url);
-    const target  = settings.newTab ? ' target="_blank" rel="noopener"' : '';
-    const imgTag  = sources.length
-      ? `<img src="${esc(sources[0])}" data-fb="${esc(sources.slice(1).join('|'))}" alt="" onerror="nextIcon(this)">`
-      : '';
-    html += `<a class="tile" href="${esc(withProtocol(l.url))}"${target}
-        style="animation-delay:${Math.min(i, 30) * 20}ms"
-        draggable="true" data-id="${l.id}"
-        oncontextmenu="openCtx(event, ${l.id})">
-      <div class="tile-icon" style="background:${colorFor(l.name)}">
-        <span>${esc(letter)}</span>
-        ${imgTag}
-      </div>
-      <span class="tile-name">${esc(l.name)}</span>
-    </a>`;
-  });
-  if (!settings.hideAdd) {
-    html += `<button class="tile tile-add" style="animation-delay:${Math.min(links.length, 30) * 20}ms" onclick="openLinkModal()">
-      <div class="plus">+</div>
-      <span class="tile-name">${esc(L().add)}</span>
-    </button>`;
+  let idx = 0;  // global tile index so the staggered entry animation is monotonic
+  const order = [...settings.groups, ''];  // user-defined groups first, ungrouped last
+  for (const groupName of order) {
+    const groupLinks = byGroup.get(groupName) || [];
+    const isUngrouped = groupName === '';
+    const showAddHere = isUngrouped && !settings.hideAdd;
+    if (!groupLinks.length && !showAddHere) continue;  // hide empty sections
+    html += '<div class="tile-section">';
+    if (groupName) html += `<div class="tile-section-title">${esc(groupName)}</div>`;
+    html += '<div class="tile-grid">';
+    for (const l of groupLinks) html += buildTileHtml(l, idx++);
+    if (showAddHere) {
+      html += `<button class="tile tile-add" style="animation-delay:${Math.min(idx++, 30) * 20}ms" onclick="openLinkModal()">
+        <div class="plus">+</div>
+        <span class="tile-name">${esc(L().add)}</span>
+      </button>`;
+    }
+    html += '</div></div>';
   }
   $.tiles.innerHTML = html;
   attachDrag();
@@ -955,6 +1096,8 @@ function attachDrag() {
       const from = links.findIndex(l => l.id === dragId);
       const to   = links.findIndex(l => l.id === targetId);
       if (from < 0 || to < 0) return;
+      // Adopt the target tile's group (no-op for same-group reorders)
+      links[from].group = links[to].group;
       const [moved] = links.splice(from, 1);
       links.splice(to, 0, moved);
       save(); renderTiles();
@@ -1003,6 +1146,7 @@ function openLinkModal(link) {
   $.linkSave.textContent  = link ? L().save     : L().add;
   $.linkName.value = link ? link.name : '';
   $.linkUrl.value  = link ? link.url  : '';
+  populateGroupSelect($.linkGroup, link ? link.group : '');
   // show a pasted icon URL in the field; hide data: URLs and the letter sentinel
   $.iconUrl.value  = (modalIcon && modalIcon !== FORCE_LETTER && !modalIcon.startsWith('data:')) ? modalIcon : '';
   updateIconPreview();
@@ -1029,14 +1173,15 @@ function updateIconPreview() {
 function resetModalIcon() { modalIcon = ''; $.iconUrl.value = ''; updateIconPreview(); }
 function useModalLetter() { modalIcon = FORCE_LETTER; $.iconUrl.value = ''; updateIconPreview(); }
 function saveLink() {
-  const name = $.linkName.value.trim();
-  const url  = $.linkUrl.value.trim();
+  const name  = $.linkName.value.trim();
+  const url   = $.linkUrl.value.trim();
+  const group = $.linkGroup.value;
   if (!name || !url) { (!name ? $.linkName : $.linkUrl).focus(); return; }
   if (editingId !== null) {
     const l = links.find(x => x.id === editingId);
-    if (l) { l.name = name; l.url = url; l.icon = modalIcon; }
+    if (l) { l.name = name; l.url = url; l.icon = modalIcon; l.group = group; }
   } else {
-    links.push({ id: nextId++, name, url, icon: modalIcon });
+    links.push({ id: nextId++, name, url, icon: modalIcon, group });
   }
   if (!save()) { alert(L().alertSaveFailed); return; }
   renderTiles(); closeLinkModal();
@@ -1063,8 +1208,11 @@ function openSettings() {
   $.setShowAdd.classList.toggle('on', !settings.hideAdd);
   $.setBgUrl.value = (settings.background && !settings.background.startsWith('data:')) ? settings.background : '';
   $.setRss.classList.toggle('on', settings.rss.enabled);
-  $.setRssPos.value = RSS_POSITIONS.includes(settings.rss.position) ? settings.rss.position : 'mr';
+  $.setRssPos.value = ALL_POSITIONS.includes(settings.rss.position) ? settings.rss.position : 'mr';
+  $.setNote.classList.toggle('on', settings.note.enabled);
+  $.setNotePos.value = ALL_POSITIONS.includes(settings.note.position) ? settings.note.position : 'ml';
   renderFeedList();
+  renderGroupList();
   $.setModal.classList.add('open');
 }
 function closeSettings() { $.setModal.classList.remove('open'); }
@@ -1107,15 +1255,36 @@ $.setBgUrl.addEventListener('input', () => { setBackground($.setBgUrl.value.trim
 document.getElementById('set-rss-row').addEventListener('click', () => {
   settings.rss.enabled = !settings.rss.enabled;
   $.setRss.classList.toggle('on', settings.rss.enabled);
+  ensureWidgetSides('rss');
+  $.setNotePos.value = settings.note.position;   // may have just been auto-mirrored
   save();
-  rssLastSig = '';   // force a fresh fetch when (re)enabled
-  applyRss();
+  rssLastSig = '';
+  applyRss(); applyNote();
 });
 $.setRssUrl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addFeed(); } });
 $.setRssPos.addEventListener('change', () => {
   settings.rss.position = $.setRssPos.value;
-  save(); applyRss();
+  ensureWidgetSides('rss');
+  $.setNotePos.value = settings.note.position;
+  save(); applyRss(); applyNote();
 });
+
+document.getElementById('set-note-row').addEventListener('click', () => {
+  settings.note.enabled = !settings.note.enabled;
+  $.setNote.classList.toggle('on', settings.note.enabled);
+  ensureWidgetSides('note');
+  $.setRssPos.value = settings.rss.position;
+  save();
+  applyNote(); applyRss();
+});
+$.setNotePos.addEventListener('change', () => {
+  settings.note.position = $.setNotePos.value;
+  ensureWidgetSides('note');
+  $.setRssPos.value = settings.rss.position;
+  save(); applyNote(); applyRss();
+});
+
+$.groupInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addGroup(); } });
 document.getElementById('bg-file').addEventListener('change', function () {
   const f = this.files[0]; this.value = '';
   if (!f) return;
@@ -1166,12 +1335,16 @@ function importData(input) {
       links    = d.links.map(normalizeLink).filter(Boolean);
       nextId   = safeNextId(d.nextId);
       settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) };
-      settings.rss = normalizeRss(settings.rss);
+      settings.rss    = normalizeRss(settings.rss);
+      settings.note   = normalizeNote(settings.note);
+      settings.groups = normalizeGroups(settings.groups);
+      ensureWidgetSides('rss');
       if (!save()) { alert(L().alertImportTooLarge); }
       applyTheme(settings.theme);
       applyBackground();
       applyLanguage();
       applyRss();
+      applyNote();
       buildEngineSelect($.searchEng, settings.engine);
       renderTiles(); applyHint(); tick(); updateGreeting();
       closeSettings();
@@ -1183,17 +1356,47 @@ function importData(input) {
 document.getElementById('import-file').addEventListener('change', function () { importData(this); });
 
 // ── RSS feed ──────────────────────────────────────────────────────────────────
-const RSS_POSITIONS = ['tl','ml','bl','tr','mr','br'];
 const RSS_REFRESH_MS = 15 * 60 * 1000;  // 15 min
 const RSS_MAX_ITEMS  = 10;
 let rssTimer = null;
 let rssLastSig = '';     // signature of the URL set last fetched (avoids needless refetch)
 
+// ── Side constraint ──────────────────────────────────────────────────────────
+// Only one widget allowed per side. When the user changes one widget's enabled
+// state or position, if it now shares a side with the OTHER enabled widget,
+// the other one auto-moves to its mirror position on the opposite side.
+const POSITION_MIRROR = { tl:'tr', ml:'mr', bl:'br', tr:'tl', mr:'ml', br:'bl' };
+function sideOf(pos) { return ['tl','ml','bl'].includes(pos) ? 'l' : 'r'; }
+function ensureWidgetSides(touched /* 'rss' or 'note' */) {
+  const just  = settings[touched];
+  const other = settings[touched === 'rss' ? 'note' : 'rss'];
+  if (!just.enabled || !other.enabled) return;
+  if (sideOf(just.position) === sideOf(other.position)) {
+    other.position = POSITION_MIRROR[other.position] || 'mr';
+  }
+}
+
+// ── Sticky note widget ───────────────────────────────────────────────────────
+let noteSaveTimer = null;
+function applyNote() {
+  const n = settings.note;
+  ALL_POSITIONS.forEach(p => $.notePanel.classList.remove('pos-' + p));
+  $.notePanel.classList.add('pos-' + (ALL_POSITIONS.includes(n.position) ? n.position : 'ml'));
+  $.notePanel.classList.toggle('show', n.enabled);
+  if ($.noteText.value !== n.text) $.noteText.value = n.text;
+}
+$.noteText.addEventListener('input', () => {
+  settings.note.text = $.noteText.value;
+  // Debounce so we don't hit localStorage on every keystroke
+  clearTimeout(noteSaveTimer);
+  noteSaveTimer = setTimeout(save, 300);
+});
+
 function applyRss() {
   const r = settings.rss;
   // strip any previous position class, then re-apply
-  RSS_POSITIONS.forEach(p => $.rssPanel.classList.remove('pos-' + p));
-  $.rssPanel.classList.add('pos-' + (RSS_POSITIONS.includes(r.position) ? r.position : 'mr'));
+  ALL_POSITIONS.forEach(p => $.rssPanel.classList.remove('pos-' + p));
+  $.rssPanel.classList.add('pos-' + (ALL_POSITIONS.includes(r.position) ? r.position : 'mr'));
   if (rssTimer) { clearInterval(rssTimer); rssTimer = null; }
   if (r.enabled) {
     $.rssPanel.classList.add('show');
@@ -1273,8 +1476,12 @@ async function fetchFeed() {
   showRssState('feedLoading');
   const results = await Promise.all(urls.map(fetchOneFeed));
   if (settings.rss.urls.join('|') !== sig) return;  // feed set changed mid-flight, abandon
-  const all = [];
-  results.forEach(items => items.forEach(it => all.push(it)));
+  // Merge all items, deduping by link (handles cross-posts + accidental duplicate URLs)
+  const seen = new Set();
+  const all  = [];
+  results.forEach(items => items.forEach(it => {
+    if (!seen.has(it.link)) { seen.add(it.link); all.push(it); }
+  }));
   if (!all.length) { showRssState('feedError'); return; }
   all.sort((a, b) => (b.ts || 0) - (a.ts || 0));   // newest first; undated items fall to the end
   renderFeed(all.slice(0, RSS_MAX_ITEMS));
@@ -1331,6 +1538,7 @@ function renderFeedList() {
 function addFeed() {
   const url = $.setRssUrl.value.trim();
   if (!url || settings.rss.urls.length >= MAX_FEEDS) return;
+  if (settings.rss.urls.includes(url)) { $.setRssUrl.value = ''; return; }  // already added
   settings.rss.urls.push(url);
   $.setRssUrl.value = '';
   save(); renderFeedList(); applyRss();
@@ -1338,6 +1546,69 @@ function addFeed() {
 function removeFeed(i) {
   settings.rss.urls.splice(i, 1);
   save(); renderFeedList(); applyRss();
+}
+
+// ── Tile groups manager ─────────────────────────────────────────────────────
+let groupDragIdx = null;
+function attachGroupDrag() {
+  $.groupList.querySelectorAll('.feed-row[draggable]').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      groupDragIdx = Number(el.dataset.idx);
+      el.style.opacity = '0.4';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend',  () => { el.style.opacity = ''; groupDragIdx = null; });
+    el.addEventListener('dragover', e => e.preventDefault());
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      const to = Number(el.dataset.idx);
+      if (groupDragIdx === null || groupDragIdx === to) return;
+      const [moved] = settings.groups.splice(groupDragIdx, 1);
+      settings.groups.splice(to, 0, moved);
+      save(); renderGroupList(); renderTiles();
+    });
+  });
+}
+function renderGroupList() {
+  const gs = settings.groups;
+  $.groupCount.textContent = ` ${gs.length}/${MAX_GROUPS}`;
+  if (!gs.length) {
+    $.groupList.innerHTML = `<div class="feed-empty" data-i18n="noGroups">${esc(L().noGroups)}</div>`;
+  } else {
+    $.groupList.innerHTML = gs.map((g, i) =>
+      `<div class="feed-row" draggable="true" data-idx="${i}"><span title="${esc(g)}">${esc(g)}</span>` +
+      `<button type="button" title="${esc(L().remove)}" onclick="removeGroup(${i})">✕</button></div>`
+    ).join('');
+    attachGroupDrag();
+  }
+  const atLimit = gs.length >= MAX_GROUPS;
+  $.groupInput.disabled  = atLimit;
+  $.groupAddBtn.disabled = atLimit;
+}
+function addGroup() {
+  const name = $.groupInput.value.trim();
+  if (!name || settings.groups.length >= MAX_GROUPS) return;
+  if (settings.groups.includes(name)) { $.groupInput.value = ''; return; }  // already exists
+  settings.groups.push(name);
+  $.groupInput.value = '';
+  save(); renderGroupList(); renderTiles();
+}
+function removeGroup(i) {
+  const name = settings.groups[i];
+  if (!name) return;
+  if (!confirm(L().confirmRemoveGroup.replace('{name}', name))) return;
+  settings.groups.splice(i, 1);
+  // Tiles that were in this group become ungrouped
+  links.forEach(l => { if (l.group === name) l.group = ''; });
+  save(); renderGroupList(); renderTiles();
+}
+function populateGroupSelect(sel, current) {
+  let html = `<option value="">${esc(L().none)}</option>`;
+  for (const g of settings.groups) {
+    html += `<option value="${esc(g)}">${esc(g)}</option>`;
+  }
+  sel.innerHTML = html;
+  sel.value = settings.groups.includes(current) ? current : '';
 }
 
 // Refresh button (manual reload, with a 360° spin for feedback)
@@ -1410,6 +1681,7 @@ applyTheme(settings.theme);
 applyBackground();
 applyLanguage();
 applyRss();
+applyNote();
 buildEngineSelect($.searchEng, settings.engine);
 renderTiles();
 applyHint();
