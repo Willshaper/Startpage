@@ -28,18 +28,19 @@
     --tile-bg-opacity:   1;
     --widget-bg-opacity: 1;
     --search-bg-opacity: 1;
+    --clock-bg-opacity:  0;
   }
 
   [data-theme="light"] {
     --bg:         #dde0ec;
-    --bg2:        #eceef8;
+    --bg2:        #e3e6f1;
     --bg3:        #d4d8ea;
     --border:     #b8bcd4;
     --border2:    #9aa0be;
     --accent:     #c43c36;
     --accent2:    #9e5e08;
     --teal:       #1e9070;
-    --text:       #0e1020;
+    --text:       #20243a;
     --text-dim:   #4a5070;
     --text-dimmer:#8088a8;
   }
@@ -93,11 +94,23 @@
     padding-top: 6vh;
   }
 
+  /* Each of greeting, clock, and date gets its own pill that hugs its content.
+     All three share --clock-bg-opacity (set by the slider) — at 0 the pills are
+     fully transparent, at 1 they're solid like tiles. Padding is always present
+     so the layout doesn't shift when the slider moves. */
+  .greeting, .clock, .date {
+    align-self: center;            /* shrink-to-content in the flex column */
+    background: color-mix(in srgb, var(--bg2) calc(var(--clock-bg-opacity) * 100%), transparent);
+    border: 1px solid color-mix(in srgb, var(--border) calc(var(--clock-bg-opacity) * 100%), transparent);
+  }
+
   .greeting {
     font-family: var(--display); font-weight: 600;
-    font-size: 17px; letter-spacing: 0.01em;
+    font-size: 20px; line-height: 1; letter-spacing: 0.01em;
     color: var(--text-dim);
-    margin-bottom: 4px;
+    padding: 5px 12px;
+    border-radius: 12px;
+    margin-bottom: 8px;
   }
   .greeting b { color: var(--accent2); font-weight: 700; }
 
@@ -107,13 +120,18 @@
     line-height: 1; letter-spacing: 0.01em;
     color: var(--text);
     font-variant-numeric: tabular-nums;
+    padding: 2px 16px 6px;
+    border-radius: 16px;
   }
   .clock .sec { color: var(--teal); font-size: 0.38em; vertical-align: super; margin-left: 5px; font-weight: 400; }
 
   .date {
-    font-family: var(--mono); font-size: 12px;
+    font-family: var(--mono); font-size: 14px; line-height: 1;
     letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--text-dim); margin-top: 10px;
+    color: var(--text-dim);
+    padding: 4px 10px;
+    border-radius: 9px;
+    margin-top: 8px;
   }
 
   /* ── Search ── */
@@ -654,6 +672,13 @@
           <span class="slider-val" id="search-opacity-val">100%</span>
         </div>
       </div>
+      <div class="field" style="margin-bottom:0">
+        <label data-i18n="clockOpacity">Clock backdrop opacity</label>
+        <div class="slider-row">
+          <input type="range" id="set-clock-opacity" min="0" max="100" step="5">
+          <span class="slider-val" id="clock-opacity-val">0%</span>
+        </div>
+      </div>
     </div>
 
     <div class="settings-section">
@@ -763,7 +788,7 @@ const DEFAULT_SETTINGS = {
   greetingName: '', engine: 'google', newTab: false, seconds: true,
   theme: 'dark', background: '', lang: 'en', hideAdd: false,
   searchEnabled: true,
-  tileOpacity: 1, widgetOpacity: 1, searchOpacity: 1,
+  tileOpacity: 1, widgetOpacity: 1, searchOpacity: 1, clockOpacity: 0,
   groups: [],
   rss:  { enabled: false, urls: [], position: 'mr' },
   note: { enabled: false, position: 'ml', text: '' },
@@ -801,7 +826,7 @@ const I18N = {
     groupName: 'Group name', noGroups: 'No groups added yet',
     confirmRemoveGroup: 'Remove group "{name}"? Tiles in it will become ungrouped.',
     showAddTile: 'Show "Add" tile', showSearch: 'Show search bar',
-    appearance: 'Appearance', tileOpacity: 'Tile opacity', widgetOpacity: 'Widget opacity', searchOpacity: 'Search bar opacity',
+    appearance: 'Appearance', tileOpacity: 'Tile opacity', widgetOpacity: 'Widget opacity', searchOpacity: 'Search bar opacity', clockOpacity: 'Clock backdrop opacity',
     confirmRemove: 'Remove "{name}"?',
     posTL: 'Top left', posML: 'Middle left', posBL: 'Bottom left',
     posTR: 'Top right', posMR: 'Middle right', posBR: 'Bottom right',
@@ -841,7 +866,7 @@ const I18N = {
     groupName: 'Gruppenavn', noGroups: 'Ingen grupper tilføjet endnu',
     confirmRemoveGroup: 'Fjern gruppen "{name}"? Fliser i den bliver ugrupperede.',
     showAddTile: 'Vis "Tilføj"-flise', showSearch: 'Vis søgefelt',
-    appearance: 'Udseende', tileOpacity: 'Fliseopacitet', widgetOpacity: 'Widget-opacitet', searchOpacity: 'Søgefelts opacitet',
+    appearance: 'Udseende', tileOpacity: 'Fliseopacitet', widgetOpacity: 'Widget-opacitet', searchOpacity: 'Søgefelts opacitet', clockOpacity: 'Uropacitet',
     confirmRemove: 'Fjern "{name}"?',
     posTL: 'Øverst venstre', posML: 'Midt venstre', posBL: 'Nederst venstre',
     posTR: 'Øverst højre',   posMR: 'Midt højre',   posBR: 'Nederst højre',
@@ -928,9 +953,11 @@ const $ = {
   setTileOp:    document.getElementById('set-tile-opacity'),
   setWidgetOp:  document.getElementById('set-widget-opacity'),
   setSearchOp:  document.getElementById('set-search-opacity'),
+  setClockOp:   document.getElementById('set-clock-opacity'),
   tileOpVal:    document.getElementById('tile-opacity-val'),
   widgetOpVal:  document.getElementById('widget-opacity-val'),
   searchOpVal:  document.getElementById('search-opacity-val'),
+  clockOpVal:   document.getElementById('clock-opacity-val'),
   setShowSearch:document.getElementById('set-showsearch'),
 };
 
@@ -992,6 +1019,7 @@ function normalizeSettings(s) {
   s.tileOpacity   = clampOpacity(s.tileOpacity);
   s.widgetOpacity = clampOpacity(s.widgetOpacity);
   s.searchOpacity = clampOpacity(s.searchOpacity);
+  s.clockOpacity  = clampOpacity(s.clockOpacity);
   return s;
 }
 function safeNextId(stored) {
@@ -1177,13 +1205,16 @@ function applyOpacity() {
   const t = clampOpacity(settings.tileOpacity);
   const w = clampOpacity(settings.widgetOpacity);
   const s = clampOpacity(settings.searchOpacity);
+  const c = clampOpacity(settings.clockOpacity);
   const root = document.documentElement.style;
   root.setProperty('--tile-bg-opacity',   t);
   root.setProperty('--widget-bg-opacity', w);
   root.setProperty('--search-bg-opacity', s);
+  root.setProperty('--clock-bg-opacity',  c);
   if ($.tileOpVal)   $.tileOpVal.textContent   = Math.round(t * 100) + '%';
   if ($.widgetOpVal) $.widgetOpVal.textContent = Math.round(w * 100) + '%';
   if ($.searchOpVal) $.searchOpVal.textContent = Math.round(s * 100) + '%';
+  if ($.clockOpVal)  $.clockOpVal.textContent  = Math.round(c * 100) + '%';
 }
 function applySearch() {
   $.searchForm.style.display = settings.searchEnabled ? '' : 'none';
@@ -1198,6 +1229,10 @@ $.setWidgetOp.addEventListener('input', () => {
 });
 $.setSearchOp.addEventListener('input', () => {
   settings.searchOpacity = clampOpacity($.setSearchOp.value / 100);
+  applyOpacity(); save();
+});
+$.setClockOp.addEventListener('input', () => {
+  settings.clockOpacity = clampOpacity($.setClockOp.value / 100);
   applyOpacity(); save();
 });
 document.getElementById('set-showsearch-row').addEventListener('click', () => {
@@ -1342,6 +1377,7 @@ function openSettings() {
   $.setTileOp.value   = Math.round(clampOpacity(settings.tileOpacity)   * 100);
   $.setWidgetOp.value = Math.round(clampOpacity(settings.widgetOpacity) * 100);
   $.setSearchOp.value = Math.round(clampOpacity(settings.searchOpacity) * 100);
+  $.setClockOp.value  = Math.round(clampOpacity(settings.clockOpacity)  * 100);
   $.setShowSearch.classList.toggle('on', settings.searchEnabled);
   applyOpacity();   // refresh the % labels next to the sliders
   renderFeedList();
