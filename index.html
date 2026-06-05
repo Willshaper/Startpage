@@ -391,13 +391,25 @@
     background: var(--bg3); border: 1px solid var(--border2);
     border-radius: 7px; padding: 6px 8px;
   }
-  .feed-row[draggable]        { cursor: grab; }
-  .feed-row[draggable]:active { cursor: grabbing; }
-  .feed-row span {
+  .feed-row--stacked {
+    flex-direction: column; align-items: stretch; gap: 4px; padding: 7px 8px 8px;
+  }
+  .feed-row-top {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .feed-row-top span {
     flex: 1; min-width: 0; font-size: 11px; color: var(--text-dim);
     font-family: var(--mono);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  .feed-filter-input {
+    width: 100%; box-sizing: border-box;
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 5px;
+    color: var(--text-dim); font-family: var(--sans); font-size: 11px;
+    padding: 4px 7px; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .feed-filter-input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(79,196,168,0.10); color: var(--text); }
   .feed-row button {
     background: none; border: none; cursor: pointer; flex-shrink: 0;
     color: var(--text-dimmer); font-size: 14px; line-height: 1; padding: 0 2px;
@@ -820,7 +832,7 @@ const I18N = {
     backup: 'Backup', export: 'Export', import: 'Import', done: 'Done',
     edit: 'Edit', remove: 'Remove',
     feed: 'Feed', showFeed: 'Show RSS feed', position: 'Position',
-    feeds: 'Feeds', noFeeds: 'No feeds added yet',
+    feeds: 'Feeds', noFeeds: 'No feeds added yet', filterPlaceholder: 'Filter by keywords (comma-separated)',
     note: 'Note', showNote: 'Show sticky note', notePlaceholder: 'Notes…',
     tileGroups: 'Tile groups', groups: 'Groups', group: 'Group', none: 'None',
     groupName: 'Group name', noGroups: 'No groups added yet',
@@ -830,7 +842,7 @@ const I18N = {
     confirmRemove: 'Remove "{name}"?',
     posTL: 'Top left', posML: 'Middle left', posBL: 'Bottom left',
     posTR: 'Top right', posMR: 'Middle right', posBR: 'Bottom right',
-    feedLoading: 'Loading…', feedEmpty: 'Set a feed URL in settings', feedError: 'Could not load feed',
+    feedLoading: 'Loading…', feedEmpty: 'Set a feed URL in settings', feedError: 'Could not load feed', feedFiltered: 'No items match your filter',
     alertImageTooLarge: 'That image is too large to save. Try a smaller one or use a URL instead.',
     alertSaveFailed: 'Could not save — the icon may be too large.',
     alertReadFailed: 'Could not read that image.',
@@ -860,7 +872,7 @@ const I18N = {
     backup: 'Sikkerhedskopi', export: 'Eksportér', import: 'Importér', done: 'Færdig',
     edit: 'Rediger', remove: 'Fjern',
     feed: 'Feed', showFeed: 'Vis RSS-feed', position: 'Placering',
-    feeds: 'Feeds', noFeeds: 'Ingen feeds tilføjet endnu',
+    feeds: 'Feeds', noFeeds: 'Ingen feeds tilføjet endnu', filterPlaceholder: 'Filtrer på nøgleord (kommasepareret)',
     note: 'Note', showNote: 'Vis notesblok', notePlaceholder: 'Noter…',
     tileGroups: 'Flisegrupper', groups: 'Grupper', group: 'Gruppe', none: 'Ingen',
     groupName: 'Gruppenavn', noGroups: 'Ingen grupper tilføjet endnu',
@@ -870,7 +882,7 @@ const I18N = {
     confirmRemove: 'Fjern "{name}"?',
     posTL: 'Øverst venstre', posML: 'Midt venstre', posBL: 'Nederst venstre',
     posTR: 'Øverst højre',   posMR: 'Midt højre',   posBR: 'Nederst højre',
-    feedLoading: 'Indlæser…', feedEmpty: 'Angiv en feed-URL i indstillinger', feedError: 'Kunne ikke indlæse feed',
+    feedLoading: 'Indlæser…', feedEmpty: 'Angiv en feed-URL i indstillinger', feedError: 'Kunne ikke indlæse feed', feedFiltered: 'Ingen elementer matcher dit filter',
     alertImageTooLarge: 'Billedet er for stort til at gemme. Prøv et mindre billede eller brug en URL.',
     alertSaveFailed: 'Kunne ikke gemme — ikonet er muligvis for stort.',
     alertReadFailed: 'Kunne ikke læse billedet.',
@@ -891,6 +903,8 @@ function applyLanguage() {
     const v = t[el.dataset.i18nPh];
     if (typeof v === 'string') el.placeholder = v;
   });
+  // Re-render dynamic feed list so filter placeholders and button titles update
+  if (typeof renderFeedList === 'function') renderFeedList();
 }
 
 let links     = [];
@@ -974,13 +988,18 @@ function normalizeLink(l) {
 }
 function normalizeRss(r) {
   r = r || {};
-  let urls = Array.isArray(r.urls)
-    ? r.urls.filter(u => typeof u === 'string' && u.trim()).map(u => u.trim())
+  let feeds = Array.isArray(r.urls)
+    ? r.urls.map(u => {
+        if (typeof u === 'string') return { url: u.trim(), filter: '' };
+        if (u && typeof u === 'object' && typeof u.url === 'string') return { url: u.url.trim(), filter: typeof u.filter === 'string' ? u.filter.trim() : '' };
+        return null;
+      }).filter(f => f && f.url)
     : [];
-  if (!urls.length && typeof r.url === 'string' && r.url.trim()) urls = [r.url.trim()];
+  // legacy single-url migration
+  if (!feeds.length && typeof r.url === 'string' && r.url.trim()) feeds = [{ url: r.url.trim(), filter: '' }];
   return {
     enabled:  !!r.enabled,
-    urls:     urls.slice(0, MAX_FEEDS),
+    urls:     feeds.slice(0, MAX_FEEDS),
     position: ALL_POSITIONS.includes(r.position) ? r.position : 'mr',
   };
 }
@@ -1532,6 +1551,7 @@ const RSS_REFRESH_MS = 15 * 60 * 1000;  // 15 min
 const RSS_MAX_ITEMS  = 10;
 let rssTimer = null;
 let rssLastSig = '';     // signature of the URL set last fetched (avoids needless refetch)
+let rssUrlDebounce = null;
 
 // ── Side constraint ──────────────────────────────────────────────────────────
 // Only one widget allowed per side. When the user changes one widget's enabled
@@ -1573,7 +1593,7 @@ function applyRss() {
   if (r.enabled) {
     $.rssPanel.classList.add('show');
     if (r.urls.length) {
-      const sig = r.urls.join('|');
+      const sig = r.urls.map(f => f.url + '|' + f.filter).join('||');
       if (sig !== rssLastSig) fetchFeed();
       rssTimer = setInterval(fetchFeed, RSS_REFRESH_MS);
     } else {
@@ -1585,7 +1605,7 @@ function applyRss() {
 }
 
 function showRssState(key) {
-  $.rssList.innerHTML = `<div class="rss-state" data-i18n="${key}">${esc(L()[key] || '')}</div>`;
+  $.rssList.innerHTML = `<div class="rss-state">${esc(L()[key] || '')}</div>`;
 }
 
 // Multi-source cascade — try each in order, first that returns items wins.
@@ -1641,20 +1661,33 @@ async function fetchOneFeed(url) {
 
 // Fetch every configured feed, combine, sort newest-first, show the last 10 overall
 async function fetchFeed() {
-  const urls = settings.rss.urls;
-  if (!urls.length) { showRssState('feedEmpty'); return; }
-  const sig = urls.join('|');
+  const feeds = settings.rss.urls;
+  if (!feeds.length) { showRssState('feedEmpty'); return; }
+  const sig = feeds.map(f => f.url + '|' + f.filter).join('||');
   rssLastSig = sig;
   showRssState('feedLoading');
-  const results = await Promise.all(urls.map(fetchOneFeed));
-  if (settings.rss.urls.join('|') !== sig) return;  // feed set changed mid-flight, abandon
+  let rawTotal = 0;  // track items before filtering to distinguish "no results" from "fetch failed"
+  const results = await Promise.all(feeds.map(f => fetchOneFeed(f.url).then(items => {
+    rawTotal += items.length;
+    const keywords = f.filter.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    if (!keywords.length) return items;
+    return items.filter(it => {
+      const title = it.title.toLowerCase();
+      return keywords.some(k => title.includes(k));
+    });
+  })));
+  if (settings.rss.urls.map(f => f.url + '|' + f.filter).join('||') !== sig) return;  // feed set changed mid-flight, abandon
   // Merge all items, deduping by link (handles cross-posts + accidental duplicate URLs)
   const seen = new Set();
   const all  = [];
   results.forEach(items => items.forEach(it => {
     if (!seen.has(it.link)) { seen.add(it.link); all.push(it); }
   }));
-  if (!all.length) { showRssState('feedError'); return; }
+  if (!all.length) {
+    // If raw items came through but were all filtered out, show a specific message
+    showRssState(rawTotal > 0 ? 'feedFiltered' : 'feedError');
+    return;
+  }
   all.sort((a, b) => (b.ts || 0) - (a.ts || 0));   // newest first; undated items fall to the end
   renderFeed(all.slice(0, RSS_MAX_ITEMS));
 }
@@ -1693,31 +1726,42 @@ function renderFeed(items) {
 
 // ── Feed list manager (settings) ──────────────────────────────────────────────
 function renderFeedList() {
-  const urls = settings.rss.urls;
-  $.feedCount.textContent = ` ${urls.length}/${MAX_FEEDS}`;
-  if (!urls.length) {
+  const feeds = settings.rss.urls;
+  $.feedCount.textContent = ` ${feeds.length}/${MAX_FEEDS}`;
+  if (!feeds.length) {
     $.feedList.innerHTML = `<div class="feed-empty" data-i18n="noFeeds">${esc(L().noFeeds)}</div>`;
   } else {
-    $.feedList.innerHTML = urls.map((u, i) =>
-      `<div class="feed-row"><span title="${esc(u)}">${esc(u)}</span>` +
-      `<button type="button" title="${esc(L().remove)}" onclick="removeFeed(${i})">✕</button></div>`
+    $.feedList.innerHTML = feeds.map((f, i) =>
+      `<div class="feed-row feed-row--stacked">` +
+      `<div class="feed-row-top"><span title="${esc(f.url)}">${esc(f.url)}</span>` +
+      `<button type="button" title="${esc(L().remove)}" onclick="removeFeed(${i})">✕</button></div>` +
+      `<input class="feed-filter-input" type="text" placeholder="${esc(L().filterPlaceholder)}" value="${esc(f.filter)}" oninput="updateFeedFilter(${i}, this.value)">` +
+      `</div>`
     ).join('');
   }
-  const atLimit = urls.length >= MAX_FEEDS;
+  const atLimit = feeds.length >= MAX_FEEDS;
   $.setRssUrl.disabled = atLimit;
   $.feedAddBtn.disabled = atLimit;
 }
 function addFeed() {
   const url = $.setRssUrl.value.trim();
   if (!url || settings.rss.urls.length >= MAX_FEEDS) return;
-  if (settings.rss.urls.includes(url)) { $.setRssUrl.value = ''; return; }  // already added
-  settings.rss.urls.push(url);
+  if (settings.rss.urls.some(f => f.url === url)) { $.setRssUrl.value = ''; return; }  // already added
+  settings.rss.urls.push({ url, filter: '' });
   $.setRssUrl.value = '';
   save(); renderFeedList(); applyRss();
 }
 function removeFeed(i) {
   settings.rss.urls.splice(i, 1);
   save(); renderFeedList(); applyRss();
+}
+function updateFeedFilter(i, value) {
+  if (!settings.rss.urls[i]) return;
+  settings.rss.urls[i].filter = value;  // store as-typed; trimming happens at match time
+  save();
+  rssLastSig = '';  // force refetch with new filter (after save)
+  clearTimeout(rssUrlDebounce);
+  rssUrlDebounce = setTimeout(() => { fetchFeed(); }, 600);
 }
 
 // ── Tile groups manager ─────────────────────────────────────────────────────
