@@ -145,7 +145,7 @@
     padding: 4px 4px 4px 6px;
     transition: border-color 0.18s, box-shadow 0.18s;
   }
-  .search:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(79,196,168,0.1); }
+  .search:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 18%, transparent); }
 
   .search-engine {
     background: transparent; border: none; outline: none;
@@ -293,7 +293,7 @@
     transition: border-color 0.15s, box-shadow 0.15s;
   }
   .field input:focus, .field select:focus {
-    border-color: var(--teal); box-shadow: 0 0 0 2px rgba(79,196,168,0.12);
+    border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 14%, transparent);
   }
   .field select option { background: var(--bg3); }
 
@@ -409,7 +409,7 @@
     padding: 4px 7px; outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .feed-filter-input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(79,196,168,0.10); color: var(--text); }
+  .feed-filter-input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 12%, transparent); color: var(--text); }
   .feed-row button {
     background: none; border: none; cursor: pointer; flex-shrink: 0;
     color: var(--text-dimmer); font-size: 14px; line-height: 1; padding: 0 2px;
@@ -428,7 +428,7 @@
     padding: 9px 11px; outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .feed-add-row input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(79,196,168,0.12); }
+  .feed-add-row input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 14%, transparent); }
   .feed-add-row .btn { flex-shrink: 0; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .feed-add-row input:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -512,10 +512,17 @@
   /* ── Sticky note widget ── */
   .note-panel { padding: 14px; }
   .note-head {
+    display: flex; align-items: center; justify-content: space-between;
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
     text-transform: uppercase; color: var(--text-dim);
     margin-bottom: 10px;
   }
+  .note-mode-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-dimmer); padding: 2px; line-height: 0;
+    transition: color 0.15s;
+  }
+  .note-mode-btn:hover { color: var(--text); }
   .note-text {
     flex: 1; width: 100%; min-height: 220px;
     background: transparent; border: none; outline: none; resize: none;
@@ -523,6 +530,134 @@
     line-height: 1.55; padding: 0;
   }
   .note-text::placeholder { color: var(--text-dimmer); }
+
+  /* Checklist mode for the note */
+  .note-list {
+    flex: 1; min-height: 220px; max-height: 56vh; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 2px; margin: 0 -4px;
+  }
+  .note-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 5px 4px; border-radius: 6px; cursor: pointer;
+    transition: background 0.12s;
+  }
+  .note-item:hover { background: var(--bg3); }
+  .note-item input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none;
+    width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px;
+    border: 1.5px solid var(--border2); border-radius: 4px;
+    background: var(--bg3); cursor: pointer; position: relative;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .note-item input[type="checkbox"]:checked { background: var(--teal); border-color: var(--teal); }
+  .note-item input[type="checkbox"]:checked::after {
+    content: ''; position: absolute; left: 4px; top: 1px;
+    width: 4px; height: 8px; border: solid #07080d;
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .note-item span {
+    flex: 1; min-width: 0; font-size: 13px; color: var(--text);
+    line-height: 1.4; word-break: break-word;
+  }
+  .note-item.done span { color: var(--text-dimmer); text-decoration: line-through; }
+  .note-item button {
+    background: none; border: none; cursor: pointer; flex-shrink: 0;
+    color: var(--text-dimmer); font-size: 13px; line-height: 1; padding: 0 2px;
+    opacity: 0; transition: color 0.12s, opacity 0.12s;
+  }
+  .note-item:hover button { opacity: 1; }
+  .note-item button:hover { color: var(--accent); }
+  .note-empty {
+    font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
+    padding: 8px 4px; text-align: center;
+  }
+  .note-add-row { display: flex; margin-top: 8px; }
+  .note-add-row input {
+    flex: 1; min-width: 0; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: 8px;
+    color: var(--text); font-family: var(--sans); font-size: 13px;
+    padding: 8px 10px; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .note-add-row input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 14%, transparent); }
+
+  /* ── Weather widget ── */
+  .weather-panel { padding: 16px; }
+  .weather-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+  .weather-refresh {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-dimmer); padding: 2px; line-height: 0;
+    transition: color 0.15s, transform 0.6s;
+  }
+  .weather-refresh:hover { color: var(--text); }
+  .weather-refresh.spin { transform: rotate(360deg); }
+  .weather-main { display: flex; align-items: center; gap: 12px; }
+  .weather-icon { font-size: 40px; line-height: 1; flex-shrink: 0; }
+  .weather-temp {
+    font-family: var(--mono); font-weight: 500; font-size: 32px;
+    color: var(--text); line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .weather-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .weather-cond { font-size: 13px; color: var(--text); line-height: 1.2; }
+  .weather-loc {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+    color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .weather-hilo {
+    margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);
+    display: flex; gap: 14px; font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  }
+  .weather-hilo b { color: var(--text); font-weight: 500; }
+  .weather-state {
+    padding: 8px 4px; font-size: 11px; color: var(--text-dimmer);
+    text-align: center; font-family: var(--mono); letter-spacing: 0.05em; line-height: 1.5;
+  }
+
+  /* ── Countdown widget ── */
+  .countdown-panel { padding: 16px; }
+  .countdown-head {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: 12px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .countdown-units { display: flex; gap: 10px; }
+  .countdown-unit {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 9px; padding: 9px 4px;
+  }
+  .countdown-num {
+    font-family: var(--mono); font-weight: 500; font-size: 22px; color: var(--text);
+    line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .countdown-label {
+    font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  .countdown-done {
+    font-family: var(--display); font-size: 16px; font-weight: 600;
+    color: var(--teal); text-align: center; padding: 8px 4px;
+  }
+  .countdown-state {
+    font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
+    text-align: center; padding: 8px 4px;
+  }
+
+  /* Color picker (accent) */
+  input[type="color"] {
+    -webkit-appearance: none; appearance: none;
+    width: 46px; height: 30px; padding: 0; cursor: pointer;
+    background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
+  input[type="color"]::-webkit-color-swatch { border: none; border-radius: 5px; }
+  input[type="color"]::-moz-color-swatch { border: none; border-radius: 5px; }
 </style>
 </head>
 <body>
@@ -569,8 +704,32 @@
 
 <!-- Sticky note widget -->
 <aside class="widget note-panel" id="note-panel">
-  <div class="note-head" data-i18n="note">Note</div>
+  <div class="note-head">
+    <span data-i18n="note">Note</span>
+    <button class="note-mode-btn" id="note-mode-btn" type="button" title="Toggle checklist"></button>
+  </div>
   <textarea class="note-text" id="note-text" placeholder="Notes…" data-i18n-ph="notePlaceholder" spellcheck="false"></textarea>
+  <div class="note-list" id="note-list"></div>
+  <div class="note-add-row" id="note-add-row">
+    <input id="note-add-input" type="text" placeholder="Add item…" data-i18n-ph="addItem" autocomplete="off">
+  </div>
+</aside>
+
+<!-- Weather widget -->
+<aside class="widget weather-panel" id="weather-panel">
+  <div class="weather-head">
+    <span data-i18n="weather">Weather</span>
+    <button class="weather-refresh" id="weather-refresh" type="button" title="Refresh">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    </button>
+  </div>
+  <div class="weather-body" id="weather-body"></div>
+</aside>
+
+<!-- Countdown widget -->
+<aside class="widget countdown-panel" id="countdown-panel">
+  <div class="countdown-head" id="countdown-title" data-i18n="countdown">Countdown</div>
+  <div class="countdown-body" id="countdown-body"></div>
 </aside>
 
 <!-- Link modal -->
@@ -691,6 +850,13 @@
           <span class="slider-val" id="clock-opacity-val">0%</span>
         </div>
       </div>
+      <div class="field" style="margin-top:14px; margin-bottom:0">
+        <label data-i18n="accentColor">Accent color</label>
+        <div class="slider-row">
+          <input type="color" id="set-accent" value="#4fc4a8">
+          <button class="btn btn-ghost" type="button" data-i18n="default" onclick="resetAccent()" style="padding:6px 14px">Default</button>
+        </div>
+      </div>
     </div>
 
     <div class="settings-section">
@@ -726,6 +892,10 @@
         <span data-i18n="showNote">Show sticky note</span>
         <div class="toggle" id="set-note"></div>
       </div>
+      <div class="toggle-row" id="set-note-checklist-row">
+        <span data-i18n="checklistMode">Checklist mode</span>
+        <div class="toggle" id="set-note-checklist"></div>
+      </div>
       <div class="field" style="margin-top:6px; margin-bottom:0">
         <label data-i18n="position">Position</label>
         <select id="set-note-pos">
@@ -736,6 +906,63 @@
           <option value="mr" data-i18n="posMR">Middle right</option>
           <option value="br" data-i18n="posBR">Bottom right</option>
         </select>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="weather">Weather</div>
+      <div class="toggle-row" id="set-weather-row">
+        <span data-i18n="showWeather">Show weather</span>
+        <div class="toggle" id="set-weather"></div>
+      </div>
+      <div class="toggle-row" id="set-weather-units-row">
+        <span data-i18n="useFahrenheit">Use Fahrenheit (°F)</span>
+        <div class="toggle" id="set-weather-units"></div>
+      </div>
+      <div class="field" style="margin-top:6px; margin-bottom:10px">
+        <label data-i18n="position">Position</label>
+        <select id="set-weather-pos">
+          <option value="tl" data-i18n="posTL">Top left</option>
+          <option value="ml" data-i18n="posML">Middle left</option>
+          <option value="bl" data-i18n="posBL">Bottom left</option>
+          <option value="tr" data-i18n="posTR">Top right</option>
+          <option value="mr" data-i18n="posMR">Middle right</option>
+          <option value="br" data-i18n="posBR">Bottom right</option>
+        </select>
+      </div>
+      <div class="feed-add-row">
+        <input id="set-weather-loc" type="text" placeholder="City (e.g. Copenhagen)" data-i18n-ph="cityPlaceholder" autocomplete="off">
+        <button class="btn btn-ghost" id="weather-loc-btn" data-i18n="set" onclick="setWeatherLocationFromInput()">Set</button>
+      </div>
+      <div class="io-row" style="margin-top:6px">
+        <button class="btn btn-ghost" id="weather-geo-btn" data-i18n="useMyLocation" onclick="useMyLocation()">Use my location</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="countdown">Countdown</div>
+      <div class="toggle-row" id="set-countdown-row">
+        <span data-i18n="showCountdown">Show countdown</span>
+        <div class="toggle" id="set-countdown"></div>
+      </div>
+      <div class="field" style="margin-top:6px; margin-bottom:10px">
+        <label data-i18n="position">Position</label>
+        <select id="set-countdown-pos">
+          <option value="tl" data-i18n="posTL">Top left</option>
+          <option value="ml" data-i18n="posML">Middle left</option>
+          <option value="bl" data-i18n="posBL">Bottom left</option>
+          <option value="tr" data-i18n="posTR">Top right</option>
+          <option value="mr" data-i18n="posMR">Middle right</option>
+          <option value="br" data-i18n="posBR">Bottom right</option>
+        </select>
+      </div>
+      <div class="field">
+        <label data-i18n="countdownLabelField">Label</label>
+        <input id="set-countdown-label" type="text" placeholder="New Year" data-i18n-ph="countdownLabelPh" autocomplete="off">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label data-i18n="countdownTarget">Target date &amp; time</label>
+        <input id="set-countdown-target" type="datetime-local">
       </div>
     </div>
 
@@ -799,15 +1026,24 @@ const DEFAULT_LINKS = [
 const DEFAULT_SETTINGS = {
   greetingName: '', engine: 'google', newTab: false, seconds: true,
   theme: 'dark', background: '', lang: 'en', hideAdd: false,
-  searchEnabled: true,
+  searchEnabled: true, accent: '',
   tileOpacity: 1, widgetOpacity: 1, searchOpacity: 1, clockOpacity: 0,
   groups: [],
-  rss:  { enabled: false, urls: [], position: 'mr' },
-  note: { enabled: false, position: 'ml', text: '' },
+  rss:     { enabled: false, urls: [], position: 'mr' },
+  note:    { enabled: false, position: 'ml', text: '', checklist: false },
+  weather: { enabled: false, position: 'tr', units: 'c', location: null },
+  countdown: { enabled: false, position: 'br', label: '', target: '' },
 };
 const MAX_FEEDS  = 15;
 const MAX_GROUPS = 10;
 const ALL_POSITIONS = ['tl','ml','bl','tr','mr','br'];
+const WIDGET_KEYS = ['rss','note','weather','countdown'];
+// Bare-token TLDs we'll treat as a URL to navigate to (otherwise → web search).
+// Keeps things like "vue.js" or "3.14" as searches, while "github.com" navigates.
+const COMMON_TLDS = new Set(['com','org','net','io','dev','app','co','edu','gov','mil',
+  'int','info','biz','me','tv','xyz','ai','gg','online','site','tech','blog','shop',
+  'store','news','uk','us','ca','de','fr','jp','cn','ru','br','au','nl','se','no','dk',
+  'fi','is','it','es','eu','ch','at','be','pl','in','kr','mx','nz','ie','pt','cz','gr','tr','za']);
 
 // ── Translations ──────────────────────────────────────────────────────────────
 const I18N = {
@@ -843,11 +1079,25 @@ const I18N = {
     posTL: 'Top left', posML: 'Middle left', posBL: 'Bottom left',
     posTR: 'Top right', posMR: 'Middle right', posBR: 'Bottom right',
     feedLoading: 'Loading…', feedEmpty: 'Set a feed URL in settings', feedError: 'Could not load feed', feedFiltered: 'No items match your filter',
+    accentColor: 'Accent color',
+    checklistMode: 'Checklist mode', addItem: 'Add item…', noteEmpty: 'No items yet',
+    weather: 'Weather', showWeather: 'Show weather', useFahrenheit: 'Use Fahrenheit (°F)',
+    cityPlaceholder: 'City (e.g. Copenhagen)', set: 'Set', useMyLocation: 'Use my location',
+    weatherSetLocation: 'Set a location in settings', weatherLoading: 'Loading…',
+    weatherError: 'Could not load weather', weatherLocating: 'Locating…',
+    weatherGeoDenied: 'Location access denied', weatherCityNotFound: 'City not found',
+    weatherHigh: 'High', weatherLow: 'Low',
+    countdown: 'Countdown', showCountdown: 'Show countdown',
+    countdownLabelField: 'Label', countdownLabelPh: 'New Year', countdownTarget: 'Target date & time',
+    countdownSet: 'Set a target date in settings', countdownReached: 'Time\'s up!',
+    cdDays: 'days', cdHours: 'hrs', cdMins: 'min', cdSecs: 'sec',
+    confirmImport: 'Import will replace all your current links and settings. Continue?',
     alertImageTooLarge: 'That image is too large to save. Try a smaller one or use a URL instead.',
     alertSaveFailed: 'Could not save — the icon may be too large.',
     alertReadFailed: 'Could not read that image.',
     alertImportTooLarge: 'Imported data is too large to store (likely a big background image).',
     alertImportInvalid: 'Import failed: invalid file.',
+    weatherConds: ['Clear','Mainly clear','Partly cloudy','Overcast','Fog','Drizzle','Rain','Freezing rain','Snow','Snow grains','Rain showers','Snow showers','Thunderstorm','Thunderstorm with hail'],
     days:   ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
     months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
   },
@@ -883,11 +1133,25 @@ const I18N = {
     posTL: 'Øverst venstre', posML: 'Midt venstre', posBL: 'Nederst venstre',
     posTR: 'Øverst højre',   posMR: 'Midt højre',   posBR: 'Nederst højre',
     feedLoading: 'Indlæser…', feedEmpty: 'Angiv en feed-URL i indstillinger', feedError: 'Kunne ikke indlæse feed', feedFiltered: 'Ingen elementer matcher dit filter',
+    accentColor: 'Accentfarve',
+    checklistMode: 'Tjekliste-tilstand', addItem: 'Tilføj punkt…', noteEmpty: 'Ingen punkter endnu',
+    weather: 'Vejr', showWeather: 'Vis vejr', useFahrenheit: 'Brug Fahrenheit (°F)',
+    cityPlaceholder: 'By (f.eks. København)', set: 'Vælg', useMyLocation: 'Brug min placering',
+    weatherSetLocation: 'Angiv en placering i indstillinger', weatherLoading: 'Indlæser…',
+    weatherError: 'Kunne ikke indlæse vejr', weatherLocating: 'Finder placering…',
+    weatherGeoDenied: 'Placeringsadgang nægtet', weatherCityNotFound: 'By ikke fundet',
+    weatherHigh: 'Høj', weatherLow: 'Lav',
+    countdown: 'Nedtælling', showCountdown: 'Vis nedtælling',
+    countdownLabelField: 'Etiket', countdownLabelPh: 'Nytår', countdownTarget: 'Måldato & -tid',
+    countdownSet: 'Angiv en måldato i indstillinger', countdownReached: 'Tiden er gået!',
+    cdDays: 'dage', cdHours: 'timer', cdMins: 'min', cdSecs: 'sek',
+    confirmImport: 'Import erstatter alle dine nuværende links og indstillinger. Fortsæt?',
     alertImageTooLarge: 'Billedet er for stort til at gemme. Prøv et mindre billede eller brug en URL.',
     alertSaveFailed: 'Kunne ikke gemme — ikonet er muligvis for stort.',
     alertReadFailed: 'Kunne ikke læse billedet.',
     alertImportTooLarge: 'Importerede data er for store til at gemme (sandsynligvis et stort baggrundsbillede).',
     alertImportInvalid: 'Import mislykkedes: ugyldig fil.',
+    weatherConds: ['Klart','Mest klart','Delvist skyet','Overskyet','Tåge','Støvregn','Regn','Isslag','Sne','Snekorn','Regnbyger','Snebyger','Tordenvejr','Tordenvejr med hagl'],
     days:   ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'],
     months: ['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'],
   },
@@ -903,8 +1167,13 @@ function applyLanguage() {
     const v = t[el.dataset.i18nPh];
     if (typeof v === 'string') el.placeholder = v;
   });
-  // Re-render dynamic feed list so filter placeholders and button titles update
-  if (typeof renderFeedList === 'function') renderFeedList();
+  // Re-render dynamic lists/widgets so placeholders, button titles and
+  // generated text pick up the new language
+  if (typeof renderFeedList  === 'function') renderFeedList();
+  if (typeof renderGroupList === 'function') renderGroupList();
+  if (typeof renderNoteList  === 'function') renderNoteList();
+  if (typeof renderWeather   === 'function') renderWeather();
+  if (typeof updateCountdown === 'function') updateCountdown();
 }
 
 let links     = [];
@@ -955,8 +1224,29 @@ const $ = {
   // Note widget
   notePanel: document.getElementById('note-panel'),
   noteText:  document.getElementById('note-text'),
+  noteList:  document.getElementById('note-list'),
+  noteAddRow:document.getElementById('note-add-row'),
+  noteAddInput:document.getElementById('note-add-input'),
+  noteModeBtn:document.getElementById('note-mode-btn'),
   setNote:   document.getElementById('set-note'),
   setNotePos:document.getElementById('set-note-pos'),
+  setNoteChecklist:document.getElementById('set-note-checklist'),
+  // Weather widget
+  weatherPanel:  document.getElementById('weather-panel'),
+  weatherBody:   document.getElementById('weather-body'),
+  weatherRefresh:document.getElementById('weather-refresh'),
+  setWeather:    document.getElementById('set-weather'),
+  setWeatherUnits:document.getElementById('set-weather-units'),
+  setWeatherPos: document.getElementById('set-weather-pos'),
+  setWeatherLoc: document.getElementById('set-weather-loc'),
+  // Countdown widget
+  countdownPanel: document.getElementById('countdown-panel'),
+  countdownTitle: document.getElementById('countdown-title'),
+  countdownBody:  document.getElementById('countdown-body'),
+  setCountdown:    document.getElementById('set-countdown'),
+  setCountdownPos: document.getElementById('set-countdown-pos'),
+  setCountdownLabel: document.getElementById('set-countdown-label'),
+  setCountdownTarget:document.getElementById('set-countdown-target'),
   // Tile groups
   linkGroup: document.getElementById('link-group'),
   groupList: document.getElementById('group-list'),
@@ -973,6 +1263,7 @@ const $ = {
   searchOpVal:  document.getElementById('search-opacity-val'),
   clockOpVal:   document.getElementById('clock-opacity-val'),
   setShowSearch:document.getElementById('set-showsearch'),
+  setAccent:    document.getElementById('set-accent'),
 };
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -1006,9 +1297,35 @@ function normalizeRss(r) {
 function normalizeNote(n) {
   n = n || {};
   return {
-    enabled:  !!n.enabled,
-    position: ALL_POSITIONS.includes(n.position) ? n.position : 'ml',
-    text:     typeof n.text === 'string' ? n.text : '',
+    enabled:   !!n.enabled,
+    position:  ALL_POSITIONS.includes(n.position) ? n.position : 'ml',
+    text:      typeof n.text === 'string' ? n.text : '',
+    checklist: !!n.checklist,
+  };
+}
+function normalizeWeather(w) {
+  w = w || {};
+  let loc = null;
+  if (w.location && typeof w.location === 'object') {
+    const lat = Number(w.location.lat), lon = Number(w.location.lon);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      loc = { lat, lon, name: typeof w.location.name === 'string' ? w.location.name : '' };
+    }
+  }
+  return {
+    enabled:  !!w.enabled,
+    position: ALL_POSITIONS.includes(w.position) ? w.position : 'tr',
+    units:    w.units === 'f' ? 'f' : 'c',
+    location: loc,
+  };
+}
+function normalizeCountdown(c) {
+  c = c || {};
+  return {
+    enabled:  !!c.enabled,
+    position: ALL_POSITIONS.includes(c.position) ? c.position : 'br',
+    label:    typeof c.label  === 'string' ? c.label.slice(0, 60) : '',
+    target:   typeof c.target === 'string' ? c.target : '',
   };
 }
 function normalizeGroups(g) {
@@ -1039,7 +1356,19 @@ function normalizeSettings(s) {
   s.widgetOpacity = clampOpacity(s.widgetOpacity);
   s.searchOpacity = clampOpacity(s.searchOpacity);
   s.clockOpacity  = clampOpacity(s.clockOpacity);
+  if (!ENGINES[s.engine]) s.engine = 'google';                       // guard against stale/removed engines
+  s.accent = (typeof s.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(s.accent)) ? s.accent : '';
   return s;
+}
+// Apply every object-subfield normalizer + side-collision resolution in one place,
+// shared by load() and importData() so they can't drift apart.
+function normalizeAllSubfields() {
+  settings.rss       = normalizeRss(settings.rss);
+  settings.note      = normalizeNote(settings.note);
+  settings.weather   = normalizeWeather(settings.weather);
+  settings.countdown = normalizeCountdown(settings.countdown);
+  settings.groups    = normalizeGroups(settings.groups);
+  resolveWidgetPositions();  // resolve any overlapping widget positions from imported/old data
 }
 function safeNextId(stored) {
   const maxId = links.reduce((m, l) => Math.max(m, l.id), 0);
@@ -1053,10 +1382,7 @@ function load() {
     nextId   = safeNextId(data.nextId);
     settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
     normalizeSettings(settings);
-    settings.rss    = normalizeRss(settings.rss);
-    settings.note   = normalizeNote(settings.note);
-    settings.groups = normalizeGroups(settings.groups);
-    ensureWidgetSides('rss');  // resolve any conflicting positions from imported/old data
+    normalizeAllSubfields();
   } else {
     links  = DEFAULT_LINKS.map((l, i) => ({ id: i + 1, name: l.name, url: l.url, icon: '', group: '' }));
     nextId = links.length + 1;
@@ -1094,10 +1420,17 @@ function processImageFile(file, maxDim, mime, quality, cb) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function withProtocol(url) { return /^https?:\/\//i.test(url) ? url : 'https://' + url; }
+// Pass through anything that already carries a scheme we allow (http/https/file);
+// otherwise assume a bare domain and prefix https://. file:// links let tiles point
+// at local files, e.g. file:///C:/Users/me/Desktop/page.html
+function withProtocol(url) { return /^(https?|file):\/\//i.test(url) ? url : 'https://' + url; }
 function faviconSources(url) {
   let host = '';
-  try { host = new URL(withProtocol(url)).hostname; } catch { return []; }
+  try {
+    const u = new URL(withProtocol(url));
+    if (u.protocol === 'file:') return [];   // local files have no favicon host
+    host = u.hostname;
+  } catch { return []; }
   if (!host) return [];
   return [
     `https://icons.duckduckgo.com/ip3/${host}.ico`,      // real site favicon, fails cleanly when absent
@@ -1121,6 +1454,21 @@ function colorFor(str) {
 }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// Decide whether a typed query is a URL to navigate to (vs. a web search).
+// A scheme always counts; a bare token only counts if its TLD is a known one,
+// so "vue.js" / "3.14" still search while "github.com" / "bbc.co.uk" navigate.
+function looksLikeUrl(q) {
+  if (/\s/.test(q)) return false;
+  if (/^(https?|file):\/\//i.test(q)) return true;
+  const host = q.split(/[/?#]/)[0];
+  if (!/^[\w-]+(\.[\w-]+)+$/.test(host)) return false;
+  return COMMON_TLDS.has(host.split('.').pop().toLowerCase());
+}
+// Only http(s) links are safe to put in an href — blocks javascript:/data: etc.
+// from untrusted RSS content (clicking those would run in our origin).
+function safeHttpLink(link) {
+  return /^https?:\/\//i.test(String(link || '').trim()) ? String(link).trim() : '';
 }
 
 // ── Background ────────────────────────────────────────────────────────────────
@@ -1278,10 +1626,12 @@ function attachDrag() {
       const from = links.findIndex(l => l.id === dragId);
       const to   = links.findIndex(l => l.id === targetId);
       if (from < 0 || to < 0) return;
-      // Adopt the target tile's group (no-op for same-group reorders)
-      links[from].group = links[to].group;
+      const targetGroup = links[to].group;     // capture before the array shifts
       const [moved] = links.splice(from, 1);
-      links.splice(to, 0, moved);
+      moved.group = targetGroup;                // adopt target's group (no-op for same-group reorders)
+      // Removing `from` shifts later indices left by one; compensate so the tile
+      // lands just before the drop target regardless of drag direction.
+      links.splice(from < to ? to - 1 : to, 0, moved);
       save(); renderTiles();
     });
   });
@@ -1390,19 +1740,29 @@ function openSettings() {
   $.setShowAdd.classList.toggle('on', !settings.hideAdd);
   $.setBgUrl.value = (settings.background && !settings.background.startsWith('data:')) ? settings.background : '';
   $.setRss.classList.toggle('on', settings.rss.enabled);
-  $.setRssPos.value = ALL_POSITIONS.includes(settings.rss.position) ? settings.rss.position : 'mr';
   $.setNote.classList.toggle('on', settings.note.enabled);
-  $.setNotePos.value = ALL_POSITIONS.includes(settings.note.position) ? settings.note.position : 'ml';
+  $.setNoteChecklist.classList.toggle('on', settings.note.checklist);
+  $.setWeather.classList.toggle('on', settings.weather.enabled);
+  $.setWeatherUnits.classList.toggle('on', settings.weather.units === 'f');
+  $.setWeatherLoc.value = settings.weather.location ? settings.weather.location.name : '';
+  $.setCountdown.classList.toggle('on', settings.countdown.enabled);
+  $.setCountdownLabel.value  = settings.countdown.label;
+  $.setCountdownTarget.value = settings.countdown.target;
+  syncWidgetPositionSelects();
   $.setTileOp.value   = Math.round(clampOpacity(settings.tileOpacity)   * 100);
   $.setWidgetOp.value = Math.round(clampOpacity(settings.widgetOpacity) * 100);
   $.setSearchOp.value = Math.round(clampOpacity(settings.searchOpacity) * 100);
   $.setClockOp.value  = Math.round(clampOpacity(settings.clockOpacity)  * 100);
   $.setShowSearch.classList.toggle('on', settings.searchEnabled);
+  $.setAccent.value = settings.accent || '#4fc4a8';
   applyOpacity();   // refresh the % labels next to the sliders
   renderFeedList();
   renderGroupList();
   $.setModal.classList.add('open');
 }
+// Re-apply every widget at once (used after a position auto-move so the bumped
+// widget actually relocates on screen)
+function applyAllWidgets() { applyRss(); applyNote(); applyWeather(); applyCountdown(); }
 function closeSettings() { $.setModal.classList.remove('open'); }
 
 $.setLang.addEventListener('change', () => {
@@ -1438,38 +1798,83 @@ $.setEngine.addEventListener('change', () => {
   $.searchEng.value = settings.engine;
   save();
 });
-$.setBgUrl.addEventListener('input', () => { setBackground($.setBgUrl.value.trim()); });
+let bgUrlDebounce = null;
+$.setBgUrl.addEventListener('input', () => {
+  // Debounce — applying/saving on every keystroke caused flicker and write churn
+  clearTimeout(bgUrlDebounce);
+  bgUrlDebounce = setTimeout(() => setBackground($.setBgUrl.value.trim()), 350);
+});
+$.setAccent.addEventListener('input', () => {
+  settings.accent = $.setAccent.value;
+  applyAccent(); save();
+});
+function resetAccent() {
+  settings.accent = '';
+  $.setAccent.value = '#4fc4a8';
+  applyAccent(); save();
+}
+
+// Generic helper: toggle a widget's enabled flag (or change its position),
+// resolve any slot collisions, sync the dropdowns, then re-apply all widgets.
+function onWidgetEnabledToggle(key, toggleEl) {
+  settings[key].enabled = !settings[key].enabled;
+  toggleEl.classList.toggle('on', settings[key].enabled);
+  resolveWidgetPositions(key);
+  syncWidgetPositionSelects();
+  save();
+}
+function onWidgetPosChange(key, value) {
+  settings[key].position = value;
+  resolveWidgetPositions(key);
+  syncWidgetPositionSelects();
+  save();
+}
 
 document.getElementById('set-rss-row').addEventListener('click', () => {
-  settings.rss.enabled = !settings.rss.enabled;
-  $.setRss.classList.toggle('on', settings.rss.enabled);
-  ensureWidgetSides('rss');
-  $.setNotePos.value = settings.note.position;   // may have just been auto-mirrored
-  save();
+  onWidgetEnabledToggle('rss', $.setRss);
   rssLastSig = '';
-  applyRss(); applyNote();
+  applyAllWidgets();
 });
 $.setRssUrl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addFeed(); } });
-$.setRssPos.addEventListener('change', () => {
-  settings.rss.position = $.setRssPos.value;
-  ensureWidgetSides('rss');
-  $.setNotePos.value = settings.note.position;
-  save(); applyRss(); applyNote();
-});
+$.setRssPos.addEventListener('change', () => { onWidgetPosChange('rss', $.setRssPos.value); applyAllWidgets(); });
 
 document.getElementById('set-note-row').addEventListener('click', () => {
-  settings.note.enabled = !settings.note.enabled;
-  $.setNote.classList.toggle('on', settings.note.enabled);
-  ensureWidgetSides('note');
-  $.setRssPos.value = settings.rss.position;
-  save();
-  applyNote(); applyRss();
+  onWidgetEnabledToggle('note', $.setNote);
+  applyAllWidgets();
 });
-$.setNotePos.addEventListener('change', () => {
-  settings.note.position = $.setNotePos.value;
-  ensureWidgetSides('note');
-  $.setRssPos.value = settings.rss.position;
-  save(); applyNote(); applyRss();
+document.getElementById('set-note-checklist-row').addEventListener('click', () => {
+  settings.note.checklist = !settings.note.checklist;
+  $.setNoteChecklist.classList.toggle('on', settings.note.checklist);
+  save(); applyNote();
+});
+$.setNotePos.addEventListener('change', () => { onWidgetPosChange('note', $.setNotePos.value); applyAllWidgets(); });
+
+document.getElementById('set-weather-row').addEventListener('click', () => {
+  onWidgetEnabledToggle('weather', $.setWeather);
+  applyAllWidgets();
+});
+document.getElementById('set-weather-units-row').addEventListener('click', () => {
+  settings.weather.units = settings.weather.units === 'f' ? 'c' : 'f';
+  $.setWeatherUnits.classList.toggle('on', settings.weather.units === 'f');
+  save();
+  weatherLastSig = '';
+  if (settings.weather.enabled && settings.weather.location) fetchWeather();
+});
+$.setWeatherPos.addEventListener('change', () => { onWidgetPosChange('weather', $.setWeatherPos.value); applyAllWidgets(); });
+$.setWeatherLoc.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); setWeatherLocationFromInput(); } });
+
+document.getElementById('set-countdown-row').addEventListener('click', () => {
+  onWidgetEnabledToggle('countdown', $.setCountdown);
+  applyAllWidgets();
+});
+$.setCountdownPos.addEventListener('change', () => { onWidgetPosChange('countdown', $.setCountdownPos.value); applyAllWidgets(); });
+$.setCountdownLabel.addEventListener('input', () => {
+  settings.countdown.label = $.setCountdownLabel.value.slice(0, 60);
+  save(); applyCountdown();
+});
+$.setCountdownTarget.addEventListener('input', () => {
+  settings.countdown.target = $.setCountdownTarget.value;
+  save(); applyCountdown();
 });
 
 $.groupInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addGroup(); } });
@@ -1492,10 +1897,11 @@ $.searchForm.addEventListener('submit', e => {
   e.preventDefault();
   const q = $.searchIn.value.trim();
   if (!q) return;
-  if (/^https?:\/\//i.test(q) || /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(q)) {
+  if (looksLikeUrl(q)) {
     location.href = withProtocol(q);
   } else {
-    location.href = ENGINES[settings.engine].url + encodeURIComponent(q);
+    const eng = ENGINES[settings.engine] || ENGINES.google;   // never crash on a stale engine
+    location.href = eng.url + encodeURIComponent(q);
   }
 });
 $.searchEng.addEventListener('change', () => {
@@ -1515,6 +1921,7 @@ function exportData() {
 function importData(input) {
   const file = input.files[0];
   if (!file) return;
+  if (!confirm(L().confirmImport)) { input.value = ''; return; }   // import overwrites everything
   const reader = new FileReader();
   reader.onload = ev => {
     try {
@@ -1524,18 +1931,18 @@ function importData(input) {
       nextId   = safeNextId(d.nextId);
       settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) };
       normalizeSettings(settings);
-      settings.rss    = normalizeRss(settings.rss);
-      settings.note   = normalizeNote(settings.note);
-      settings.groups = normalizeGroups(settings.groups);
-      ensureWidgetSides('rss');
+      normalizeAllSubfields();
       if (!save()) { alert(L().alertImportTooLarge); }
       applyTheme(settings.theme);
+      applyAccent();
       applyBackground();
       applyOpacity();
       applySearch();
       applyLanguage();
       applyRss();
       applyNote();
+      applyWeather();
+      applyCountdown();
       buildEngineSelect($.searchEng, settings.engine);
       renderTiles(); applyHint(); tick(); updateGreeting();
       closeSettings();
@@ -1553,35 +1960,113 @@ let rssTimer = null;
 let rssLastSig = '';     // signature of the URL set last fetched (avoids needless refetch)
 let rssUrlDebounce = null;
 
-// ── Side constraint ──────────────────────────────────────────────────────────
-// Only one widget allowed per side. When the user changes one widget's enabled
-// state or position, if it now shares a side with the OTHER enabled widget,
-// the other one auto-moves to its mirror position on the opposite side.
-const POSITION_MIRROR = { tl:'tr', ml:'mr', bl:'br', tr:'tl', mr:'ml', br:'bl' };
-function sideOf(pos) { return ['tl','ml','bl'].includes(pos) ? 'l' : 'r'; }
-function ensureWidgetSides(touched /* 'rss' or 'note' */) {
-  const just  = settings[touched];
-  const other = settings[touched === 'rss' ? 'note' : 'rss'];
-  if (!just.enabled || !other.enabled) return;
-  if (sideOf(just.position) === sideOf(other.position)) {
-    other.position = POSITION_MIRROR[other.position] || 'mr';
+// ── Widget position constraint ────────────────────────────────────────────────
+// There are 6 fixed slots (3 per side) and up to 4 widgets. No two enabled
+// widgets may share a slot. When one is moved/enabled (`touched`), it keeps its
+// chosen slot and any colliding widgets are bumped to the first free slot.
+const WIDGET_POS_SELECTS = {
+  rss: 'setRssPos', note: 'setNotePos', weather: 'setWeatherPos', countdown: 'setCountdownPos',
+};
+function resolveWidgetPositions(touched) {
+  const used = new Set();
+  const order = touched ? [touched, ...WIDGET_KEYS.filter(k => k !== touched)] : WIDGET_KEYS;
+  for (const k of order) {
+    const w = settings[k];
+    if (!w || !w.enabled) continue;
+    let pos = ALL_POSITIONS.includes(w.position) ? w.position : ALL_POSITIONS[0];
+    if (used.has(pos)) pos = ALL_POSITIONS.find(p => !used.has(p)) || pos;
+    w.position = pos;
+    used.add(pos);
+  }
+}
+// Push the (possibly auto-moved) positions back into the settings dropdowns
+function syncWidgetPositionSelects() {
+  for (const [k, ref] of Object.entries(WIDGET_POS_SELECTS)) {
+    if ($[ref]) $[ref].value = settings[k].position;
   }
 }
 
 // ── Sticky note widget ───────────────────────────────────────────────────────
+// The note's `text` is the single source of truth in both modes. Checklist mode
+// just renders/edits it as `- [ ] item` / `- [x] item` lines, so toggling modes
+// (and export/import) keeps everything intact.
 let noteSaveTimer = null;
+const CHECK_ICON = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h8M2 8h8M2 12h5"/><path d="M11.5 11.5l1.5 1.5 2.5-3"/></svg>';
+const TEXT_ICON  = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h8"/></svg>';
+function parseChecklist(text) {
+  return text.split('\n').filter(l => l.trim() !== '').map(line => {
+    const m = /^\s*-\s*\[([ xX])\]\s?(.*)$/.exec(line);
+    if (m) return { done: m[1].toLowerCase() === 'x', label: m[2] };
+    return { done: false, label: line.replace(/^\s*[-*]\s+/, '') };
+  });
+}
+function serializeChecklist(items) {
+  return items.map(it => `- [${it.done ? 'x' : ' '}] ${it.label}`).join('\n');
+}
 function applyNote() {
   const n = settings.note;
   ALL_POSITIONS.forEach(p => $.notePanel.classList.remove('pos-' + p));
   $.notePanel.classList.add('pos-' + (ALL_POSITIONS.includes(n.position) ? n.position : 'ml'));
   $.notePanel.classList.toggle('show', n.enabled);
+  const list = n.checklist;
+  $.noteText.style.display   = list ? 'none' : '';
+  $.noteList.style.display   = list ? '' : 'none';
+  $.noteAddRow.style.display = list ? '' : 'none';
+  $.noteModeBtn.innerHTML = list ? TEXT_ICON : CHECK_ICON;
   if ($.noteText.value !== n.text) $.noteText.value = n.text;
+  if (list) renderNoteList();
+}
+function renderNoteList() {
+  if (!settings.note.checklist) return;
+  const items = parseChecklist(settings.note.text);
+  if (!items.length) {
+    $.noteList.innerHTML = `<div class="note-empty">${esc(L().noteEmpty)}</div>`;
+    return;
+  }
+  $.noteList.innerHTML = items.map((it, i) =>
+    `<label class="note-item${it.done ? ' done' : ''}">` +
+    `<input type="checkbox" ${it.done ? 'checked' : ''} onchange="toggleNoteItem(${i})">` +
+    `<span>${esc(it.label)}</span>` +
+    `<button type="button" title="${esc(L().remove)}" onclick="removeNoteItem(${i})">✕</button>` +
+    `</label>`
+  ).join('');
+}
+function commitChecklist(items) {
+  settings.note.text = serializeChecklist(items);
+  if ($.noteText.value !== settings.note.text) $.noteText.value = settings.note.text;
+  save(); renderNoteList();
+}
+function toggleNoteItem(i) {
+  const items = parseChecklist(settings.note.text);
+  if (!items[i]) return;
+  items[i].done = !items[i].done;
+  commitChecklist(items);
+}
+function removeNoteItem(i) {
+  const items = parseChecklist(settings.note.text);
+  if (!items[i]) return;
+  items.splice(i, 1);
+  commitChecklist(items);
+}
+function addNoteItem() {
+  const label = $.noteAddInput.value.trim();
+  if (!label) return;
+  const items = parseChecklist(settings.note.text);
+  items.push({ done: false, label });
+  $.noteAddInput.value = '';
+  commitChecklist(items);
 }
 $.noteText.addEventListener('input', () => {
   settings.note.text = $.noteText.value;
   // Debounce so we don't hit localStorage on every keystroke
   clearTimeout(noteSaveTimer);
   noteSaveTimer = setTimeout(save, 300);
+});
+$.noteAddInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addNoteItem(); } });
+$.noteModeBtn.addEventListener('click', () => {
+  settings.note.checklist = !settings.note.checklist;
+  if ($.setNoteChecklist) $.setNoteChecklist.classList.toggle('on', settings.note.checklist);
+  save(); applyNote();
 });
 
 function applyRss() {
@@ -1620,7 +2105,7 @@ const FEED_FETCHERS = [
       const data = await res.json();
       if (!data || data.status !== 'ok' || !Array.isArray(data.items)) throw new Error('bad rss2json');
       return data.items
-        .map(i => ({ title: (i.title || '').trim(), link: (i.link || '').trim(), ts: Date.parse(i.pubDate || '') || 0 }))
+        .map(i => ({ title: (i.title || '').trim(), link: safeHttpLink(i.link), ts: Date.parse(i.pubDate || '') || 0 }))
         .filter(it => it.title && it.link);
     },
   },
@@ -1699,7 +2184,7 @@ function parseFeedXml(xmlText) {
   // RSS 2.0 / 1.0
   doc.querySelectorAll('item').forEach(node => {
     const title = (node.querySelector('title')?.textContent || '').trim();
-    const link  = (node.querySelector('link')?.textContent  || '').trim();
+    const link  = safeHttpLink(node.querySelector('link')?.textContent);
     const date  = node.querySelector('pubDate')?.textContent || '';
     if (title && link) out.push({ title, link, ts: Date.parse(date) || 0 });
   });
@@ -1709,7 +2194,7 @@ function parseFeedXml(xmlText) {
       const title  = (node.querySelector('title')?.textContent || '').trim();
       const links  = Array.from(node.querySelectorAll('link'));
       const altLnk = links.find(l => (l.getAttribute('rel') || 'alternate') === 'alternate') || links[0];
-      const link   = altLnk ? altLnk.getAttribute('href') : '';
+      const link   = safeHttpLink(altLnk ? altLnk.getAttribute('href') : '');
       const date   = node.querySelector('updated')?.textContent || node.querySelector('published')?.textContent || '';
       if (title && link) out.push({ title, link, ts: Date.parse(date) || 0 });
     });
@@ -1838,6 +2323,191 @@ $.rssRefresh.addEventListener('click', () => {
 });
 
 
+// ── Accent color ──────────────────────────────────────────────────────────────
+// A custom accent overrides --teal (drives buttons, focus rings, toggles, etc.);
+// empty falls back to the per-theme default.
+function applyAccent() {
+  const root = document.documentElement.style;
+  if (settings.accent) root.setProperty('--teal', settings.accent);
+  else root.removeProperty('--teal');
+}
+
+// ── Weather widget (Open-Meteo — free, no API key, CORS-enabled) ───────────────
+const WEATHER_REFRESH_MS = 30 * 60 * 1000;  // 30 min
+let weatherTimer   = null;
+let weatherLastSig = '';     // lat,lon,units of the last fetch
+let weatherData    = null;   // last good payload, kept so lang/units changes re-render instantly
+// Map a WMO weather code to an emoji + an index into L().weatherConds
+function weatherInfo(code) {
+  const c = Number(code);
+  if (c === 0) return { idx: 0,  icon: '☀️' };
+  if (c === 1) return { idx: 1,  icon: '🌤️' };
+  if (c === 2) return { idx: 2,  icon: '⛅' };
+  if (c === 3) return { idx: 3,  icon: '☁️' };
+  if (c === 45 || c === 48)       return { idx: 4,  icon: '🌫️' };
+  if (c >= 51 && c <= 55)         return { idx: 5,  icon: '🌦️' };
+  if (c === 56 || c === 57)       return { idx: 5,  icon: '🌧️' };
+  if (c >= 61 && c <= 65)         return { idx: 6,  icon: '🌧️' };
+  if (c === 66 || c === 67)       return { idx: 7,  icon: '🌧️' };
+  if (c >= 71 && c <= 75)         return { idx: 8,  icon: '🌨️' };
+  if (c === 77)                   return { idx: 9,  icon: '🌨️' };
+  if (c >= 80 && c <= 82)         return { idx: 10, icon: '🌦️' };
+  if (c === 85 || c === 86)       return { idx: 11, icon: '🌨️' };
+  if (c === 95)                   return { idx: 12, icon: '⛈️' };
+  if (c === 96 || c === 99)       return { idx: 13, icon: '⛈️' };
+  return { idx: 3, icon: '☁️' };
+}
+function showWeatherState(key) {
+  $.weatherBody.innerHTML = `<div class="weather-state">${esc(L()[key] || '')}</div>`;
+}
+function applyWeather() {
+  const w = settings.weather;
+  ALL_POSITIONS.forEach(p => $.weatherPanel.classList.remove('pos-' + p));
+  $.weatherPanel.classList.add('pos-' + (ALL_POSITIONS.includes(w.position) ? w.position : 'tr'));
+  if (weatherTimer) { clearInterval(weatherTimer); weatherTimer = null; }
+  if (!w.enabled) { $.weatherPanel.classList.remove('show'); return; }
+  $.weatherPanel.classList.add('show');
+  if (!w.location) { weatherData = null; showWeatherState('weatherSetLocation'); return; }
+  const sig = w.location.lat + ',' + w.location.lon + ',' + w.units;
+  if (sig !== weatherLastSig) fetchWeather();
+  else renderWeather();
+  weatherTimer = setInterval(fetchWeather, WEATHER_REFRESH_MS);
+}
+async function fetchWeather() {
+  const w = settings.weather;
+  if (!w.location) { showWeatherState('weatherSetLocation'); return; }
+  const sig = w.location.lat + ',' + w.location.lon + ',' + w.units;
+  weatherLastSig = sig;
+  if (!weatherData) showWeatherState('weatherLoading');
+  const unit = w.units === 'f' ? 'fahrenheit' : 'celsius';
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${w.location.lat}&longitude=${w.location.lon}` +
+              `&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto&temperature_unit=${unit}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('weather http');
+    const data = await res.json();
+    if (sig !== weatherLastSig) return;  // settings changed mid-flight, abandon
+    if (!data.current || typeof data.current.temperature_2m !== 'number') throw new Error('bad weather');
+    weatherData = {
+      temp:  Math.round(data.current.temperature_2m),
+      code:  data.current.weather_code,
+      hi:    data.daily ? Math.round(data.daily.temperature_2m_max[0]) : null,
+      lo:    data.daily ? Math.round(data.daily.temperature_2m_min[0]) : null,
+      units: w.units,
+      name:  w.location.name,
+    };
+    renderWeather();
+  } catch {
+    if (sig !== weatherLastSig) return;
+    if (!weatherData) showWeatherState('weatherError');
+  }
+}
+function renderWeather() {
+  if (!settings.weather.enabled) return;
+  if (!weatherData) { if (!settings.weather.location) showWeatherState('weatherSetLocation'); return; }
+  const t    = L();
+  const info = weatherInfo(weatherData.code);
+  const deg  = weatherData.units === 'f' ? '°F' : '°C';
+  const cond = t.weatherConds[info.idx] || '';
+  const loc  = settings.weather.location;
+  const name = weatherData.name || (loc ? `${loc.lat.toFixed(2)}, ${loc.lon.toFixed(2)}` : '');
+  let html =
+    `<div class="weather-main">` +
+      `<div class="weather-icon">${info.icon}</div>` +
+      `<div class="weather-meta">` +
+        `<div class="weather-temp">${weatherData.temp}${deg}</div>` +
+        `<div class="weather-cond">${esc(cond)}</div>` +
+        `<div class="weather-loc" title="${esc(name)}">${esc(name)}</div>` +
+      `</div>` +
+    `</div>`;
+  if (weatherData.hi !== null && weatherData.lo !== null) {
+    html += `<div class="weather-hilo">` +
+            `<span>${esc(t.weatherHigh)} <b>${weatherData.hi}${deg}</b></span>` +
+            `<span>${esc(t.weatherLow)} <b>${weatherData.lo}${deg}</b></span></div>`;
+  }
+  $.weatherBody.innerHTML = html;
+}
+async function geocodeCity(name) {
+  const lang = settings.lang === 'da' ? 'da' : 'en';
+  const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=${lang}&format=json`);
+  if (!res.ok) throw new Error('geocode http');
+  const data = await res.json();
+  const r = data.results && data.results[0];
+  if (!r) return null;
+  return { lat: r.latitude, lon: r.longitude, name: [r.name, r.country_code].filter(Boolean).join(', ') };
+}
+async function setWeatherLocationFromInput() {
+  const name = $.setWeatherLoc.value.trim();
+  if (!name) return;
+  showWeatherState('weatherLoading');
+  try {
+    const loc = await geocodeCity(name);
+    if (!loc) { showWeatherState('weatherCityNotFound'); return; }
+    settings.weather.location = loc;
+    $.setWeatherLoc.value = loc.name;
+    weatherLastSig = '';
+    save();
+    if (settings.weather.enabled) applyWeather();
+  } catch { showWeatherState('weatherError'); }
+}
+function useMyLocation() {
+  if (!navigator.geolocation) { showWeatherState('weatherGeoDenied'); return; }
+  showWeatherState('weatherLocating');
+  navigator.geolocation.getCurrentPosition(pos => {
+    settings.weather.location = {
+      lat:  Number(pos.coords.latitude.toFixed(4)),
+      lon:  Number(pos.coords.longitude.toFixed(4)),
+      name: L().useMyLocation,
+    };
+    $.setWeatherLoc.value = settings.weather.location.name;
+    weatherLastSig = '';
+    save();
+    if (settings.weather.enabled) applyWeather();
+  }, () => showWeatherState('weatherGeoDenied'));
+}
+$.weatherRefresh.addEventListener('click', () => {
+  if (!settings.weather.location) return;
+  $.weatherRefresh.classList.remove('spin');
+  void $.weatherRefresh.offsetWidth;   // restart the transition
+  $.weatherRefresh.classList.add('spin');
+  weatherLastSig = '';
+  fetchWeather();
+});
+
+// ── Countdown widget ───────────────────────────────────────────────────────────
+function applyCountdown() {
+  const c = settings.countdown;
+  ALL_POSITIONS.forEach(p => $.countdownPanel.classList.remove('pos-' + p));
+  $.countdownPanel.classList.add('pos-' + (ALL_POSITIONS.includes(c.position) ? c.position : 'br'));
+  $.countdownPanel.classList.toggle('show', c.enabled);
+  updateCountdown();
+}
+// Called every second by tick(); cheap and only does work while enabled
+function updateCountdown() {
+  const c = settings.countdown;
+  if (!c.enabled) return;
+  const t = L();
+  $.countdownTitle.textContent = c.label || t.countdown;
+  const target = c.target ? new Date(c.target).getTime() : NaN;
+  if (!Number.isFinite(target)) {
+    $.countdownBody.innerHTML = `<div class="countdown-state">${esc(t.countdownSet)}</div>`;
+    return;
+  }
+  let diff = Math.floor((target - Date.now()) / 1000);
+  if (diff <= 0) {
+    $.countdownBody.innerHTML = `<div class="countdown-done">${esc(t.countdownReached)}</div>`;
+    return;
+  }
+  const days = Math.floor(diff / 86400); diff -= days * 86400;
+  const hrs  = Math.floor(diff / 3600);  diff -= hrs * 3600;
+  const mins = Math.floor(diff / 60);
+  const secs = diff - mins * 60;
+  const unit = (n, label) =>
+    `<div class="countdown-unit"><div class="countdown-num">${n}</div><div class="countdown-label">${esc(label)}</div></div>`;
+  $.countdownBody.innerHTML = `<div class="countdown-units">` +
+    unit(days, t.cdDays) + unit(hrs, t.cdHours) + unit(mins, t.cdMins) + unit(secs, t.cdSecs) + `</div>`;
+}
+
 const MOON = '<circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 2A5.5 5.5 0 0 0 7.5 13 5.5 5.5 0 0 1 7.5 2z" fill="currentColor"/>';
 const SUN  = '<circle cx="7.5" cy="7.5" r="2.8" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1v1.4M7.5 12.6V14M1 7.5h1.4M12.6 7.5H14M3.2 3.2l1 1M10.8 10.8l1 1M11.8 3.2l-1 1M4.2 10.8l-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>';
 function applyTheme(theme) {
@@ -1864,19 +2534,21 @@ function updateGreeting() {
   const n = settings.greetingName;
   $.greeting.innerHTML = greetingText() + (n ? `, <b>${esc(n)}</b>` : '');
 }
+let lastClockHtml = '', lastDateText = '';
 function tick() {
   const t = L();
   const d = new Date();
   const p = n => String(n).padStart(2, '0');
   const hm = `${p(d.getHours())}:${p(d.getMinutes())}`;
-  $.clock.innerHTML = settings.seconds ? `${hm}<span class="sec">${p(d.getSeconds())}</span>` : hm;
+  const clockHtml = settings.seconds ? `${hm}<span class="sec">${p(d.getSeconds())}</span>` : hm;
+  if (clockHtml !== lastClockHtml) { $.clock.innerHTML = clockHtml; lastClockHtml = clockHtml; }
   const day = t.days[d.getDay()];
   const date = d.getDate();
   const month = t.months[d.getMonth()];
   // Danish convention: "Fredag, 23. maj"; English: "Friday, May 23"
-  $.date.textContent = settings.lang === 'da'
-    ? `${day}, ${date}. ${month}`
-    : `${day}, ${month} ${date}`;
+  const dateText = settings.lang === 'da' ? `${day}, ${date}. ${month}` : `${day}, ${month} ${date}`;
+  if (dateText !== lastDateText) { $.date.textContent = dateText; lastDateText = dateText; }
+  updateCountdown();
 }
 
 // ── Global listeners ──────────────────────────────────────────────────────────
@@ -1894,12 +2566,15 @@ document.addEventListener('keydown', e => {
 // ── Init ──────────────────────────────────────────────────────────────────────
 load();
 applyTheme(settings.theme);
+applyAccent();
 applyBackground();
 applyOpacity();
 applySearch();
 applyLanguage();
 applyRss();
 applyNote();
+applyWeather();
+applyCountdown();
 buildEngineSelect($.searchEng, settings.engine);
 renderTiles();
 applyHint();
