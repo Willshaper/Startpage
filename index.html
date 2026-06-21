@@ -626,6 +626,16 @@
     margin-bottom: 12px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  /* Each countdown in the list; stacked with a divider between them */
+  .countdown-body { max-height: 56vh; overflow-y: auto; margin: 0 -2px; padding: 0 2px; }
+  .countdown-item + .countdown-item {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+  }
+  .countdown-item-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .countdown-units { display: flex; gap: 10px; }
   .countdown-unit {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -945,7 +955,7 @@
         <span data-i18n="showCountdown">Show countdown</span>
         <div class="toggle" id="set-countdown"></div>
       </div>
-      <div class="field" style="margin-top:6px; margin-bottom:10px">
+      <div class="field" style="margin-top:6px; margin-bottom:12px">
         <label data-i18n="position">Position</label>
         <select id="set-countdown-pos">
           <option value="tl" data-i18n="posTL">Top left</option>
@@ -956,13 +966,16 @@
           <option value="br" data-i18n="posBR">Bottom right</option>
         </select>
       </div>
-      <div class="field">
-        <label data-i18n="countdownLabelField">Label</label>
+      <div class="feed-list-label">
+        <span data-i18n="countdowns">Countdowns</span><span id="countdown-count"></span>
+      </div>
+      <div class="feed-list" id="countdown-list"></div>
+      <div class="feed-add-row" style="margin-bottom:6px">
         <input id="set-countdown-label" type="text" placeholder="New Year" data-i18n-ph="countdownLabelPh" autocomplete="off">
       </div>
-      <div class="field" style="margin-bottom:0">
-        <label data-i18n="countdownTarget">Target date &amp; time</label>
-        <input id="set-countdown-target" type="datetime-local">
+      <div class="feed-add-row">
+        <input id="set-countdown-target" type="datetime-local" style="flex:1; min-width:0">
+        <button class="btn btn-ghost" id="countdown-add-btn" data-i18n="add" onclick="addCountdown()">Add</button>
       </div>
     </div>
 
@@ -1032,10 +1045,11 @@ const DEFAULT_SETTINGS = {
   rss:     { enabled: false, urls: [], position: 'mr' },
   note:    { enabled: false, position: 'ml', text: '', checklist: false },
   weather: { enabled: false, position: 'tr', units: 'c', location: null },
-  countdown: { enabled: false, position: 'br', label: '', target: '' },
+  countdown: { enabled: false, position: 'br', items: [] },
 };
 const MAX_FEEDS  = 15;
 const MAX_GROUPS = 10;
+const MAX_COUNTDOWNS = 10;
 const ALL_POSITIONS = ['tl','ml','bl','tr','mr','br'];
 const WIDGET_KEYS = ['rss','note','weather','countdown'];
 // Bare-token TLDs we'll treat as a URL to navigate to (otherwise → web search).
@@ -1088,8 +1102,9 @@ const I18N = {
     weatherGeoDenied: 'Location access denied', weatherCityNotFound: 'City not found',
     weatherHigh: 'High', weatherLow: 'Low',
     countdown: 'Countdown', showCountdown: 'Show countdown',
-    countdownLabelField: 'Label', countdownLabelPh: 'New Year', countdownTarget: 'Target date & time',
-    countdownSet: 'Set a target date in settings', countdownReached: 'Time\'s up!',
+    countdowns: 'Countdowns', noCountdowns: 'No countdowns added yet',
+    countdownLabelField: 'Label', countdownLabelPh: 'Label (e.g. New Year)', countdownTarget: 'Target date & time',
+    countdownSet: 'Add a countdown in settings', countdownReached: 'Time\'s up!',
     cdDays: 'days', cdHours: 'hrs', cdMins: 'min', cdSecs: 'sec',
     confirmImport: 'Import will replace all your current links and settings. Continue?',
     alertImageTooLarge: 'That image is too large to save. Try a smaller one or use a URL instead.',
@@ -1142,8 +1157,9 @@ const I18N = {
     weatherGeoDenied: 'Placeringsadgang nægtet', weatherCityNotFound: 'By ikke fundet',
     weatherHigh: 'Høj', weatherLow: 'Lav',
     countdown: 'Nedtælling', showCountdown: 'Vis nedtælling',
-    countdownLabelField: 'Etiket', countdownLabelPh: 'Nytår', countdownTarget: 'Måldato & -tid',
-    countdownSet: 'Angiv en måldato i indstillinger', countdownReached: 'Tiden er gået!',
+    countdowns: 'Nedtællinger', noCountdowns: 'Ingen nedtællinger tilføjet endnu',
+    countdownLabelField: 'Etiket', countdownLabelPh: 'Etiket (f.eks. Nytår)', countdownTarget: 'Måldato & -tid',
+    countdownSet: 'Tilføj en nedtælling i indstillinger', countdownReached: 'Tiden er gået!',
     cdDays: 'dage', cdHours: 'timer', cdMins: 'min', cdSecs: 'sek',
     confirmImport: 'Import erstatter alle dine nuværende links og indstillinger. Fortsæt?',
     alertImageTooLarge: 'Billedet er for stort til at gemme. Prøv et mindre billede eller brug en URL.',
@@ -1169,11 +1185,12 @@ function applyLanguage() {
   });
   // Re-render dynamic lists/widgets so placeholders, button titles and
   // generated text pick up the new language
-  if (typeof renderFeedList  === 'function') renderFeedList();
-  if (typeof renderGroupList === 'function') renderGroupList();
-  if (typeof renderNoteList  === 'function') renderNoteList();
-  if (typeof renderWeather   === 'function') renderWeather();
-  if (typeof updateCountdown === 'function') updateCountdown();
+  if (typeof renderFeedList      === 'function') renderFeedList();
+  if (typeof renderGroupList     === 'function') renderGroupList();
+  if (typeof renderNoteList      === 'function') renderNoteList();
+  if (typeof renderWeather       === 'function') renderWeather();
+  if (typeof renderCountdownList === 'function') renderCountdownList();
+  if (typeof updateCountdown     === 'function') updateCountdown();
 }
 
 let links     = [];
@@ -1247,6 +1264,9 @@ const $ = {
   setCountdownPos: document.getElementById('set-countdown-pos'),
   setCountdownLabel: document.getElementById('set-countdown-label'),
   setCountdownTarget:document.getElementById('set-countdown-target'),
+  countdownList:   document.getElementById('countdown-list'),
+  countdownCount:  document.getElementById('countdown-count'),
+  countdownAddBtn: document.getElementById('countdown-add-btn'),
   // Tile groups
   linkGroup: document.getElementById('link-group'),
   groupList: document.getElementById('group-list'),
@@ -1321,11 +1341,18 @@ function normalizeWeather(w) {
 }
 function normalizeCountdown(c) {
   c = c || {};
+  const clean = it => (it && typeof it === 'object' && typeof it.target === 'string' && it.target)
+    ? { label: typeof it.label === 'string' ? it.label.slice(0, 60) : '', target: it.target }
+    : null;
+  let items = Array.isArray(c.items) ? c.items.map(clean).filter(Boolean) : [];
+  // migrate the old single-countdown shape { label, target }
+  if (!items.length && typeof c.target === 'string' && c.target) {
+    items = [{ label: typeof c.label === 'string' ? c.label.slice(0, 60) : '', target: c.target }];
+  }
   return {
     enabled:  !!c.enabled,
     position: ALL_POSITIONS.includes(c.position) ? c.position : 'br',
-    label:    typeof c.label  === 'string' ? c.label.slice(0, 60) : '',
-    target:   typeof c.target === 'string' ? c.target : '',
+    items:    items.slice(0, MAX_COUNTDOWNS),
   };
 }
 function normalizeGroups(g) {
@@ -1746,8 +1773,8 @@ function openSettings() {
   $.setWeatherUnits.classList.toggle('on', settings.weather.units === 'f');
   $.setWeatherLoc.value = settings.weather.location ? settings.weather.location.name : '';
   $.setCountdown.classList.toggle('on', settings.countdown.enabled);
-  $.setCountdownLabel.value  = settings.countdown.label;
-  $.setCountdownTarget.value = settings.countdown.target;
+  $.setCountdownLabel.value  = '';
+  $.setCountdownTarget.value = '';
   syncWidgetPositionSelects();
   $.setTileOp.value   = Math.round(clampOpacity(settings.tileOpacity)   * 100);
   $.setWidgetOp.value = Math.round(clampOpacity(settings.widgetOpacity) * 100);
@@ -1758,6 +1785,7 @@ function openSettings() {
   applyOpacity();   // refresh the % labels next to the sliders
   renderFeedList();
   renderGroupList();
+  renderCountdownList();
   $.setModal.classList.add('open');
 }
 // Re-apply every widget at once (used after a position auto-move so the bumped
@@ -1868,14 +1896,8 @@ document.getElementById('set-countdown-row').addEventListener('click', () => {
   applyAllWidgets();
 });
 $.setCountdownPos.addEventListener('change', () => { onWidgetPosChange('countdown', $.setCountdownPos.value); applyAllWidgets(); });
-$.setCountdownLabel.addEventListener('input', () => {
-  settings.countdown.label = $.setCountdownLabel.value.slice(0, 60);
-  save(); applyCountdown();
-});
-$.setCountdownTarget.addEventListener('input', () => {
-  settings.countdown.target = $.setCountdownTarget.value;
-  save(); applyCountdown();
-});
+$.setCountdownLabel.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCountdown(); } });
+$.setCountdownTarget.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCountdown(); } });
 
 $.groupInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addGroup(); } });
 document.getElementById('bg-file').addEventListener('change', function () {
@@ -2474,7 +2496,7 @@ $.weatherRefresh.addEventListener('click', () => {
   fetchWeather();
 });
 
-// ── Countdown widget ───────────────────────────────────────────────────────────
+// ── Countdown widget (holds a list of independent countdowns) ──────────────────
 function applyCountdown() {
   const c = settings.countdown;
   ALL_POSITIONS.forEach(p => $.countdownPanel.classList.remove('pos-' + p));
@@ -2482,30 +2504,77 @@ function applyCountdown() {
   $.countdownPanel.classList.toggle('show', c.enabled);
   updateCountdown();
 }
+// Render one countdown's body (units, "time's up", or "no target")
+function countdownItemHtml(item, now, t) {
+  const unit = (n, label) =>
+    `<div class="countdown-unit"><div class="countdown-num">${n}</div><div class="countdown-label">${esc(label)}</div></div>`;
+  const target = item.target ? new Date(item.target).getTime() : NaN;
+  let inner;
+  if (!Number.isFinite(target)) {
+    inner = `<div class="countdown-state">${esc(t.countdownSet)}</div>`;
+  } else {
+    let diff = Math.floor((target - now) / 1000);
+    if (diff <= 0) {
+      inner = `<div class="countdown-done">${esc(t.countdownReached)}</div>`;
+    } else {
+      const days = Math.floor(diff / 86400); diff -= days * 86400;
+      const hrs  = Math.floor(diff / 3600);  diff -= hrs * 3600;
+      const mins = Math.floor(diff / 60);
+      const secs = diff - mins * 60;
+      inner = `<div class="countdown-units">` +
+        unit(days, t.cdDays) + unit(hrs, t.cdHours) + unit(mins, t.cdMins) + unit(secs, t.cdSecs) + `</div>`;
+    }
+  }
+  return `<div class="countdown-item">` +
+    `<div class="countdown-item-label">${esc(item.label || t.countdown)}</div>${inner}</div>`;
+}
 // Called every second by tick(); cheap and only does work while enabled
 function updateCountdown() {
   const c = settings.countdown;
   if (!c.enabled) return;
   const t = L();
-  $.countdownTitle.textContent = c.label || t.countdown;
-  const target = c.target ? new Date(c.target).getTime() : NaN;
-  if (!Number.isFinite(target)) {
+  if (!c.items.length) {
     $.countdownBody.innerHTML = `<div class="countdown-state">${esc(t.countdownSet)}</div>`;
     return;
   }
-  let diff = Math.floor((target - Date.now()) / 1000);
-  if (diff <= 0) {
-    $.countdownBody.innerHTML = `<div class="countdown-done">${esc(t.countdownReached)}</div>`;
-    return;
+  const now = Date.now();
+  $.countdownBody.innerHTML = c.items.map(item => countdownItemHtml(item, now, t)).join('');
+}
+
+// ── Countdown list manager (settings) ──────────────────────────────────────────
+function formatCountdownWhen(target) {
+  return typeof target === 'string' ? target.replace('T', ' ') : '';
+}
+function renderCountdownList() {
+  const items = settings.countdown.items;
+  $.countdownCount.textContent = ` ${items.length}/${MAX_COUNTDOWNS}`;
+  if (!items.length) {
+    $.countdownList.innerHTML = `<div class="feed-empty">${esc(L().noCountdowns)}</div>`;
+  } else {
+    $.countdownList.innerHTML = items.map((it, i) => {
+      const label = it.label || L().countdown;
+      const when  = formatCountdownWhen(it.target);
+      return `<div class="feed-row"><span title="${esc(label + ' · ' + when)}">${esc(label)} · ${esc(when)}</span>` +
+             `<button type="button" title="${esc(L().remove)}" onclick="removeCountdown(${i})">✕</button></div>`;
+    }).join('');
   }
-  const days = Math.floor(diff / 86400); diff -= days * 86400;
-  const hrs  = Math.floor(diff / 3600);  diff -= hrs * 3600;
-  const mins = Math.floor(diff / 60);
-  const secs = diff - mins * 60;
-  const unit = (n, label) =>
-    `<div class="countdown-unit"><div class="countdown-num">${n}</div><div class="countdown-label">${esc(label)}</div></div>`;
-  $.countdownBody.innerHTML = `<div class="countdown-units">` +
-    unit(days, t.cdDays) + unit(hrs, t.cdHours) + unit(mins, t.cdMins) + unit(secs, t.cdSecs) + `</div>`;
+  const atLimit = items.length >= MAX_COUNTDOWNS;
+  $.setCountdownLabel.disabled  = atLimit;
+  $.setCountdownTarget.disabled = atLimit;
+  $.countdownAddBtn.disabled    = atLimit;
+}
+function addCountdown() {
+  if (settings.countdown.items.length >= MAX_COUNTDOWNS) return;
+  const target = $.setCountdownTarget.value;
+  if (!target) { $.setCountdownTarget.focus(); return; }   // a target is required; label is optional
+  settings.countdown.items.push({ label: $.setCountdownLabel.value.trim().slice(0, 60), target });
+  $.setCountdownLabel.value = '';
+  $.setCountdownTarget.value = '';
+  save(); renderCountdownList(); applyCountdown();
+}
+function removeCountdown(i) {
+  settings.countdown.items.splice(i, 1);
+  save(); renderCountdownList(); applyCountdown();
 }
 
 const MOON = '<circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 2A5.5 5.5 0 0 0 7.5 13 5.5 5.5 0 0 1 7.5 2z" fill="currentColor"/>';
