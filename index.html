@@ -504,6 +504,13 @@
   }
   .rss-item:hover { background: var(--bg3); color: var(--text); }
   .rss-item + .rss-item { margin-top: 1px; }
+  /* Global "highlight" filter — exact token matches get a cyan backdrop */
+  .rss-item--hl {
+    background: color-mix(in srgb, #22d3ee 16%, transparent);
+    box-shadow: inset 2px 0 0 #22d3ee;
+    color: var(--text);
+  }
+  .rss-item--hl:hover { background: color-mix(in srgb, #22d3ee 26%, transparent); }
   .rss-state {
     padding: 14px 4px; font-size: 11px; color: var(--text-dimmer);
     text-align: center; font-family: var(--mono); letter-spacing: 0.05em;
@@ -894,6 +901,10 @@
         <input id="set-rss-url" type="text" placeholder="https://example.com/feed.xml" autocomplete="off">
         <button class="btn btn-ghost" id="feed-add-btn" data-i18n="add" onclick="addFeed()">Add</button>
       </div>
+      <div class="field" style="margin-top:12px; margin-bottom:0">
+        <label data-i18n="highlight">Highlight</label>
+        <input id="set-rss-highlight" type="text" placeholder="Exact matches to highlight (comma-separated)" data-i18n-ph="highlightPlaceholder" autocomplete="off">
+      </div>
     </div>
 
     <div class="settings-section">
@@ -1042,7 +1053,7 @@ const DEFAULT_SETTINGS = {
   searchEnabled: true, accent: '',
   tileOpacity: 1, widgetOpacity: 1, searchOpacity: 1, clockOpacity: 0,
   groups: [],
-  rss:     { enabled: false, urls: [], position: 'mr' },
+  rss:     { enabled: false, urls: [], position: 'mr', highlight: '' },
   note:    { enabled: false, position: 'ml', text: '', checklist: false },
   weather: { enabled: false, position: 'tr', units: 'c', location: null },
   countdown: { enabled: false, position: 'br', items: [] },
@@ -1083,6 +1094,7 @@ const I18N = {
     edit: 'Edit', remove: 'Remove',
     feed: 'Feed', showFeed: 'Show RSS feed', position: 'Position',
     feeds: 'Feeds', noFeeds: 'No feeds added yet', filterPlaceholder: 'Filter by keywords (comma-separated)',
+    highlight: 'Highlight', highlightPlaceholder: 'Exact matches to highlight (comma-separated)',
     note: 'Note', showNote: 'Show sticky note', notePlaceholder: 'Notes…',
     tileGroups: 'Tile groups', groups: 'Groups', group: 'Group', none: 'None',
     groupName: 'Group name', noGroups: 'No groups added yet',
@@ -1138,6 +1150,7 @@ const I18N = {
     edit: 'Rediger', remove: 'Fjern',
     feed: 'Feed', showFeed: 'Vis RSS-feed', position: 'Placering',
     feeds: 'Feeds', noFeeds: 'Ingen feeds tilføjet endnu', filterPlaceholder: 'Filtrer på nøgleord (kommasepareret)',
+    highlight: 'Fremhæv', highlightPlaceholder: 'Eksakte match der fremhæves (kommasepareret)',
     note: 'Note', showNote: 'Vis notesblok', notePlaceholder: 'Noter…',
     tileGroups: 'Flisegrupper', groups: 'Grupper', group: 'Gruppe', none: 'Ingen',
     groupName: 'Gruppenavn', noGroups: 'Ingen grupper tilføjet endnu',
@@ -1235,6 +1248,7 @@ const $ = {
   setRss:    document.getElementById('set-rss'),
   setRssUrl: document.getElementById('set-rss-url'),
   setRssPos: document.getElementById('set-rss-pos'),
+  setRssHighlight: document.getElementById('set-rss-highlight'),
   feedList:  document.getElementById('feed-list'),
   feedCount: document.getElementById('feed-count'),
   feedAddBtn:document.getElementById('feed-add-btn'),
@@ -1309,9 +1323,10 @@ function normalizeRss(r) {
   // legacy single-url migration
   if (!feeds.length && typeof r.url === 'string' && r.url.trim()) feeds = [{ url: r.url.trim(), filter: '' }];
   return {
-    enabled:  !!r.enabled,
-    urls:     feeds.slice(0, MAX_FEEDS),
-    position: ALL_POSITIONS.includes(r.position) ? r.position : 'mr',
+    enabled:   !!r.enabled,
+    urls:      feeds.slice(0, MAX_FEEDS),
+    position:  ALL_POSITIONS.includes(r.position) ? r.position : 'mr',
+    highlight: typeof r.highlight === 'string' ? r.highlight : '',  // global exact-match highlight phrases
   };
 }
 function normalizeNote(n) {
@@ -1767,6 +1782,7 @@ function openSettings() {
   $.setShowAdd.classList.toggle('on', !settings.hideAdd);
   $.setBgUrl.value = (settings.background && !settings.background.startsWith('data:')) ? settings.background : '';
   $.setRss.classList.toggle('on', settings.rss.enabled);
+  $.setRssHighlight.value = settings.rss.highlight;
   $.setNote.classList.toggle('on', settings.note.enabled);
   $.setNoteChecklist.classList.toggle('on', settings.note.checklist);
   $.setWeather.classList.toggle('on', settings.weather.enabled);
@@ -1865,6 +1881,13 @@ document.getElementById('set-rss-row').addEventListener('click', () => {
 });
 $.setRssUrl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addFeed(); } });
 $.setRssPos.addEventListener('change', () => { onWidgetPosChange('rss', $.setRssPos.value); applyAllWidgets(); });
+$.setRssHighlight.addEventListener('input', () => {
+  settings.rss.highlight = $.setRssHighlight.value;   // store as-typed; trim/lowercase at match time
+  save();
+  // Highlighting is purely visual, so just re-style the items already shown — no refetch
+  clearTimeout(rssHighlightDebounce);
+  rssHighlightDebounce = setTimeout(() => { if (lastFeedItems.length) renderFeed(lastFeedItems); }, 150);
+});
 
 document.getElementById('set-note-row').addEventListener('click', () => {
   onWidgetEnabledToggle('note', $.setNote);
@@ -1981,6 +2004,8 @@ const RSS_MAX_ITEMS  = 10;
 let rssTimer = null;
 let rssLastSig = '';     // signature of the URL set last fetched (avoids needless refetch)
 let rssUrlDebounce = null;
+let rssHighlightDebounce = null;
+let lastFeedItems = [];  // last rendered items, so a highlight-only change can re-style without refetching
 
 // ── Widget position constraint ────────────────────────────────────────────────
 // There are 6 fixed slots (3 per side) and up to 4 widgets. No two enabled
@@ -2224,11 +2249,35 @@ function parseFeedXml(xmlText) {
   return out;
 }
 
+// Global "highlight" filter: a title is flagged when one of the comma-separated
+// phrases occurs as a whole token (not flanked by letters/digits) — so "Episode 1"
+// matches "…Episode 1" but not "…Episode 10" or "…Episode 19". Case-insensitive.
+function highlightPhrases() {
+  return settings.rss.highlight.split(',').map(p => p.trim().toLowerCase()).filter(Boolean);
+}
+function titleIsHighlighted(title, phrases) {
+  if (!phrases.length) return false;
+  const lt = title.toLowerCase();
+  const word = c => (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9');
+  return phrases.some(p => {
+    let idx = lt.indexOf(p);
+    while (idx !== -1) {
+      const before = idx > 0 ? lt[idx - 1] : '';
+      const after  = lt[idx + p.length] || '';
+      if (!word(before) && !word(after)) return true;   // token boundary on both sides
+      idx = lt.indexOf(p, idx + 1);
+    }
+    return false;
+  });
+}
 function renderFeed(items) {
-  const target = settings.newTab ? ' target="_blank" rel="noopener"' : '';
-  $.rssList.innerHTML = items.map(it =>
-    `<a class="rss-item" href="${esc(it.link)}"${target}>${esc(it.title)}</a>`
-  ).join('');
+  lastFeedItems = items;   // cache so a highlight change can re-style without refetching
+  const target  = settings.newTab ? ' target="_blank" rel="noopener"' : '';
+  const phrases = highlightPhrases();
+  $.rssList.innerHTML = items.map(it => {
+    const hl = titleIsHighlighted(it.title, phrases) ? ' rss-item--hl' : '';
+    return `<a class="rss-item${hl}" href="${esc(it.link)}"${target}>${esc(it.title)}</a>`;
+  }).join('');
 }
 
 // ── Feed list manager (settings) ──────────────────────────────────────────────
