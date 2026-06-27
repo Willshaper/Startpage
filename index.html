@@ -2103,8 +2103,9 @@ function layoutWidgets() {
     const botPad = 30, gap = 14;
     const avail = window.innerHeight - topPad - botPad - gap * (list.length - 1);
     // Natural (uncapped) height of each widget
-    const items = list.map(({ el, key }) => ({ el, nat: measureNatural(el, widgetScrollChild(key)), h: 0 }));
-    // Water-fill: short widgets keep their height, the rest share what's left
+    const items = list.map(({ el, key, order }) => ({ el, order, nat: measureNatural(el, widgetScrollChild(key)), h: 0 }));
+    // Water-fill: short widgets keep their height, the rest share what's left.
+    // This caps the total so the anchored placement below can't overlap.
     let remaining = avail, flexible = items.length, changed = true;
     while (changed && flexible > 0) {
       changed = false;
@@ -2117,14 +2118,25 @@ function layoutWidgets() {
       const share = Math.max(80, Math.floor(remaining / flexible));
       for (const it of items) if (!it.h) it.h = share;
     }
-    // Place top-down
-    let cursor = topPad;
-    for (const it of items) {
-      it.el.style.top = cursor + 'px';
+    // Place each at its own anchor — top→top edge, bottom→bottom edge,
+    // middle→centred — so a "bottom" widget stays at the bottom instead of
+    // clustering at the top. Heights are already capped, so they never overlap.
+    const T = topPad, B = window.innerHeight - botPad, C = window.innerHeight / 2;
+    const place = (it, y) => {
+      it.el.style.top = Math.round(y) + 'px';
       it.el.style.bottom = 'auto';
       it.el.style.transform = 'none';
-      it.el.style.maxHeight = it.h + 'px';
-      cursor += it.h + gap;
+      it.el.style.maxHeight = Math.round(it.h) + 'px';
+    };
+    const top = items.find(it => it.order === 0);   // distinct slots per side, so ≤1 each
+    const mid = items.find(it => it.order === 1);
+    const bot = items.find(it => it.order === 2);
+    if (top) place(top, T);
+    if (bot) place(bot, B - bot.h);
+    if (mid) {
+      const lo = top ? T + top.h + gap : T;
+      const hi = bot ? B - bot.h - gap : B;
+      place(mid, Math.max(lo, Math.min(C - mid.h / 2, hi - mid.h)));
     }
   }
 }
