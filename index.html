@@ -494,7 +494,7 @@
   }
   .rss-refresh:hover { color: var(--text); }
   .rss-refresh.spin { transform: rotate(360deg); }
-  .rss-list { overflow-y: auto; flex: 1; margin: -4px; padding: 4px; }
+  .rss-list { overflow-y: auto; flex: 1; min-height: 0; margin: -4px; padding: 4px; }
   .rss-item {
     display: block; padding: 8px 9px; border-radius: 7px;
     text-decoration: none; color: var(--text-dim);
@@ -634,7 +634,7 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   /* Each countdown in the list; stacked with a divider between them */
-  .countdown-body { max-height: 56vh; overflow-y: auto; margin: 0 -2px; padding: 0 2px; }
+  .countdown-body { flex: 1; min-height: 0; max-height: 56vh; overflow-y: auto; margin: 0 -2px; padding: 0 2px; }
   .countdown-item + .countdown-item {
     margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
   }
@@ -675,6 +675,23 @@
   input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
   input[type="color"]::-webkit-color-swatch { border: none; border-radius: 5px; }
   input[type="color"]::-moz-color-swatch { border: none; border-radius: 5px; }
+
+  /* ── Thin, theme-matched scrollbars (feed, lists, modals, note) ── */
+  /* Chromium/WebKit: custom 6px scrollbars via the pseudo-elements */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border2); border-radius: 4px;
+    transition: background 0.15s;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dimmer); }
+  ::-webkit-scrollbar-corner { background: transparent; }
+  /* Firefox has no ::-webkit-scrollbar — use the standard properties there.
+     Scoped via @supports so it doesn't disable the pseudo styling in Chromium
+     (where setting scrollbar-width makes the browser ignore ::-webkit-scrollbar). */
+  @supports not selector(::-webkit-scrollbar) {
+    * { scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+  }
 </style>
 </head>
 <body>
@@ -2000,7 +2017,7 @@ document.getElementById('import-file').addEventListener('change', function () { 
 
 // ── RSS feed ──────────────────────────────────────────────────────────────────
 const RSS_REFRESH_MS = 15 * 60 * 1000;  // 15 min
-const RSS_MAX_ITEMS  = 10;
+const RSS_MAX_ITEMS  = 50;
 let rssTimer = null;
 let rssLastSig = '';     // signature of the URL set last fetched (avoids needless refetch)
 let rssUrlDebounce = null;
@@ -2033,6 +2050,86 @@ function syncWidgetPositionSelects() {
   }
 }
 
+// ── Widget vertical layout ─────────────────────────────────────────────────────
+// resolveWidgetPositions keeps widgets in distinct slots, but two on the same
+// SIDE (e.g. top-right + bottom-right) can still overlap when their content is
+// tall. This stacks same-side widgets top-down and caps each one's height so the
+// column fits the viewport — tall content (like a 50-item feed) then scrolls
+// internally instead of covering its neighbour.
+const WIDGET_PANEL_REF = { rss: 'rssPanel', note: 'notePanel', weather: 'weatherPanel', countdown: 'countdownPanel' };
+const WIDGET_SLOT_ORDER = { tl: 0, ml: 1, bl: 2, tr: 0, mr: 1, br: 2 };
+let layoutRaf = null;
+function scheduleLayout() {           // coalesce bursts of calls into one reflow
+  if (layoutRaf) return;
+  layoutRaf = requestAnimationFrame(() => { layoutRaf = null; layoutWidgets(); });
+}
+// The scrollable region inside each widget (so measurement can let it expand)
+function widgetScrollChild(key) {
+  if (key === 'rss')       return $.rssList;
+  if (key === 'note')      return settings.note.checklist ? $.noteList : $.noteText;
+  if (key === 'countdown') return $.countdownBody;
+  return null;             // weather is fixed-height, no scroll region
+}
+// Uncapped content height of a widget. Its scroll child is flex:1 and would
+// collapse to 0 while the panel is unbounded, so expand it during the measure.
+function measureNatural(el, child) {
+  const pm = el.style.maxHeight; el.style.maxHeight = 'none';
+  let cf, cm;
+  if (child) { cf = child.style.flex; cm = child.style.maxHeight; child.style.flex = '0 0 auto'; child.style.maxHeight = 'none'; }
+  const h = el.offsetHeight;
+  el.style.maxHeight = pm;
+  if (child) { child.style.flex = cf; child.style.maxHeight = cm; }
+  return h;
+}
+function layoutWidgets() {
+  const allPanels = WIDGET_KEYS.map(k => $[WIDGET_PANEL_REF[k]]).filter(Boolean);
+  const clear = el => { el.style.top = ''; el.style.bottom = ''; el.style.transform = ''; el.style.maxHeight = ''; };
+  // Below the responsive breakpoint the widgets are hidden — drop any overrides.
+  if (window.innerWidth <= 1280) { allPanels.forEach(clear); return; }
+
+  const groups = { l: [], r: [] };
+  for (const k of WIDGET_KEYS) {
+    const w = settings[k], el = $[WIDGET_PANEL_REF[k]];
+    if (!w || !w.enabled || !el || !el.classList.contains('show')) continue;
+    const side = ['tl', 'ml', 'bl'].includes(w.position) ? 'l' : 'r';
+    groups[side].push({ el, key: k, order: WIDGET_SLOT_ORDER[w.position] ?? 1 });
+  }
+  for (const side of ['l', 'r']) {
+    const list = groups[side].sort((a, b) => a.order - b.order);
+    list.forEach(({ el }) => clear(el));       // reset before measuring / re-placing
+    if (list.length < 2) continue;             // a lone widget keeps its CSS anchor + 70vh cap
+
+    const topPad = side === 'r' ? 64 : 18;      // clear the top-right controls
+    const botPad = 30, gap = 14;
+    const avail = window.innerHeight - topPad - botPad - gap * (list.length - 1);
+    // Natural (uncapped) height of each widget
+    const items = list.map(({ el, key }) => ({ el, nat: measureNatural(el, widgetScrollChild(key)), h: 0 }));
+    // Water-fill: short widgets keep their height, the rest share what's left
+    let remaining = avail, flexible = items.length, changed = true;
+    while (changed && flexible > 0) {
+      changed = false;
+      const share = remaining / flexible;
+      for (const it of items) {
+        if (!it.h && it.nat <= share) { it.h = it.nat; remaining -= it.nat; flexible--; changed = true; }
+      }
+    }
+    if (flexible > 0) {
+      const share = Math.max(80, Math.floor(remaining / flexible));
+      for (const it of items) if (!it.h) it.h = share;
+    }
+    // Place top-down
+    let cursor = topPad;
+    for (const it of items) {
+      it.el.style.top = cursor + 'px';
+      it.el.style.bottom = 'auto';
+      it.el.style.transform = 'none';
+      it.el.style.maxHeight = it.h + 'px';
+      cursor += it.h + gap;
+    }
+  }
+}
+window.addEventListener('resize', scheduleLayout);
+
 // ── Sticky note widget ───────────────────────────────────────────────────────
 // The note's `text` is the single source of truth in both modes. Checklist mode
 // just renders/edits it as `- [ ] item` / `- [x] item` lines, so toggling modes
@@ -2062,21 +2159,23 @@ function applyNote() {
   $.noteModeBtn.innerHTML = list ? TEXT_ICON : CHECK_ICON;
   if ($.noteText.value !== n.text) $.noteText.value = n.text;
   if (list) renderNoteList();
+  scheduleLayout();
 }
 function renderNoteList() {
   if (!settings.note.checklist) return;
   const items = parseChecklist(settings.note.text);
   if (!items.length) {
     $.noteList.innerHTML = `<div class="note-empty">${esc(L().noteEmpty)}</div>`;
-    return;
+  } else {
+    $.noteList.innerHTML = items.map((it, i) =>
+      `<label class="note-item${it.done ? ' done' : ''}">` +
+      `<input type="checkbox" ${it.done ? 'checked' : ''} onchange="toggleNoteItem(${i})">` +
+      `<span>${esc(it.label)}</span>` +
+      `<button type="button" title="${esc(L().remove)}" onclick="removeNoteItem(${i})">✕</button>` +
+      `</label>`
+    ).join('');
   }
-  $.noteList.innerHTML = items.map((it, i) =>
-    `<label class="note-item${it.done ? ' done' : ''}">` +
-    `<input type="checkbox" ${it.done ? 'checked' : ''} onchange="toggleNoteItem(${i})">` +
-    `<span>${esc(it.label)}</span>` +
-    `<button type="button" title="${esc(L().remove)}" onclick="removeNoteItem(${i})">✕</button>` +
-    `</label>`
-  ).join('');
+  scheduleLayout();
 }
 function commitChecklist(items) {
   settings.note.text = serializeChecklist(items);
@@ -2134,10 +2233,12 @@ function applyRss() {
   } else {
     $.rssPanel.classList.remove('show');
   }
+  scheduleLayout();
 }
 
 function showRssState(key) {
   $.rssList.innerHTML = `<div class="rss-state">${esc(L()[key] || '')}</div>`;
+  scheduleLayout();
 }
 
 // Multi-source cascade — try each in order, first that returns items wins.
@@ -2191,7 +2292,7 @@ async function fetchOneFeed(url) {
   return [];
 }
 
-// Fetch every configured feed, combine, sort newest-first, show the last 10 overall
+// Fetch every configured feed, combine, sort newest-first, show the last RSS_MAX_ITEMS overall
 async function fetchFeed() {
   const feeds = settings.rss.urls;
   if (!feeds.length) { showRssState('feedEmpty'); return; }
@@ -2278,6 +2379,7 @@ function renderFeed(items) {
     const hl = titleIsHighlighted(it.title, phrases) ? ' rss-item--hl' : '';
     return `<a class="rss-item${hl}" href="${esc(it.link)}"${target}>${esc(it.title)}</a>`;
   }).join('');
+  scheduleLayout();   // feed height changed — re-fit the column
 }
 
 // ── Feed list manager (settings) ──────────────────────────────────────────────
@@ -2430,19 +2532,21 @@ function weatherInfo(code) {
 }
 function showWeatherState(key) {
   $.weatherBody.innerHTML = `<div class="weather-state">${esc(L()[key] || '')}</div>`;
+  scheduleLayout();
 }
 function applyWeather() {
   const w = settings.weather;
   ALL_POSITIONS.forEach(p => $.weatherPanel.classList.remove('pos-' + p));
   $.weatherPanel.classList.add('pos-' + (ALL_POSITIONS.includes(w.position) ? w.position : 'tr'));
   if (weatherTimer) { clearInterval(weatherTimer); weatherTimer = null; }
-  if (!w.enabled) { $.weatherPanel.classList.remove('show'); return; }
+  if (!w.enabled) { $.weatherPanel.classList.remove('show'); scheduleLayout(); return; }
   $.weatherPanel.classList.add('show');
   if (!w.location) { weatherData = null; showWeatherState('weatherSetLocation'); return; }
   const sig = w.location.lat + ',' + w.location.lon + ',' + w.units;
   if (sig !== weatherLastSig) fetchWeather();
   else renderWeather();
   weatherTimer = setInterval(fetchWeather, WEATHER_REFRESH_MS);
+  scheduleLayout();
 }
 async function fetchWeather() {
   const w = settings.weather;
@@ -2497,6 +2601,7 @@ function renderWeather() {
             `<span>${esc(t.weatherLow)} <b>${weatherData.lo}${deg}</b></span></div>`;
   }
   $.weatherBody.innerHTML = html;
+  scheduleLayout();
 }
 async function geocodeCity(name) {
   const lang = settings.lang === 'da' ? 'da' : 'en';
@@ -2552,6 +2657,7 @@ function applyCountdown() {
   $.countdownPanel.classList.add('pos-' + (ALL_POSITIONS.includes(c.position) ? c.position : 'br'));
   $.countdownPanel.classList.toggle('show', c.enabled);
   updateCountdown();
+  scheduleLayout();
 }
 // Render one countdown's body (units, "time's up", or "no target")
 function countdownItemHtml(item, now, t) {
