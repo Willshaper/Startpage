@@ -859,28 +859,28 @@
       <div class="field">
         <label data-i18n="tileOpacity">Tile opacity</label>
         <div class="slider-row">
-          <input type="range" id="set-tile-opacity" min="0" max="100" step="5">
+          <input type="range" id="set-tile-opacity" min="0" max="100" step="5" value="100">
           <span class="slider-val" id="tile-opacity-val">100%</span>
         </div>
       </div>
       <div class="field">
         <label data-i18n="widgetOpacity">Widget opacity</label>
         <div class="slider-row">
-          <input type="range" id="set-widget-opacity" min="0" max="100" step="5">
+          <input type="range" id="set-widget-opacity" min="0" max="100" step="5" value="100">
           <span class="slider-val" id="widget-opacity-val">100%</span>
         </div>
       </div>
       <div class="field" style="margin-bottom:0">
         <label data-i18n="searchOpacity">Search bar opacity</label>
         <div class="slider-row">
-          <input type="range" id="set-search-opacity" min="0" max="100" step="5">
+          <input type="range" id="set-search-opacity" min="0" max="100" step="5" value="100">
           <span class="slider-val" id="search-opacity-val">100%</span>
         </div>
       </div>
       <div class="field" style="margin-bottom:0">
         <label data-i18n="clockOpacity">Clock backdrop opacity</label>
         <div class="slider-row">
-          <input type="range" id="set-clock-opacity" min="0" max="100" step="5">
+          <input type="range" id="set-clock-opacity" min="0" max="100" step="5" value="0">
           <span class="slider-val" id="clock-opacity-val">0%</span>
         </div>
       </div>
@@ -1645,22 +1645,22 @@ function applyOpacity() {
 function applySearch() {
   $.searchForm.style.display = settings.searchEnabled ? '' : 'none';
 }
-$.setTileOp.addEventListener('input', () => {
-  settings.tileOpacity = clampOpacity($.setTileOp.value / 100);
-  applyOpacity(); save();
-});
-$.setWidgetOp.addEventListener('input', () => {
-  settings.widgetOpacity = clampOpacity($.setWidgetOp.value / 100);
-  applyOpacity(); save();
-});
-$.setSearchOp.addEventListener('input', () => {
-  settings.searchOpacity = clampOpacity($.setSearchOp.value / 100);
-  applyOpacity(); save();
-});
-$.setClockOp.addEventListener('input', () => {
-  settings.clockOpacity = clampOpacity($.setClockOp.value / 100);
-  applyOpacity(); save();
-});
+// Bind one opacity slider. Guards against persisting an uninitialised slider:
+// only react while the Settings panel is open (so openSettings has set the value
+// from settings first), and block the mouse wheel from nudging the slider when
+// the user is just scrolling the panel.
+function bindOpacitySlider(el, key) {
+  el.addEventListener('input', () => {
+    if (!$.setModal.classList.contains('open')) return;
+    settings[key] = clampOpacity(el.value / 100);
+    applyOpacity(); save();
+  });
+  el.addEventListener('wheel', e => { e.preventDefault(); }, { passive: false });
+}
+bindOpacitySlider($.setTileOp,   'tileOpacity');
+bindOpacitySlider($.setWidgetOp, 'widgetOpacity');
+bindOpacitySlider($.setSearchOp, 'searchOpacity');
+bindOpacitySlider($.setClockOp,  'clockOpacity');
 document.getElementById('set-showsearch-row').addEventListener('click', () => {
   settings.searchEnabled = !settings.searchEnabled;
   $.setShowSearch.classList.toggle('on', settings.searchEnabled);
