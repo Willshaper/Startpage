@@ -489,7 +489,7 @@
   .rss-head {
     display: flex; justify-content: space-between; align-items: center;
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--text-dim);
+    text-transform: uppercase; color: var(--wt-today);
     margin-bottom: 10px;
   }
   .rss-refresh {
@@ -500,22 +500,25 @@
   .rss-refresh:hover { color: var(--text); }
   .rss-refresh.spin { transform: rotate(360deg); }
   .rss-list { overflow-y: auto; flex: 1; min-height: 0; margin: -4px; padding: 4px; }
+  /* Shared item card: solid fill + 1px border + rounded (matches the tracker) */
   .rss-item {
-    display: block; padding: 8px 9px; border-radius: 7px;
+    display: block; padding: 8px 10px; border-radius: 7px;
+    background: var(--bg3); border: 1px solid var(--border);
     text-decoration: none; color: var(--text-dim);
     font-size: 12.5px; line-height: 1.4;
-    transition: background 0.12s, color 0.12s;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
     word-break: break-word;
   }
-  .rss-item:hover { background: var(--bg3); color: var(--text); }
-  .rss-item + .rss-item { margin-top: 1px; }
+  .rss-item:hover { border-color: var(--border2); color: var(--text); }
+  .rss-item + .rss-item { margin-top: 4px; }
   /* Global "highlight" filter — exact token matches get a cyan backdrop */
   .rss-item--hl {
-    background: color-mix(in srgb, #22d3ee 16%, transparent);
+    background: color-mix(in srgb, #22d3ee 14%, var(--bg3));
+    border-color: color-mix(in srgb, #22d3ee 40%, var(--border));
     box-shadow: inset 2px 0 0 #22d3ee;
     color: var(--text);
   }
-  .rss-item--hl:hover { background: color-mix(in srgb, #22d3ee 26%, transparent); }
+  .rss-item--hl:hover { border-color: color-mix(in srgb, #22d3ee 55%, var(--border)); }
   .rss-state {
     padding: 14px 4px; font-size: 11px; color: var(--text-dimmer);
     text-align: center; font-family: var(--mono); letter-spacing: 0.05em;
@@ -526,7 +529,7 @@
   .note-head {
     display: flex; align-items: center; justify-content: space-between;
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--text-dim);
+    text-transform: uppercase; color: var(--wt-today);
     margin-bottom: 10px;
   }
   .note-mode-btn {
@@ -598,7 +601,7 @@
   .weather-head {
     display: flex; justify-content: space-between; align-items: center;
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--text-dim);
+    text-transform: uppercase; color: var(--wt-today);
     margin-bottom: 12px;
   }
   .weather-refresh {
@@ -631,64 +634,52 @@
   }
 
   /* ── Countdown widget ── */
-  .countdown-panel { padding: 16px; }
+  .countdown-panel { padding: 14px 14px 12px; }
   .countdown-head {
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--text-dim);
-    margin-bottom: 12px;
+    text-transform: uppercase; color: var(--wt-today);
+    margin-bottom: 10px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  /* Each countdown in the list; stacked with a divider between them */
-  .countdown-body { flex: 1; min-height: 0; max-height: 56vh; overflow-y: auto; margin: 0 -2px; padding: 0 2px; }
-  .countdown-item + .countdown-item {
-    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+  .countdown-body {
+    flex: 1; min-height: 0; max-height: 56vh; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 4px; margin: -3px; padding: 3px;
+  }
+  /* Each countdown is a card matching the feed/tracker */
+  .countdown-item {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 7px;
+    padding: 8px 10px;
   }
   .countdown-item-label {
     font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 3px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .countdown-units { display: flex; gap: 10px; }
-  .countdown-unit {
-    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 9px; padding: 9px 4px;
+  /* Prominent D/H/M readout; numbers pop, the d/h/m letters sit dimmer */
+  .countdown-time {
+    font-family: var(--mono); font-weight: 500; font-size: 22px; letter-spacing: 0.01em;
+    line-height: 1; font-variant-numeric: tabular-nums; color: var(--text);
   }
-  .countdown-num {
-    font-family: var(--mono); font-weight: 500; font-size: 22px; color: var(--text);
-    line-height: 1; font-variant-numeric: tabular-nums;
-  }
-  .countdown-label {
-    font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--text-dim);
-  }
+  .countdown-time .u { font-size: 13px; color: var(--text-dim); margin: 0 2px 0 1px; }
+  .countdown-time.cd-near { color: var(--accent); }
+  .countdown-time.cd-mid  { color: var(--wt-mid); }
+  .countdown-time.cd-far  { color: var(--teal); }
   .countdown-done {
     font-family: var(--display); font-size: 16px; font-weight: 600;
-    color: var(--teal); text-align: center; padding: 8px 4px;
+    color: var(--teal); line-height: 1; padding: 1px 0;
   }
   .countdown-state {
-    font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
-    text-align: center; padding: 8px 4px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-dimmer); padding: 1px 0;
   }
 
   /* ── Weekly-Tracker widget (mirrors the Weekly-Tracker card style) ── */
-  .tracker-panel { padding: 12px 12px 10px; }
-  .tracker-day-header {
-    display: flex; align-items: center; gap: 6px; margin-bottom: 9px; flex-shrink: 0;
+  .tracker-panel { padding: 14px 14px 12px; }
+  .tracker-head {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--wt-today);
+    margin-bottom: 10px; flex-shrink: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .tracker-day-name {
-    font-family: var(--display); font-size: 10px; font-weight: 700;
-    letter-spacing: 0.2em; text-transform: uppercase; color: var(--wt-today); white-space: nowrap;
-  }
-  .tracker-today-badge {
-    font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--wt-today);
-    background: color-mix(in srgb, var(--wt-today) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--wt-today) 28%, transparent);
-    border-radius: 3px; padding: 1px 5px; white-space: nowrap;
-  }
-  .tracker-day-line { flex: 1; height: 1px; background: color-mix(in srgb, var(--wt-today) 30%, transparent); }
-  .tracker-day-count { font-family: var(--mono); font-size: 9px; color: var(--text-dimmer); flex-shrink: 0; }
 
   .tracker-body {
     flex: 1; min-height: 0; overflow-y: auto;
@@ -700,16 +691,14 @@
     position: relative; overflow: hidden;
   }
   .wt-entry:hover { border-color: var(--border2); }
-  /* Colour tag — 3px left bar driven by the inline --ec var */
-  .wt-entry[data-ec]::after {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-    width: 3px; background: var(--ec); border-radius: 7px 0 0 7px;
-  }
+  /* Colour tag — left bar driven by the inline --ec var. Uses an inset box-shadow
+     (not an ::after strip) so the bar follows the rounded corners, like the feed. */
   .wt-entry[data-ec] {
     border-color: color-mix(in srgb, var(--ec) 30%, var(--border));
     background: color-mix(in srgb, var(--ec) 8%, var(--bg3));
+    box-shadow: inset 3px 0 0 var(--ec);
   }
-  /* Next-up badge (::before so it doesn't collide with the ::after colour bar) */
+  /* Next-up badge */
   .wt-entry.wt-next::before {
     content: '▶ next'; position: absolute; top: 5px; right: 8px;
     font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase;
@@ -854,7 +843,7 @@
 
 <!-- Weekly-Tracker widget (reads the same-origin Weekly-Tracker localStorage) -->
 <aside class="widget tracker-panel" id="tracker-panel">
-  <div class="tracker-day-header" id="tracker-header"></div>
+  <div class="tracker-head" id="tracker-header"></div>
   <div class="tracker-body" id="tracker-body"></div>
 </aside>
 
@@ -2438,17 +2427,24 @@ const FEED_FETCHERS = [
   },
 ];
 
-// Fetch a single feed through the cascade; returns [] if every source fails
+// Query every source in parallel and merge their items, deduped by link. A single
+// stale source can no longer hide fresher items — e.g. rss2json serves a cached copy
+// of rate-limited feeds like Reddit (hours old), while corsproxy returns the current
+// feed; merging surfaces the fresh items from whichever source has them. `no-store`
+// also bypasses the browser HTTP cache. Returns [] only if every source fails.
 async function fetchOneFeed(url) {
-  for (const f of FEED_FETCHERS) {
+  const perSource = await Promise.all(FEED_FETCHERS.map(async f => {
     try {
-      const res = await fetch(f.url(url));
-      if (!res.ok) continue;
-      const items = await f.parse(res);
-      if (items.length) return items;
-    } catch { /* try next source */ }
+      const res = await fetch(f.url(url), { cache: 'no-store' });
+      if (!res.ok) return [];
+      return await f.parse(res);
+    } catch { return []; }
+  }));
+  const seen = new Set(), out = [];
+  for (const items of perSource) for (const it of items) {
+    if (!seen.has(it.link)) { seen.add(it.link); out.push(it); }
   }
-  return [];
+  return out;
 }
 
 // Fetch every configured feed, combine, sort newest-first, show the last RSS_MAX_ITEMS overall
@@ -2818,41 +2814,51 @@ function applyCountdown() {
   updateCountdown();
   scheduleLayout();
 }
-// Render one countdown's body (units, "time's up", or "no target")
+// Colour the readout by nearness, matching the tracker's countdown colours
+function countdownCdClass(ms) {
+  const h = ms / 3600000;
+  return h < 6 ? 'cd-near' : h < 48 ? 'cd-mid' : 'cd-far';
+}
+// Render one countdown's body: a prominent D/H/M line (no seconds), "time's up",
+// or a "set a target" hint
 function countdownItemHtml(item, now, t) {
-  const unit = (n, label) =>
-    `<div class="countdown-unit"><div class="countdown-num">${n}</div><div class="countdown-label">${esc(label)}</div></div>`;
+  const p2 = n => String(n).padStart(2, '0');
   const target = item.target ? new Date(item.target).getTime() : NaN;
   let inner;
   if (!Number.isFinite(target)) {
     inner = `<div class="countdown-state">${esc(t.countdownSet)}</div>`;
   } else {
-    let diff = Math.floor((target - now) / 1000);
-    if (diff <= 0) {
+    const ms = target - now;
+    if (ms <= 0) {
       inner = `<div class="countdown-done">${esc(t.countdownReached)}</div>`;
     } else {
+      let diff = Math.floor(ms / 1000);
       const days = Math.floor(diff / 86400); diff -= days * 86400;
       const hrs  = Math.floor(diff / 3600);  diff -= hrs * 3600;
       const mins = Math.floor(diff / 60);
-      const secs = diff - mins * 60;
-      inner = `<div class="countdown-units">` +
-        unit(days, t.cdDays) + unit(hrs, t.cdHours) + unit(mins, t.cdMins) + unit(secs, t.cdSecs) + `</div>`;
+      const time = (days > 0 ? `${days}<span class="u">d</span> ` : '') +
+        `${p2(hrs)}<span class="u">h</span> ${p2(mins)}<span class="u">m</span>`;
+      inner = `<div class="countdown-time ${countdownCdClass(ms)}">${time}</div>`;
     }
   }
   return `<div class="countdown-item">` +
     `<div class="countdown-item-label">${esc(item.label || t.countdown)}</div>${inner}</div>`;
 }
-// Called every second by tick(); cheap and only does work while enabled
+// Called every second by tick(). Without seconds the readout only changes each
+// minute, so only touch the DOM when the HTML actually changes (avoids resetting
+// the scroll position and needless layout work).
+let lastCountdownHtml = '';
 function updateCountdown() {
   const c = settings.countdown;
   if (!c.enabled) return;
   const t = L();
-  if (!c.items.length) {
-    $.countdownBody.innerHTML = `<div class="countdown-state">${esc(t.countdownSet)}</div>`;
-    return;
-  }
-  const now = Date.now();
-  $.countdownBody.innerHTML = c.items.map(item => countdownItemHtml(item, now, t)).join('');
+  const html = c.items.length
+    ? c.items.map(item => countdownItemHtml(item, Date.now(), t)).join('')
+    : `<div class="countdown-state">${esc(t.countdownSet)}</div>`;
+  if (html === lastCountdownHtml) return;
+  lastCountdownHtml = html;
+  $.countdownBody.innerHTML = html;
+  scheduleLayout();
 }
 
 // ── Countdown list manager (settings) ──────────────────────────────────────────
@@ -2941,24 +2947,25 @@ function trackerState(key) {
 function renderTracker() {
   if (!settings.tracker.enabled) return;
   const t = L();
-  const entries = readTrackerEntries();
-  if (!entries || !entries.length) { $.trackerHeader.innerHTML = ''; trackerState('trackerEmpty'); return; }
   const now   = new Date();
   const today = now.getDay();
+  $.trackerHeader.textContent = t.weeklyTracker + ' - ' + t.days[today];   // "Weekly Tracker - Friday"
+  const entries = readTrackerEntries();
+  if (!entries || !entries.length) { trackerState('trackerEmpty'); return; }
   // Only today's entries, ordered by time of day (like the tracker's day column)
   const rows = entries.filter(e => e.day === today)
     .map(e => ({ e, ms: trackerMsUntilNext(e.day, e.time, now) }))
     .sort((a, b) => a.e.time.localeCompare(b.e.time));
-  // Header: "FRIDAY  [TODAY] ──── N"
-  $.trackerHeader.innerHTML =
-    `<span class="tracker-day-name">${esc(t.days[today])}</span>` +
-    `<span class="tracker-today-badge">${esc(t.trackerToday)}</span>` +
-    `<span class="tracker-day-line"></span>` +
-    `<span class="tracker-day-count">${rows.length}</span>`;
   if (!rows.length) { trackerState('trackerNoneToday'); return; }
-  // Next-up = today's entry with the soonest upcoming occurrence
-  let nextId = null, minMs = Infinity;
-  for (const r of rows) if (r.ms < minMs) { minMs = r.ms; nextId = r.e.id; }
+  // Next-up = the earliest entry today that hasn't started yet. If every event
+  // today has already passed, badge nothing (msUntilNext would point a week ahead,
+  // which isn't the actual next thing).
+  let nextId = null;
+  for (const r of rows) {
+    const [h, m] = r.e.time.split(':').map(Number);
+    const passed = now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m);
+    if (!passed) { nextId = r.e.id; break; }
+  }
   $.trackerBody.innerHTML = rows.map(r => {
     const e = r.e;
     const colorHex   = e.color ? TRACKER_COLORS[e.color] : null;
