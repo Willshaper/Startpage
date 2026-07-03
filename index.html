@@ -20,6 +20,9 @@
     --text:       #d4d6e8;
     --text-dim:   #8088a8;
     --text-dimmer:#4a4f6a;
+    /* Weekly-Tracker widget: mid-range countdown + "today" accent (match the tracker) */
+    --wt-mid:     #d4860f;
+    --wt-today:   #3ab8d8;
     --mono:   'DM Mono', monospace;
     --sans:   'Noto Sans JP', sans-serif;
     --display:'Syne', sans-serif;
@@ -43,6 +46,8 @@
     --text:       #20243a;
     --text-dim:   #4a5070;
     --text-dimmer:#8088a8;
+    --wt-mid:     #9e5e08;
+    --wt-today:   #1480a8;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -666,6 +671,87 @@
     text-align: center; padding: 8px 4px;
   }
 
+  /* ── Weekly-Tracker widget (mirrors the Weekly-Tracker card style) ── */
+  .tracker-panel { padding: 12px 12px 10px; }
+  .tracker-day-header {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 9px; flex-shrink: 0;
+  }
+  .tracker-day-name {
+    font-family: var(--display); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--wt-today); white-space: nowrap;
+  }
+  .tracker-today-badge {
+    font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--wt-today);
+    background: color-mix(in srgb, var(--wt-today) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--wt-today) 28%, transparent);
+    border-radius: 3px; padding: 1px 5px; white-space: nowrap;
+  }
+  .tracker-day-line { flex: 1; height: 1px; background: color-mix(in srgb, var(--wt-today) 30%, transparent); }
+  .tracker-day-count { font-family: var(--mono); font-size: 9px; color: var(--text-dimmer); flex-shrink: 0; }
+
+  .tracker-body {
+    flex: 1; min-height: 0; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 4px; margin: -3px; padding: 3px;
+  }
+  .wt-entry {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 7px;
+    padding: 7px 10px 6px; display: flex; flex-direction: column; gap: 2px;
+    position: relative; overflow: hidden;
+  }
+  .wt-entry:hover { border-color: var(--border2); }
+  /* Colour tag — 3px left bar driven by the inline --ec var */
+  .wt-entry[data-ec]::after {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: var(--ec); border-radius: 7px 0 0 7px;
+  }
+  .wt-entry[data-ec] {
+    border-color: color-mix(in srgb, var(--ec) 30%, var(--border));
+    background: color-mix(in srgb, var(--ec) 8%, var(--bg3));
+  }
+  /* Next-up badge (::before so it doesn't collide with the ::after colour bar) */
+  .wt-entry.wt-next::before {
+    content: '▶ next'; position: absolute; top: 5px; right: 8px;
+    font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent2);
+    background: color-mix(in srgb, var(--accent2) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent2) 24%, transparent);
+    border-radius: 3px; padding: 1px 5px; pointer-events: none;
+  }
+  .wt-entry.wt-next .wt-name { padding-right: 44px; }
+  .wt-name { font-size: 13px; color: var(--text); line-height: 1.3; word-break: break-word; padding-left: 6px; }
+  .wt-notes {
+    font-size: 10.5px; color: var(--text-dim); font-style: italic;
+    line-height: 1.3; padding-left: 6px; word-break: break-word;
+  }
+  .wt-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-left: 6px; margin-top: 1px;
+  }
+  .wt-time, .wt-cd { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; }
+  .wt-time { color: var(--accent2); }
+  .wt-cd-near { color: var(--accent); }
+  .wt-cd-mid  { color: var(--wt-mid); }
+  .wt-cd-far  { color: var(--teal); }
+  .wt-meta-right { display: flex; align-items: center; gap: 7px; }
+  .wt-link {
+    display: flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; flex-shrink: 0;
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 4px;
+    color: var(--text-dimmer); text-decoration: none;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .wt-link:hover { border-color: var(--wt-today); color: var(--wt-today); background: color-mix(in srgb, var(--wt-today) 8%, transparent); }
+  .tracker-state {
+    font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
+    text-align: center; padding: 12px 6px; line-height: 1.5;
+  }
+
+  .settings-note {
+    font-family: var(--mono); font-size: 10px; line-height: 1.5;
+    color: var(--text-dimmer); margin-top: 8px;
+  }
+
   /* Color picker (accent) */
   input[type="color"] {
     -webkit-appearance: none; appearance: none;
@@ -764,6 +850,12 @@
 <aside class="widget countdown-panel" id="countdown-panel">
   <div class="countdown-head" id="countdown-title" data-i18n="countdown">Countdown</div>
   <div class="countdown-body" id="countdown-body"></div>
+</aside>
+
+<!-- Weekly-Tracker widget (reads the same-origin Weekly-Tracker localStorage) -->
+<aside class="widget tracker-panel" id="tracker-panel">
+  <div class="tracker-day-header" id="tracker-header"></div>
+  <div class="tracker-body" id="tracker-body"></div>
 </aside>
 
 <!-- Link modal -->
@@ -1008,6 +1100,26 @@
     </div>
 
     <div class="settings-section">
+      <div class="settings-section-title" data-i18n="weeklyTracker">Weekly Tracker</div>
+      <div class="toggle-row" id="set-tracker-row">
+        <span data-i18n="showTracker">Show weekly tracker</span>
+        <div class="toggle" id="set-tracker"></div>
+      </div>
+      <div class="field" style="margin-top:6px; margin-bottom:8px">
+        <label data-i18n="position">Position</label>
+        <select id="set-tracker-pos">
+          <option value="tl" data-i18n="posTL">Top left</option>
+          <option value="ml" data-i18n="posML">Middle left</option>
+          <option value="bl" data-i18n="posBL">Bottom left</option>
+          <option value="tr" data-i18n="posTR">Top right</option>
+          <option value="mr" data-i18n="posMR">Middle right</option>
+          <option value="br" data-i18n="posBR">Bottom right</option>
+        </select>
+      </div>
+      <div class="settings-note" data-i18n="trackerHint">Reads your Weekly-Tracker items from this browser. Open the tracker on this browser to add or change them.</div>
+    </div>
+
+    <div class="settings-section">
       <div class="settings-section-title" data-i18n="tileGroups">Tile groups</div>
       <div class="feed-list-label">
         <span data-i18n="groups">Groups</span><span id="group-count"></span>
@@ -1074,12 +1186,17 @@ const DEFAULT_SETTINGS = {
   note:    { enabled: false, position: 'ml', text: '', checklist: false },
   weather: { enabled: false, position: 'tr', units: 'c', location: null },
   countdown: { enabled: false, position: 'br', items: [] },
+  tracker: { enabled: false, position: 'tl' },
 };
 const MAX_FEEDS  = 15;
 const MAX_GROUPS = 10;
 const MAX_COUNTDOWNS = 10;
 const ALL_POSITIONS = ['tl','ml','bl','tr','mr','br'];
-const WIDGET_KEYS = ['rss','note','weather','countdown'];
+const WIDGET_KEYS = ['rss','note','weather','countdown','tracker'];
+// Weekly-Tracker (willshaper.github.io/Weekly-Tracker) shares this origin's
+// localStorage, so the tracker widget reads its data straight from this key.
+const TRACKER_KEY = 'weekly_tracker';
+const TRACKER_COLORS = { '1':'#e05555', '2':'#e89440', '3':'#4db87a', '4':'#4a9ee8', '5':'#9b6bd4' };
 // Bare-token TLDs we'll treat as a URL to navigate to (otherwise → web search).
 // Keeps things like "vue.js" or "3.14" as searches, while "github.com" navigates.
 const COMMON_TLDS = new Set(['com','org','net','io','dev','app','co','edu','gov','mil',
@@ -1135,6 +1252,9 @@ const I18N = {
     countdownLabelField: 'Label', countdownLabelPh: 'Label (e.g. New Year)', countdownTarget: 'Target date & time',
     countdownSet: 'Add a countdown in settings', countdownReached: 'Time\'s up!',
     cdDays: 'days', cdHours: 'hrs', cdMins: 'min', cdSecs: 'sec',
+    weeklyTracker: 'Weekly Tracker', showTracker: 'Show weekly tracker',
+    trackerToday: 'Today', trackerEmpty: 'No weekly items yet', trackerNoneToday: 'Nothing scheduled today',
+    trackerHint: 'Reads your Weekly-Tracker items from this browser. Open the tracker in this browser to add or change them.',
     confirmImport: 'Import will replace all your current links and settings. Continue?',
     alertImageTooLarge: 'That image is too large to save. Try a smaller one or use a URL instead.',
     alertSaveFailed: 'Could not save — the icon may be too large.',
@@ -1191,6 +1311,9 @@ const I18N = {
     countdownLabelField: 'Etiket', countdownLabelPh: 'Etiket (f.eks. Nytår)', countdownTarget: 'Måldato & -tid',
     countdownSet: 'Tilføj en nedtælling i indstillinger', countdownReached: 'Tiden er gået!',
     cdDays: 'dage', cdHours: 'timer', cdMins: 'min', cdSecs: 'sek',
+    weeklyTracker: 'Ugeplan', showTracker: 'Vis ugeplan',
+    trackerToday: 'I dag', trackerEmpty: 'Ingen ugentlige punkter endnu', trackerNoneToday: 'Ingenting planlagt i dag',
+    trackerHint: 'Læser dine Weekly-Tracker-punkter fra denne browser. Åbn traceren i denne browser for at tilføje eller ændre dem.',
     confirmImport: 'Import erstatter alle dine nuværende links og indstillinger. Fortsæt?',
     alertImageTooLarge: 'Billedet er for stort til at gemme. Prøv et mindre billede eller brug en URL.',
     alertSaveFailed: 'Kunne ikke gemme — ikonet er muligvis for stort.',
@@ -1221,6 +1344,7 @@ function applyLanguage() {
   if (typeof renderWeather       === 'function') renderWeather();
   if (typeof renderCountdownList === 'function') renderCountdownList();
   if (typeof updateCountdown     === 'function') updateCountdown();
+  if (typeof renderTracker       === 'function') renderTracker();
 }
 
 let links     = [];
@@ -1298,6 +1422,12 @@ const $ = {
   countdownList:   document.getElementById('countdown-list'),
   countdownCount:  document.getElementById('countdown-count'),
   countdownAddBtn: document.getElementById('countdown-add-btn'),
+  // Weekly-Tracker widget
+  trackerPanel:  document.getElementById('tracker-panel'),
+  trackerHeader: document.getElementById('tracker-header'),
+  trackerBody:   document.getElementById('tracker-body'),
+  setTracker:    document.getElementById('set-tracker'),
+  setTrackerPos: document.getElementById('set-tracker-pos'),
   // Tile groups
   linkGroup: document.getElementById('link-group'),
   groupList: document.getElementById('group-list'),
@@ -1387,6 +1517,13 @@ function normalizeCountdown(c) {
     items:    items.slice(0, MAX_COUNTDOWNS),
   };
 }
+function normalizeTracker(t) {
+  t = t || {};
+  return {
+    enabled:  !!t.enabled,
+    position: ALL_POSITIONS.includes(t.position) ? t.position : 'tl',
+  };
+}
 function normalizeGroups(g) {
   if (!Array.isArray(g)) return [];
   // Keep only non-empty strings, dedupe preserving order, cap at MAX_GROUPS
@@ -1426,6 +1563,7 @@ function normalizeAllSubfields() {
   settings.note      = normalizeNote(settings.note);
   settings.weather   = normalizeWeather(settings.weather);
   settings.countdown = normalizeCountdown(settings.countdown);
+  settings.tracker   = normalizeTracker(settings.tracker);
   settings.groups    = normalizeGroups(settings.groups);
   resolveWidgetPositions();  // resolve any overlapping widget positions from imported/old data
 }
@@ -1808,6 +1946,7 @@ function openSettings() {
   $.setCountdown.classList.toggle('on', settings.countdown.enabled);
   $.setCountdownLabel.value  = '';
   $.setCountdownTarget.value = '';
+  $.setTracker.classList.toggle('on', settings.tracker.enabled);
   syncWidgetPositionSelects();
   $.setTileOp.value   = Math.round(clampOpacity(settings.tileOpacity)   * 100);
   $.setWidgetOp.value = Math.round(clampOpacity(settings.widgetOpacity) * 100);
@@ -1823,7 +1962,7 @@ function openSettings() {
 }
 // Re-apply every widget at once (used after a position auto-move so the bumped
 // widget actually relocates on screen)
-function applyAllWidgets() { applyRss(); applyNote(); applyWeather(); applyCountdown(); }
+function applyAllWidgets() { applyRss(); applyNote(); applyWeather(); applyCountdown(); applyTracker(); }
 function closeSettings() { $.setModal.classList.remove('open'); }
 
 $.setLang.addEventListener('change', () => {
@@ -1939,6 +2078,12 @@ $.setCountdownPos.addEventListener('change', () => { onWidgetPosChange('countdow
 $.setCountdownLabel.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCountdown(); } });
 $.setCountdownTarget.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCountdown(); } });
 
+document.getElementById('set-tracker-row').addEventListener('click', () => {
+  onWidgetEnabledToggle('tracker', $.setTracker);
+  applyAllWidgets();
+});
+$.setTrackerPos.addEventListener('change', () => { onWidgetPosChange('tracker', $.setTrackerPos.value); applyAllWidgets(); });
+
 $.groupInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addGroup(); } });
 document.getElementById('bg-file').addEventListener('change', function () {
   const f = this.files[0]; this.value = '';
@@ -2005,6 +2150,7 @@ function importData(input) {
       applyNote();
       applyWeather();
       applyCountdown();
+      applyTracker();
       buildEngineSelect($.searchEng, settings.engine);
       renderTiles(); applyHint(); tick(); updateGreeting();
       closeSettings();
@@ -2029,7 +2175,7 @@ let lastFeedItems = [];  // last rendered items, so a highlight-only change can 
 // widgets may share a slot. When one is moved/enabled (`touched`), it keeps its
 // chosen slot and any colliding widgets are bumped to the first free slot.
 const WIDGET_POS_SELECTS = {
-  rss: 'setRssPos', note: 'setNotePos', weather: 'setWeatherPos', countdown: 'setCountdownPos',
+  rss: 'setRssPos', note: 'setNotePos', weather: 'setWeatherPos', countdown: 'setCountdownPos', tracker: 'setTrackerPos',
 };
 function resolveWidgetPositions(touched) {
   const used = new Set();
@@ -2056,7 +2202,7 @@ function syncWidgetPositionSelects() {
 // tall. This stacks same-side widgets top-down and caps each one's height so the
 // column fits the viewport — tall content (like a 50-item feed) then scrolls
 // internally instead of covering its neighbour.
-const WIDGET_PANEL_REF = { rss: 'rssPanel', note: 'notePanel', weather: 'weatherPanel', countdown: 'countdownPanel' };
+const WIDGET_PANEL_REF = { rss: 'rssPanel', note: 'notePanel', weather: 'weatherPanel', countdown: 'countdownPanel', tracker: 'trackerPanel' };
 const WIDGET_SLOT_ORDER = { tl: 0, ml: 1, bl: 2, tr: 0, mr: 1, br: 2 };
 let layoutRaf = null;
 function scheduleLayout() {           // coalesce bursts of calls into one reflow
@@ -2068,6 +2214,7 @@ function widgetScrollChild(key) {
   if (key === 'rss')       return $.rssList;
   if (key === 'note')      return settings.note.checklist ? $.noteList : $.noteText;
   if (key === 'countdown') return $.countdownBody;
+  if (key === 'tracker')   return $.trackerBody;
   return null;             // weather is fixed-height, no scroll region
 }
 // Uncapped content height of a widget. Its scroll child is flex:1 and would
@@ -2744,7 +2891,119 @@ function removeCountdown(i) {
   save(); renderCountdownList(); applyCountdown();
 }
 
-const MOON = '<circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 2A5.5 5.5 0 0 0 7.5 13 5.5 5.5 0 0 1 7.5 2z" fill="currentColor"/>';
+// ── Weekly-Tracker widget ──────────────────────────────────────────────────────
+// Reads the Weekly-Tracker's data straight from this origin's localStorage. Both
+// sites are served from willshaper.github.io, so they share one store. Read-only:
+// the widget never writes TRACKER_KEY, so it can't corrupt the tracker.
+let trackerTimer = null;
+function readTrackerEntries() {
+  let data = null;
+  try { data = JSON.parse(localStorage.getItem(TRACKER_KEY) || 'null'); } catch { return null; }
+  if (!data || !Array.isArray(data.entries)) return null;
+  return data.entries.map(e => {
+    if (!e || typeof e.id !== 'number' || typeof e.day !== 'number') return null;
+    return {
+      id:    e.id,
+      day:   e.day,
+      time:  typeof e.time  === 'string' ? e.time  : '00:00',
+      name:  typeof e.name  === 'string' ? e.name  : '',
+      notes: typeof e.notes === 'string' ? e.notes : '',
+      link:  typeof e.link  === 'string' ? e.link  : '',
+      color: (e.color && TRACKER_COLORS[e.color]) ? e.color : null,
+    };
+  }).filter(Boolean);
+}
+// ms until the next weekly occurrence of (day 0=Sun..6=Sat, "HH:MM") in local time
+function trackerMsUntilNext(day, timeStr, now) {
+  const [h, m] = timeStr.split(':').map(Number);
+  let ahead = (day - now.getDay() + 7) % 7;
+  if (ahead === 0 && (now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m))) ahead = 7;
+  const t = new Date(now);
+  t.setDate(t.getDate() + ahead);
+  t.setHours(h || 0, m || 0, 0, 0);
+  return t - now;
+}
+function trackerCountdown(ms) {
+  const mins = Math.floor(ms / 60000), hrs = Math.floor(mins / 60), days = Math.floor(hrs / 24);
+  if (days === 0 && hrs === 0) return (mins % 60) + 'm';
+  if (days === 0) return hrs + 'h ' + (mins % 60) + 'm';
+  return days + 'd ' + (hrs % 24) + 'h';
+}
+function trackerCdClass(ms) {
+  const h = ms / 3600000;
+  return h < 6 ? 'wt-cd-near' : h < 48 ? 'wt-cd-mid' : 'wt-cd-far';
+}
+const TRACKER_LINK_SVG = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M4.5 2H2a1 1 0 00-1 1v6a1 1 0 001 1h6a1 1 0 001-1V6.5M6.5 1H10m0 0v3.5M10 1L5 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function trackerState(key) {
+  $.trackerBody.innerHTML = `<div class="tracker-state">${esc(L()[key] || '')}</div>`;
+  scheduleLayout();
+}
+function renderTracker() {
+  if (!settings.tracker.enabled) return;
+  const t = L();
+  const entries = readTrackerEntries();
+  if (!entries || !entries.length) { $.trackerHeader.innerHTML = ''; trackerState('trackerEmpty'); return; }
+  const now   = new Date();
+  const today = now.getDay();
+  // Only today's entries, ordered by time of day (like the tracker's day column)
+  const rows = entries.filter(e => e.day === today)
+    .map(e => ({ e, ms: trackerMsUntilNext(e.day, e.time, now) }))
+    .sort((a, b) => a.e.time.localeCompare(b.e.time));
+  // Header: "FRIDAY  [TODAY] ──── N"
+  $.trackerHeader.innerHTML =
+    `<span class="tracker-day-name">${esc(t.days[today])}</span>` +
+    `<span class="tracker-today-badge">${esc(t.trackerToday)}</span>` +
+    `<span class="tracker-day-line"></span>` +
+    `<span class="tracker-day-count">${rows.length}</span>`;
+  if (!rows.length) { trackerState('trackerNoneToday'); return; }
+  // Next-up = today's entry with the soonest upcoming occurrence
+  let nextId = null, minMs = Infinity;
+  for (const r of rows) if (r.ms < minMs) { minMs = r.ms; nextId = r.e.id; }
+  $.trackerBody.innerHTML = rows.map(r => {
+    const e = r.e;
+    const colorHex   = e.color ? TRACKER_COLORS[e.color] : null;
+    const colorAttrs = colorHex ? ` data-ec="${e.color}" style="--ec:${colorHex}"` : '';
+    const isNext = e.id === nextId ? ' wt-next' : '';
+    const link   = safeHttpLink(e.link);
+    const linkBtn = link
+      ? `<a class="wt-link" href="${esc(link)}" target="_blank" rel="noopener noreferrer" title="${esc(link)}">${TRACKER_LINK_SVG}</a>`
+      : '';
+    return `<div class="wt-entry${isNext}"${colorAttrs}>` +
+      `<div class="wt-name">${esc(e.name)}</div>` +
+      (e.notes ? `<div class="wt-notes">${esc(e.notes)}</div>` : '') +
+      `<div class="wt-meta">` +
+        `<span class="wt-time">${esc(e.time)}</span>` +
+        `<div class="wt-meta-right">` +
+          `<span class="wt-cd ${trackerCdClass(r.ms)}">${esc(trackerCountdown(r.ms))}</span>` +
+          linkBtn +
+        `</div>` +
+      `</div>` +
+    `</div>`;
+  }).join('');
+  scheduleLayout();
+}
+function applyTracker() {
+  const tk = settings.tracker;
+  ALL_POSITIONS.forEach(p => $.trackerPanel.classList.remove('pos-' + p));
+  $.trackerPanel.classList.add('pos-' + (ALL_POSITIONS.includes(tk.position) ? tk.position : 'tl'));
+  $.trackerPanel.classList.toggle('show', tk.enabled);
+  if (trackerTimer) { clearInterval(trackerTimer); trackerTimer = null; }
+  if (tk.enabled) {
+    renderTracker();
+    trackerTimer = setInterval(renderTracker, 60000);  // keep the "in Xd Yh" figures current
+  }
+  scheduleLayout();
+}
+// The Weekly-Tracker tab writes localStorage; that fires a 'storage' event in this
+// tab, so the widget refreshes live. Also re-read when this tab regains focus.
+window.addEventListener('storage', e => {
+  if (e.key === TRACKER_KEY && settings.tracker.enabled) renderTracker();
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && settings.tracker.enabled) renderTracker();
+});
+
+const MOON ='<circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 2A5.5 5.5 0 0 0 7.5 13 5.5 5.5 0 0 1 7.5 2z" fill="currentColor"/>';
 const SUN  = '<circle cx="7.5" cy="7.5" r="2.8" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1v1.4M7.5 12.6V14M1 7.5h1.4M12.6 7.5H14M3.2 3.2l1 1M10.8 10.8l1 1M11.8 3.2l-1 1M4.2 10.8l-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>';
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -2811,6 +3070,7 @@ applyRss();
 applyNote();
 applyWeather();
 applyCountdown();
+applyTracker();
 buildEngineSelect($.searchEng, settings.engine);
 renderTiles();
 applyHint();
