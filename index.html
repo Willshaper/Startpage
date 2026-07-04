@@ -748,6 +748,50 @@
     color: var(--text-dimmer); margin-top: 8px;
   }
 
+  /* ── Settings hub (tabbed) ── */
+  .modal-settings {
+    max-width: 600px; padding: 0; overflow: hidden;
+    height: min(580px, calc(100vh - 32px));
+    display: flex; flex-direction: column;
+  }
+  .modal-settings .modal-head {
+    padding: 15px 20px 13px; margin-bottom: 0; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .settings-body { display: flex; flex: 1; min-height: 0; }
+  .settings-nav {
+    width: 152px; flex-shrink: 0; border-right: 1px solid var(--border);
+    padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto;
+  }
+  .settings-tab {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    padding: 8px 10px; border-radius: 8px; border: none; background: none; cursor: pointer;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; text-align: left;
+    color: var(--text-dim); transition: background 0.12s, color 0.12s;
+  }
+  .settings-tab:hover { color: var(--text); background: var(--bg3); }
+  .settings-tab.active { color: var(--wt-today); background: color-mix(in srgb, var(--wt-today) 12%, transparent); }
+  .settings-tab svg { flex-shrink: 0; }
+  .settings-panes { flex: 1; min-width: 0; overflow-y: auto; padding: 16px 20px 20px; }
+  .settings-pane { display: none; }
+  .settings-pane.active { display: block; animation: fade 0.15s ease; }
+  .settings-group { margin-top: 20px; }
+  .settings-group:first-child { margin-top: 0; }
+  .widget-card {
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 11px 13px; margin-bottom: 10px;
+  }
+  .widget-card:last-child { margin-bottom: 0; }
+  .modal-settings .modal-actions { padding: 12px 20px; margin-top: 0; border-top: 1px solid var(--border); flex-shrink: 0; }
+  @media (max-width: 560px) {
+    .settings-body { flex-direction: column; }
+    .settings-nav {
+      width: auto; flex-direction: row; gap: 4px;
+      border-right: none; border-bottom: 1px solid var(--border); overflow-x: auto; padding: 8px;
+    }
+    .settings-tab { width: auto; white-space: nowrap; }
+    .modal-settings { height: min(640px, calc(100vh - 24px)); }
+  }
+
   /* Color picker (accent) */
   input[type="color"] {
     -webkit-appearance: none; appearance: none;
@@ -894,11 +938,21 @@
 
 <!-- Settings modal -->
 <div class="modal-overlay" id="settings-modal">
-  <div class="modal">
+  <div class="modal modal-settings">
     <div class="modal-head">
       <span class="modal-title" data-i18n="settings">Settings</span>
       <button class="modal-close" onclick="closeSettings()">✕</button>
     </div>
+    <div class="settings-body">
+      <nav class="settings-nav" id="settings-nav">
+        <button type="button" class="settings-tab active" data-pane="general"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2.1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2.1" fill="currentColor" stroke="none"/><circle cx="8" cy="17" r="2.1" fill="currentColor" stroke="none"/></svg><span data-i18n="general">General</span></button>
+        <button type="button" class="settings-tab" data-pane="appearance"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5s5.5 5.6 5.5 9.6a5.5 5.5 0 0 1-11 0c0-4 5.5-9.6 5.5-9.6z"/></svg><span data-i18n="appearance">Appearance</span></button>
+        <button type="button" class="settings-tab" data-pane="widgets"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span data-i18n="widgets">Widgets</span></button>
+        <button type="button" class="settings-tab" data-pane="tiles"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M17 14.5v6M14 17.5h6"/></svg><span data-i18n="tiles">Tiles</span></button>
+        <button type="button" class="settings-tab" data-pane="backup"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5.5h16v4H4z"/><path d="M6 9.5v9h12v-9"/><path d="M10 13h4"/></svg><span data-i18n="backup">Backup</span></button>
+      </nav>
+      <div class="settings-panes">
+        <section class="settings-pane active" data-pane="general">
     <div class="field">
       <label data-i18n="yourName">Your name (for the greeting)</label>
       <input id="set-name" type="text" placeholder="optional" data-i18n-ph="optional" autocomplete="off">
@@ -930,8 +984,10 @@
       <span data-i18n="showSearch">Show search bar</span>
       <div class="toggle" id="set-showsearch"></div>
     </div>
+        </section>
 
-    <div class="settings-section">
+        <section class="settings-pane" data-pane="appearance">
+    <div class="settings-group">
       <div class="settings-section-title" data-i18n="background">Background</div>
       <div class="io-row">
         <label class="btn btn-ghost file-label"><span data-i18n="uploadImage">Upload image</span><input type="file" id="bg-file" accept="image/*"></label>
@@ -942,8 +998,8 @@
       </div>
     </div>
 
-    <div class="settings-section">
-      <div class="settings-section-title" data-i18n="appearance">Appearance</div>
+    <div class="settings-group">
+      <div class="settings-section-title" data-i18n="opacity">Opacity</div>
       <div class="field">
         <label data-i18n="tileOpacity">Tile opacity</label>
         <div class="slider-row">
@@ -972,16 +1028,18 @@
           <span class="slider-val" id="clock-opacity-val">0%</span>
         </div>
       </div>
-      <div class="field" style="margin-top:14px; margin-bottom:0">
-        <label data-i18n="accentColor">Accent color</label>
+      </div>
+      <div class="settings-group">
+        <div class="settings-section-title" data-i18n="accentColor">Accent color</div>
         <div class="slider-row">
           <input type="color" id="set-accent" value="#4fc4a8">
           <button class="btn btn-ghost" type="button" data-i18n="default" onclick="resetAccent()" style="padding:6px 14px">Default</button>
         </div>
       </div>
-    </div>
+        </section>
 
-    <div class="settings-section">
+        <section class="settings-pane" data-pane="widgets">
+    <div class="widget-card">
       <div class="settings-section-title" data-i18n="feed">Feed</div>
       <div class="toggle-row" id="set-rss-row">
         <span data-i18n="showFeed">Show RSS feed</span>
@@ -1012,7 +1070,7 @@
       </div>
     </div>
 
-    <div class="settings-section">
+    <div class="widget-card">
       <div class="settings-section-title" data-i18n="note">Note</div>
       <div class="toggle-row" id="set-note-row">
         <span data-i18n="showNote">Show sticky note</span>
@@ -1035,7 +1093,7 @@
       </div>
     </div>
 
-    <div class="settings-section">
+    <div class="widget-card">
       <div class="settings-section-title" data-i18n="weather">Weather</div>
       <div class="toggle-row" id="set-weather-row">
         <span data-i18n="showWeather">Show weather</span>
@@ -1065,7 +1123,7 @@
       </div>
     </div>
 
-    <div class="settings-section">
+    <div class="widget-card">
       <div class="settings-section-title" data-i18n="countdown">Countdown</div>
       <div class="toggle-row" id="set-countdown-row">
         <span data-i18n="showCountdown">Show countdown</span>
@@ -1095,7 +1153,7 @@
       </div>
     </div>
 
-    <div class="settings-section">
+    <div class="widget-card">
       <div class="settings-section-title" data-i18n="weeklyTracker">Weekly Tracker</div>
       <div class="toggle-row" id="set-tracker-row">
         <span data-i18n="showTracker">Show weekly tracker</span>
@@ -1114,8 +1172,10 @@
       </div>
       <div class="settings-note" data-i18n="trackerHint">Reads your Weekly-Tracker items from this browser. Open the tracker on this browser to add or change them.</div>
     </div>
+        </section>
 
-    <div class="settings-section">
+        <section class="settings-pane" data-pane="tiles">
+    <div class="settings-group">
       <div class="settings-section-title" data-i18n="tileGroups">Tile groups</div>
       <div class="feed-list-label">
         <span data-i18n="groups">Groups</span><span id="group-count"></span>
@@ -1126,12 +1186,17 @@
         <button class="btn btn-ghost" id="group-add-btn" data-i18n="add" onclick="addGroup()">Add</button>
       </div>
     </div>
+        </section>
 
-    <div class="settings-section">
+        <section class="settings-pane" data-pane="backup">
+    <div class="settings-group">
       <div class="settings-section-title" data-i18n="backup">Backup</div>
       <div class="io-row">
         <button class="btn btn-ghost" data-i18n="export" onclick="exportData()">Export</button>
         <label class="btn btn-ghost file-label"><span data-i18n="import">Import</span><input type="file" id="import-file" accept=".json"></label>
+      </div>
+    </div>
+        </section>
       </div>
     </div>
 
@@ -1222,6 +1287,7 @@ const I18N = {
     background: 'Background', uploadImage: 'Upload image',
     backup: 'Backup', export: 'Export', import: 'Import', done: 'Done',
     edit: 'Edit', remove: 'Remove',
+    general: 'General', widgets: 'Widgets', tiles: 'Tiles', opacity: 'Opacity',
     feed: 'Feed', showFeed: 'Show RSS feed', position: 'Position',
     feeds: 'Feeds', noFeeds: 'No feeds added yet', filterPlaceholder: 'Filter by keywords (comma-separated)',
     highlight: 'Highlight', highlightPlaceholder: 'Exact matches to highlight (comma-separated)',
@@ -1281,6 +1347,7 @@ const I18N = {
     background: 'Baggrund', uploadImage: 'Upload billede',
     backup: 'Sikkerhedskopi', export: 'Eksportér', import: 'Importér', done: 'Færdig',
     edit: 'Rediger', remove: 'Fjern',
+    general: 'Generelt', widgets: 'Widgets', tiles: 'Fliser', opacity: 'Opacitet',
     feed: 'Feed', showFeed: 'Vis RSS-feed', position: 'Placering',
     feeds: 'Feeds', noFeeds: 'Ingen feeds tilføjet endnu', filterPlaceholder: 'Filtrer på nøgleord (kommasepareret)',
     highlight: 'Fremhæv', highlightPlaceholder: 'Eksakte match der fremhæves (kommasepareret)',
@@ -1960,6 +2027,15 @@ function openSettings() {
 // widget actually relocates on screen)
 function applyAllWidgets() { applyRss(); applyNote(); applyWeather(); applyCountdown(); applyTracker(); }
 function closeSettings() { $.setModal.classList.remove('open'); }
+// Settings hub tabs: show one pane at a time
+function setSettingsTab(pane) {
+  document.querySelectorAll('#settings-nav .settings-tab').forEach(b => b.classList.toggle('active', b.dataset.pane === pane));
+  document.querySelectorAll('#settings-modal .settings-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === pane));
+}
+document.getElementById('settings-nav').addEventListener('click', e => {
+  const b = e.target.closest('.settings-tab');
+  if (b) setSettingsTab(b.dataset.pane);
+});
 
 $.setLang.addEventListener('change', () => {
   settings.lang = $.setLang.value;
