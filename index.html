@@ -781,6 +781,19 @@
     padding: 11px 13px; margin-bottom: 10px;
   }
   .widget-card:last-child { margin-bottom: 0; }
+  /* Corner position picker (2 cols × 3 rows = the six screen slots) */
+  .pos-row { display: flex; align-items: center; gap: 12px; }
+  .pos-grid {
+    display: grid; grid-template-columns: repeat(2, 20px); grid-template-rows: repeat(3, 15px);
+    gap: 4px; flex-shrink: 0;
+  }
+  .pos-cell {
+    padding: 0; border: 1px solid var(--border2); border-radius: 4px;
+    background: var(--bg3); cursor: pointer; transition: background 0.12s, border-color 0.12s;
+  }
+  .pos-cell:hover { border-color: var(--text-dimmer); }
+  .pos-cell.active { background: var(--teal); border-color: var(--teal); }
+  .pos-name { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
   .modal-settings .modal-actions { padding: 12px 20px; margin-top: 0; border-top: 1px solid var(--border); flex-shrink: 0; }
   @media (max-width: 560px) {
     .settings-body { flex-direction: column; }
@@ -1047,14 +1060,7 @@
       </div>
       <div class="field" style="margin-top:6px; margin-bottom:12px">
         <label data-i18n="position">Position</label>
-        <select id="set-rss-pos">
-          <option value="tl" data-i18n="posTL">Top left</option>
-          <option value="ml" data-i18n="posML">Middle left</option>
-          <option value="bl" data-i18n="posBL">Bottom left</option>
-          <option value="tr" data-i18n="posTR">Top right</option>
-          <option value="mr" data-i18n="posMR">Middle right</option>
-          <option value="br" data-i18n="posBR">Bottom right</option>
-        </select>
+        <div class="pos-row"><div class="pos-grid" data-widget="rss"></div><span class="pos-name" id="rss-pos-name"></span></div>
       </div>
       <div class="feed-list-label">
         <span data-i18n="feeds">Feeds</span><span id="feed-count"></span>
@@ -1082,14 +1088,7 @@
       </div>
       <div class="field" style="margin-top:6px; margin-bottom:0">
         <label data-i18n="position">Position</label>
-        <select id="set-note-pos">
-          <option value="tl" data-i18n="posTL">Top left</option>
-          <option value="ml" data-i18n="posML">Middle left</option>
-          <option value="bl" data-i18n="posBL">Bottom left</option>
-          <option value="tr" data-i18n="posTR">Top right</option>
-          <option value="mr" data-i18n="posMR">Middle right</option>
-          <option value="br" data-i18n="posBR">Bottom right</option>
-        </select>
+        <div class="pos-row"><div class="pos-grid" data-widget="note"></div><span class="pos-name" id="note-pos-name"></span></div>
       </div>
     </div>
 
@@ -1105,14 +1104,7 @@
       </div>
       <div class="field" style="margin-top:6px; margin-bottom:10px">
         <label data-i18n="position">Position</label>
-        <select id="set-weather-pos">
-          <option value="tl" data-i18n="posTL">Top left</option>
-          <option value="ml" data-i18n="posML">Middle left</option>
-          <option value="bl" data-i18n="posBL">Bottom left</option>
-          <option value="tr" data-i18n="posTR">Top right</option>
-          <option value="mr" data-i18n="posMR">Middle right</option>
-          <option value="br" data-i18n="posBR">Bottom right</option>
-        </select>
+        <div class="pos-row"><div class="pos-grid" data-widget="weather"></div><span class="pos-name" id="weather-pos-name"></span></div>
       </div>
       <div class="feed-add-row">
         <input id="set-weather-loc" type="text" placeholder="City (e.g. Copenhagen)" data-i18n-ph="cityPlaceholder" autocomplete="off">
@@ -1131,14 +1123,7 @@
       </div>
       <div class="field" style="margin-top:6px; margin-bottom:12px">
         <label data-i18n="position">Position</label>
-        <select id="set-countdown-pos">
-          <option value="tl" data-i18n="posTL">Top left</option>
-          <option value="ml" data-i18n="posML">Middle left</option>
-          <option value="bl" data-i18n="posBL">Bottom left</option>
-          <option value="tr" data-i18n="posTR">Top right</option>
-          <option value="mr" data-i18n="posMR">Middle right</option>
-          <option value="br" data-i18n="posBR">Bottom right</option>
-        </select>
+        <div class="pos-row"><div class="pos-grid" data-widget="countdown"></div><span class="pos-name" id="countdown-pos-name"></span></div>
       </div>
       <div class="feed-list-label">
         <span data-i18n="countdowns">Countdowns</span><span id="countdown-count"></span>
@@ -1161,14 +1146,7 @@
       </div>
       <div class="field" style="margin-top:6px; margin-bottom:8px">
         <label data-i18n="position">Position</label>
-        <select id="set-tracker-pos">
-          <option value="tl" data-i18n="posTL">Top left</option>
-          <option value="ml" data-i18n="posML">Middle left</option>
-          <option value="bl" data-i18n="posBL">Bottom left</option>
-          <option value="tr" data-i18n="posTR">Top right</option>
-          <option value="mr" data-i18n="posMR">Middle right</option>
-          <option value="br" data-i18n="posBR">Bottom right</option>
-        </select>
+        <div class="pos-row"><div class="pos-grid" data-widget="tracker"></div><span class="pos-name" id="tracker-pos-name"></span></div>
       </div>
       <div class="settings-note" data-i18n="trackerHint">Reads your Weekly-Tracker items from this browser. Open the tracker on this browser to add or change them.</div>
     </div>
@@ -1408,6 +1386,7 @@ function applyLanguage() {
   if (typeof renderCountdownList === 'function') renderCountdownList();
   if (typeof updateCountdown     === 'function') updateCountdown();
   if (typeof renderTracker       === 'function') renderTracker();
+  if (typeof syncWidgetPositions === 'function') syncWidgetPositions();
 }
 
 let links     = [];
@@ -1451,7 +1430,6 @@ const $ = {
   rssRefresh:document.getElementById('rss-refresh'),
   setRss:    document.getElementById('set-rss'),
   setRssUrl: document.getElementById('set-rss-url'),
-  setRssPos: document.getElementById('set-rss-pos'),
   setRssHighlight: document.getElementById('set-rss-highlight'),
   feedList:  document.getElementById('feed-list'),
   feedCount: document.getElementById('feed-count'),
@@ -1464,7 +1442,6 @@ const $ = {
   noteAddInput:document.getElementById('note-add-input'),
   noteModeBtn:document.getElementById('note-mode-btn'),
   setNote:   document.getElementById('set-note'),
-  setNotePos:document.getElementById('set-note-pos'),
   setNoteChecklist:document.getElementById('set-note-checklist'),
   // Weather widget
   weatherPanel:  document.getElementById('weather-panel'),
@@ -1472,14 +1449,12 @@ const $ = {
   weatherRefresh:document.getElementById('weather-refresh'),
   setWeather:    document.getElementById('set-weather'),
   setWeatherUnits:document.getElementById('set-weather-units'),
-  setWeatherPos: document.getElementById('set-weather-pos'),
   setWeatherLoc: document.getElementById('set-weather-loc'),
   // Countdown widget
   countdownPanel: document.getElementById('countdown-panel'),
   countdownTitle: document.getElementById('countdown-title'),
   countdownBody:  document.getElementById('countdown-body'),
   setCountdown:    document.getElementById('set-countdown'),
-  setCountdownPos: document.getElementById('set-countdown-pos'),
   setCountdownLabel: document.getElementById('set-countdown-label'),
   setCountdownTarget:document.getElementById('set-countdown-target'),
   countdownList:   document.getElementById('countdown-list'),
@@ -1490,7 +1465,6 @@ const $ = {
   trackerHeader: document.getElementById('tracker-header'),
   trackerBody:   document.getElementById('tracker-body'),
   setTracker:    document.getElementById('set-tracker'),
-  setTrackerPos: document.getElementById('set-tracker-pos'),
   // Tile groups
   linkGroup: document.getElementById('link-group'),
   groupList: document.getElementById('group-list'),
@@ -2010,7 +1984,7 @@ function openSettings() {
   $.setCountdownLabel.value  = '';
   $.setCountdownTarget.value = '';
   $.setTracker.classList.toggle('on', settings.tracker.enabled);
-  syncWidgetPositionSelects();
+  syncWidgetPositions();
   $.setTileOp.value   = Math.round(clampOpacity(settings.tileOpacity)   * 100);
   $.setWidgetOp.value = Math.round(clampOpacity(settings.widgetOpacity) * 100);
   $.setSearchOp.value = Math.round(clampOpacity(settings.searchOpacity) * 100);
@@ -2092,13 +2066,13 @@ function onWidgetEnabledToggle(key, toggleEl) {
   settings[key].enabled = !settings[key].enabled;
   toggleEl.classList.toggle('on', settings[key].enabled);
   resolveWidgetPositions(key);
-  syncWidgetPositionSelects();
+  syncWidgetPositions();
   save();
 }
 function onWidgetPosChange(key, value) {
   settings[key].position = value;
   resolveWidgetPositions(key);
-  syncWidgetPositionSelects();
+  syncWidgetPositions();
   save();
 }
 
@@ -2108,7 +2082,6 @@ document.getElementById('set-rss-row').addEventListener('click', () => {
   applyAllWidgets();
 });
 $.setRssUrl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addFeed(); } });
-$.setRssPos.addEventListener('change', () => { onWidgetPosChange('rss', $.setRssPos.value); applyAllWidgets(); });
 $.setRssHighlight.addEventListener('input', () => {
   settings.rss.highlight = $.setRssHighlight.value;   // store as-typed; trim/lowercase at match time
   save();
@@ -2126,7 +2099,6 @@ document.getElementById('set-note-checklist-row').addEventListener('click', () =
   $.setNoteChecklist.classList.toggle('on', settings.note.checklist);
   save(); applyNote();
 });
-$.setNotePos.addEventListener('change', () => { onWidgetPosChange('note', $.setNotePos.value); applyAllWidgets(); });
 
 document.getElementById('set-weather-row').addEventListener('click', () => {
   onWidgetEnabledToggle('weather', $.setWeather);
@@ -2139,14 +2111,12 @@ document.getElementById('set-weather-units-row').addEventListener('click', () =>
   weatherLastSig = '';
   if (settings.weather.enabled && settings.weather.location) fetchWeather();
 });
-$.setWeatherPos.addEventListener('change', () => { onWidgetPosChange('weather', $.setWeatherPos.value); applyAllWidgets(); });
 $.setWeatherLoc.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); setWeatherLocationFromInput(); } });
 
 document.getElementById('set-countdown-row').addEventListener('click', () => {
   onWidgetEnabledToggle('countdown', $.setCountdown);
   applyAllWidgets();
 });
-$.setCountdownPos.addEventListener('change', () => { onWidgetPosChange('countdown', $.setCountdownPos.value); applyAllWidgets(); });
 $.setCountdownLabel.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCountdown(); } });
 $.setCountdownTarget.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCountdown(); } });
 
@@ -2154,7 +2124,13 @@ document.getElementById('set-tracker-row').addEventListener('click', () => {
   onWidgetEnabledToggle('tracker', $.setTracker);
   applyAllWidgets();
 });
-$.setTrackerPos.addEventListener('change', () => { onWidgetPosChange('tracker', $.setTrackerPos.value); applyAllWidgets(); });
+// Position grids (all widgets): click a corner cell to place that widget on screen
+document.getElementById('settings-modal').addEventListener('click', e => {
+  const cell = e.target.closest('.pos-cell');
+  if (!cell) return;
+  onWidgetPosChange(cell.closest('.pos-grid').dataset.widget, cell.dataset.pos);
+  applyAllWidgets();
+});
 
 $.groupInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addGroup(); } });
 document.getElementById('bg-file').addEventListener('change', function () {
@@ -2269,9 +2245,8 @@ function saveFeedCache(items) {
 // There are 6 fixed slots (3 per side) and up to 4 widgets. No two enabled
 // widgets may share a slot. When one is moved/enabled (`touched`), it keeps its
 // chosen slot and any colliding widgets are bumped to the first free slot.
-const WIDGET_POS_SELECTS = {
-  rss: 'setRssPos', note: 'setNotePos', weather: 'setWeatherPos', countdown: 'setCountdownPos', tracker: 'setTrackerPos',
-};
+// Corner-picker grid order: 2 columns (left, right) × 3 rows (top, middle, bottom)
+const POS_GRID_ORDER = ['tl', 'tr', 'ml', 'mr', 'bl', 'br'];
 function resolveWidgetPositions(touched) {
   const used = new Set();
   const order = touched ? [touched, ...WIDGET_KEYS.filter(k => k !== touched)] : WIDGET_KEYS;
@@ -2284,10 +2259,25 @@ function resolveWidgetPositions(touched) {
     used.add(pos);
   }
 }
-// Push the (possibly auto-moved) positions back into the settings dropdowns
-function syncWidgetPositionSelects() {
-  for (const [k, ref] of Object.entries(WIDGET_POS_SELECTS)) {
-    if ($[ref]) $[ref].value = settings[k].position;
+// Fill each widget's position grid with its six corner cells (built once at init)
+function buildPosGrids() {
+  document.querySelectorAll('#settings-modal .pos-grid').forEach(grid => {
+    grid.innerHTML = POS_GRID_ORDER
+      .map(p => `<button type="button" class="pos-cell" data-pos="${p}"></button>`).join('');
+  });
+}
+// Reflect each widget's position (incl. any collision auto-move) in its grid + label
+function syncWidgetPositions() {
+  for (const key of WIDGET_KEYS) {
+    const grid = document.querySelector(`#settings-modal .pos-grid[data-widget="${key}"]`);
+    if (!grid) continue;
+    const pos = settings[key].position;
+    grid.querySelectorAll('.pos-cell').forEach(c => {
+      c.classList.toggle('active', c.dataset.pos === pos);
+      c.title = L()['pos' + c.dataset.pos.toUpperCase()] || '';
+    });
+    const nm = document.getElementById(key + '-pos-name');
+    if (nm) nm.textContent = L()['pos' + pos.toUpperCase()] || '';
   }
 }
 
@@ -2314,13 +2304,18 @@ function widgetScrollChild(key) {
 }
 // Uncapped content height of a widget. Its scroll child is flex:1 and would
 // collapse to 0 while the panel is unbounded, so expand it during the measure.
+// Save/restore the child's scrollTop — expanding it removes the overflow, which
+// would otherwise reset a scrolled list (e.g. the feed) back to the top.
 function measureNatural(el, child) {
+  // Read scrollTop BEFORE unbounding the panel — once max-height is 'none' the
+  // child stops overflowing and its scrollTop is already 0.
+  let cf, cm, st;
+  if (child) { cf = child.style.flex; cm = child.style.maxHeight; st = child.scrollTop; }
   const pm = el.style.maxHeight; el.style.maxHeight = 'none';
-  let cf, cm;
-  if (child) { cf = child.style.flex; cm = child.style.maxHeight; child.style.flex = '0 0 auto'; child.style.maxHeight = 'none'; }
+  if (child) { child.style.flex = '0 0 auto'; child.style.maxHeight = 'none'; }
   const h = el.offsetHeight;
   el.style.maxHeight = pm;
-  if (child) { child.style.flex = cf; child.style.maxHeight = cm; }
+  if (child) { child.style.flex = cf; child.style.maxHeight = cm; child.scrollTop = st; }
   return h;
 }
 function layoutWidgets() {
@@ -3198,6 +3193,7 @@ applyNote();
 applyWeather();
 applyCountdown();
 applyTracker();
+buildPosGrids();
 buildEngineSelect($.searchEng, settings.engine);
 renderTiles();
 applyHint();
