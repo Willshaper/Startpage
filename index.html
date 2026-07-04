@@ -183,10 +183,14 @@
   }
   .tile-section { display: flex; flex-direction: column; gap: 10px; }
   .tile-section-title {
+    align-self: flex-start;   /* box hugs the text width, not the full row */
     font-family: var(--mono); font-size: 10px;
     letter-spacing: 0.14em; text-transform: uppercase;
     color: var(--text-dim);
-    padding-left: 4px;
+    /* Fade the box with the tile opacity slider, like the tiles themselves */
+    background: color-mix(in srgb, var(--bg3) calc(var(--tile-bg-opacity) * 100%), transparent);
+    border: 1px solid color-mix(in srgb, var(--border) calc(var(--tile-bg-opacity) * 100%), transparent);
+    border-radius: 7px; padding: 5px 10px;
   }
   .tile-grid {
     display: grid;
@@ -655,12 +659,15 @@
     text-transform: uppercase; color: var(--text-dim); margin-bottom: 3px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  /* Prominent D/H/M readout; numbers pop, the d/h/m letters sit dimmer */
+  /* Prominent D/H/M/S readout, spread across the card so there's no dead space.
+     Numbers pop, the d/h/m/s letters sit dimmer. */
   .countdown-time {
+    display: flex; justify-content: space-between; align-items: baseline;
     font-family: var(--mono); font-weight: 500; font-size: 22px; letter-spacing: 0.01em;
     line-height: 1; font-variant-numeric: tabular-nums; color: var(--text);
   }
-  .countdown-time .u { font-size: 13px; color: var(--text-dim); margin: 0 2px 0 1px; }
+  .countdown-time .seg { white-space: nowrap; }
+  .countdown-time .u { font-size: 13px; color: var(--text-dim); margin-left: 1px; }
   .countdown-time.cd-near { color: var(--accent); }
   .countdown-time.cd-mid  { color: var(--wt-mid); }
   .countdown-time.cd-far  { color: var(--teal); }
@@ -2153,11 +2160,34 @@ document.getElementById('import-file').addEventListener('change', function () { 
 // ── RSS feed ──────────────────────────────────────────────────────────────────
 const RSS_REFRESH_MS = 15 * 60 * 1000;  // 15 min
 const RSS_MAX_ITEMS  = 50;
+const FEED_CACHE_KEY = 'startpage_feedcache';   // last good items, shown until a fresh fetch lands
 let rssTimer = null;
 let rssLastSig = '';     // signature of the URL set last fetched (avoids needless refetch)
 let rssUrlDebounce = null;
 let rssHighlightDebounce = null;
 let lastFeedItems = [];  // last rendered items, so a highlight-only change can re-style without refetching
+
+// Signature of the current feed set (url + keyword filter). Highlight is not part
+// of it — highlighting is visual-only and never triggers a refetch.
+function feedSig() { return settings.rss.urls.map(f => f.url + '|' + f.filter).join('||'); }
+// Persist the last good items so the feed shows instantly on the next load and
+// survives a failed fetch. Keyed by feed signature so a cache from a different
+// feed set is ignored.
+function loadFeedCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem(FEED_CACHE_KEY) || 'null');
+    if (c && c.sig === feedSig() && Array.isArray(c.items) && c.items.length) return c.items;
+  } catch {}
+  return null;
+}
+function saveFeedCache(items) {
+  try {
+    localStorage.setItem(FEED_CACHE_KEY, JSON.stringify({
+      sig: feedSig(),
+      items: items.map(it => ({ title: it.title, link: it.link, ts: it.ts })),
+    }));
+  } catch {}
+}
 
 // ── Widget position constraint ────────────────────────────────────────────────
 // There are 6 fixed slots (3 per side) and up to 4 widgets. No two enabled
@@ -2372,8 +2402,12 @@ function applyRss() {
   if (r.enabled) {
     $.rssPanel.classList.add('show');
     if (r.urls.length) {
-      const sig = r.urls.map(f => f.url + '|' + f.filter).join('||');
-      if (sig !== rssLastSig) fetchFeed();
+      // Show last-known items instantly (from cache) while the fresh fetch runs
+      if (!$.rssList.querySelector('.rss-item')) {
+        const cached = loadFeedCache();
+        if (cached) renderFeed(cached);
+      }
+      if (feedSig() !== rssLastSig) fetchFeed();
       rssTimer = setInterval(fetchFeed, RSS_REFRESH_MS);
     } else {
       showRssState('feedEmpty');
@@ -2451,9 +2485,11 @@ async function fetchOneFeed(url) {
 async function fetchFeed() {
   const feeds = settings.rss.urls;
   if (!feeds.length) { showRssState('feedEmpty'); return; }
-  const sig = feeds.map(f => f.url + '|' + f.filter).join('||');
+  const sig = feedSig();
   rssLastSig = sig;
-  showRssState('feedLoading');
+  // Only show "Loading…" when nothing is on screen yet; otherwise keep the current
+  // (cached or previous) items visible until the fresh set arrives.
+  if (!$.rssList.querySelector('.rss-item')) showRssState('feedLoading');
   let rawTotal = 0;  // track items before filtering to distinguish "no results" from "fetch failed"
   const results = await Promise.all(feeds.map(f => fetchOneFeed(f.url).then(items => {
     rawTotal += items.length;
@@ -2464,7 +2500,7 @@ async function fetchFeed() {
       return keywords.some(k => title.includes(k));
     });
   })));
-  if (settings.rss.urls.map(f => f.url + '|' + f.filter).join('||') !== sig) return;  // feed set changed mid-flight, abandon
+  if (feedSig() !== sig) return;  // feed set changed mid-flight, abandon
   // Merge all items, deduping by link (handles cross-posts + accidental duplicate URLs)
   const seen = new Set();
   const all  = [];
@@ -2472,12 +2508,16 @@ async function fetchFeed() {
     if (!seen.has(it.link)) { seen.add(it.link); all.push(it); }
   }));
   if (!all.length) {
-    // If raw items came through but were all filtered out, show a specific message
-    showRssState(rawTotal > 0 ? 'feedFiltered' : 'feedError');
+    // Fresh data that all got filtered out → say so. But a plain fetch failure
+    // leaves any cached/previous items on screen rather than replacing them.
+    if (rawTotal > 0) showRssState('feedFiltered');
+    else if (!$.rssList.querySelector('.rss-item')) showRssState('feedError');
     return;
   }
   all.sort((a, b) => (b.ts || 0) - (a.ts || 0));   // newest first; undated items fall to the end
-  renderFeed(all.slice(0, RSS_MAX_ITEMS));
+  const top = all.slice(0, RSS_MAX_ITEMS);
+  renderFeed(top);
+  saveFeedCache(top);   // remember this good set for the next load / a failed fetch
 }
 
 function parseFeedXml(xmlText) {
@@ -2836,8 +2876,10 @@ function countdownItemHtml(item, now, t) {
       const days = Math.floor(diff / 86400); diff -= days * 86400;
       const hrs  = Math.floor(diff / 3600);  diff -= hrs * 3600;
       const mins = Math.floor(diff / 60);
-      const time = (days > 0 ? `${days}<span class="u">d</span> ` : '') +
-        `${p2(hrs)}<span class="u">h</span> ${p2(mins)}<span class="u">m</span>`;
+      const secs = diff - mins * 60;
+      const seg = (n, u) => `<span class="seg">${n}<span class="u">${u}</span></span>`;
+      const time = (days > 0 ? seg(days, 'd') : '') +
+        seg(p2(hrs), 'h') + seg(p2(mins), 'm') + seg(p2(secs), 's');
       inner = `<div class="countdown-time ${countdownCdClass(ms)}">${time}</div>`;
     }
   }
@@ -2857,7 +2899,9 @@ function updateCountdown() {
     : `<div class="countdown-state">${esc(t.countdownSet)}</div>`;
   if (html === lastCountdownHtml) return;
   lastCountdownHtml = html;
+  const st = $.countdownBody.scrollTop;      // the per-second rebuild would reset scroll otherwise
   $.countdownBody.innerHTML = html;
+  $.countdownBody.scrollTop = st;
   scheduleLayout();
 }
 
