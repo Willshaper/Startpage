@@ -777,9 +777,16 @@
   .settings-group { margin-top: 20px; }
   .settings-group:first-child { margin-top: 0; }
   .widget-card {
-    border: 1px solid var(--border); border-radius: 10px;
-    padding: 11px 13px; margin-bottom: 10px;
+    border: 1px solid var(--border2); border-radius: 10px;
+    background: color-mix(in srgb, var(--bg3) 35%, transparent);
+    padding: 12px 14px; margin-bottom: 12px;
   }
+  /* Card header: show-toggle on the left, position grid on the right */
+  .wc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px; }
+  .wc-head-main { flex: 1; min-width: 0; }
+  .wc-head-main .toggle-row { justify-content: flex-start; gap: 10px; padding: 3px 0; }
+  .wc-head-pos { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; }
+  .wc-head .settings-section-title { margin-bottom: 6px; }
   .widget-card:last-child { margin-bottom: 0; }
   /* Corner position picker (2 cols × 3 rows = the six screen slots) */
   .pos-row { display: flex; align-items: center; gap: 12px; }
@@ -1053,14 +1060,18 @@
 
         <section class="settings-pane" data-pane="widgets">
     <div class="widget-card">
-      <div class="settings-section-title" data-i18n="feed">Feed</div>
-      <div class="toggle-row" id="set-rss-row">
-        <span data-i18n="showFeed">Show RSS feed</span>
-        <div class="toggle" id="set-rss"></div>
-      </div>
-      <div class="field" style="margin-top:6px; margin-bottom:12px">
-        <label data-i18n="position">Position</label>
-        <div class="pos-row"><div class="pos-grid" data-widget="rss"></div><span class="pos-name" id="rss-pos-name"></span></div>
+      <div class="wc-head">
+        <div class="wc-head-main">
+          <div class="settings-section-title" data-i18n="feed">Feed</div>
+          <div class="toggle-row" id="set-rss-row">
+            <span data-i18n="showFeed">Show RSS feed</span>
+            <div class="toggle" id="set-rss"></div>
+          </div>
+        </div>
+        <div class="wc-head-pos">
+          <div class="settings-section-title" data-i18n="position">Position</div>
+          <div class="pos-grid" data-widget="rss"></div>
+        </div>
       </div>
       <div class="feed-list-label">
         <span data-i18n="feeds">Feeds</span><span id="feed-count"></span>
@@ -1077,34 +1088,42 @@
     </div>
 
     <div class="widget-card">
-      <div class="settings-section-title" data-i18n="note">Note</div>
-      <div class="toggle-row" id="set-note-row">
-        <span data-i18n="showNote">Show sticky note</span>
-        <div class="toggle" id="set-note"></div>
+      <div class="wc-head">
+        <div class="wc-head-main">
+          <div class="settings-section-title" data-i18n="note">Note</div>
+          <div class="toggle-row" id="set-note-row">
+            <span data-i18n="showNote">Show sticky note</span>
+            <div class="toggle" id="set-note"></div>
+          </div>
+        </div>
+        <div class="wc-head-pos">
+          <div class="settings-section-title" data-i18n="position">Position</div>
+          <div class="pos-grid" data-widget="note"></div>
+        </div>
       </div>
       <div class="toggle-row" id="set-note-checklist-row">
         <span data-i18n="checklistMode">Checklist mode</span>
         <div class="toggle" id="set-note-checklist"></div>
       </div>
-      <div class="field" style="margin-top:6px; margin-bottom:0">
-        <label data-i18n="position">Position</label>
-        <div class="pos-row"><div class="pos-grid" data-widget="note"></div><span class="pos-name" id="note-pos-name"></span></div>
-      </div>
     </div>
 
     <div class="widget-card">
-      <div class="settings-section-title" data-i18n="weather">Weather</div>
-      <div class="toggle-row" id="set-weather-row">
-        <span data-i18n="showWeather">Show weather</span>
-        <div class="toggle" id="set-weather"></div>
+      <div class="wc-head">
+        <div class="wc-head-main">
+          <div class="settings-section-title" data-i18n="weather">Weather</div>
+          <div class="toggle-row" id="set-weather-row">
+            <span data-i18n="showWeather">Show weather</span>
+            <div class="toggle" id="set-weather"></div>
+          </div>
+        </div>
+        <div class="wc-head-pos">
+          <div class="settings-section-title" data-i18n="position">Position</div>
+          <div class="pos-grid" data-widget="weather"></div>
+        </div>
       </div>
-      <div class="toggle-row" id="set-weather-units-row">
+      <div class="toggle-row" id="set-weather-units-row" style="margin-bottom:10px">
         <span data-i18n="useFahrenheit">Use Fahrenheit (°F)</span>
         <div class="toggle" id="set-weather-units"></div>
-      </div>
-      <div class="field" style="margin-top:6px; margin-bottom:10px">
-        <label data-i18n="position">Position</label>
-        <div class="pos-row"><div class="pos-grid" data-widget="weather"></div><span class="pos-name" id="weather-pos-name"></span></div>
       </div>
       <div class="feed-add-row">
         <input id="set-weather-loc" type="text" placeholder="City (e.g. Copenhagen)" data-i18n-ph="cityPlaceholder" autocomplete="off">
@@ -1116,14 +1135,18 @@
     </div>
 
     <div class="widget-card">
-      <div class="settings-section-title" data-i18n="countdown">Countdown</div>
-      <div class="toggle-row" id="set-countdown-row">
-        <span data-i18n="showCountdown">Show countdown</span>
-        <div class="toggle" id="set-countdown"></div>
-      </div>
-      <div class="field" style="margin-top:6px; margin-bottom:12px">
-        <label data-i18n="position">Position</label>
-        <div class="pos-row"><div class="pos-grid" data-widget="countdown"></div><span class="pos-name" id="countdown-pos-name"></span></div>
+      <div class="wc-head">
+        <div class="wc-head-main">
+          <div class="settings-section-title" data-i18n="countdown">Countdown</div>
+          <div class="toggle-row" id="set-countdown-row">
+            <span data-i18n="showCountdown">Show countdown</span>
+            <div class="toggle" id="set-countdown"></div>
+          </div>
+        </div>
+        <div class="wc-head-pos">
+          <div class="settings-section-title" data-i18n="position">Position</div>
+          <div class="pos-grid" data-widget="countdown"></div>
+        </div>
       </div>
       <div class="feed-list-label">
         <span data-i18n="countdowns">Countdowns</span><span id="countdown-count"></span>
@@ -1139,14 +1162,18 @@
     </div>
 
     <div class="widget-card">
-      <div class="settings-section-title" data-i18n="weeklyTracker">Weekly Tracker</div>
-      <div class="toggle-row" id="set-tracker-row">
-        <span data-i18n="showTracker">Show weekly tracker</span>
-        <div class="toggle" id="set-tracker"></div>
-      </div>
-      <div class="field" style="margin-top:6px; margin-bottom:8px">
-        <label data-i18n="position">Position</label>
-        <div class="pos-row"><div class="pos-grid" data-widget="tracker"></div><span class="pos-name" id="tracker-pos-name"></span></div>
+      <div class="wc-head">
+        <div class="wc-head-main">
+          <div class="settings-section-title" data-i18n="weeklyTracker">Weekly Tracker</div>
+          <div class="toggle-row" id="set-tracker-row">
+            <span data-i18n="showTracker">Show weekly tracker</span>
+            <div class="toggle" id="set-tracker"></div>
+          </div>
+        </div>
+        <div class="wc-head-pos">
+          <div class="settings-section-title" data-i18n="position">Position</div>
+          <div class="pos-grid" data-widget="tracker"></div>
+        </div>
       </div>
       <div class="settings-note" data-i18n="trackerHint">Reads your Weekly-Tracker items from this browser. Open the tracker on this browser to add or change them.</div>
     </div>
