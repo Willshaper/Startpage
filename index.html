@@ -32,7 +32,14 @@
     --widget-bg-opacity: 1;
     --search-bg-opacity: 1;
     --clock-bg-opacity:  0;
+    /* Tile grid: column count (set via JS) and the widest the tile block may get.
+       --tile-safe reserves ~320px on each side for the fixed edge widgets so tiles
+       never slide under them; it is viewport-relative, so it holds from 1080p to 4K. */
+    --tile-cols: 8;
+    --tile-safe: calc(100vw - 640px);
   }
+  /* Below 1280px the edge widgets are hidden, so the tiles may use the full width. */
+  @media (max-width: 1280px) { :root { --tile-safe: calc(100vw - 48px); } }
 
   [data-theme="light"] {
     --bg:         #dde0ec;
@@ -93,7 +100,9 @@
 
   /* ── Center stack ── */
   .center {
-    width: 100%; max-width: 880px;
+    /* No width cap here: greeting/clock/date hug their content and search caps at
+       560px, so only the tile block widens. The tile block sizes itself (below). */
+    width: 100%; max-width: none;
     margin: auto 0;
     display: flex; flex-direction: column; align-items: center;
     padding-top: 6vh;
@@ -177,7 +186,11 @@
   /* ── Tiles ── */
   .tiles {
     margin-top: 40px;
-    width: 100%;
+    /* --tile-w is one tile's width; --tile-pitch is that plus its gap. The block
+       grows with the column count up to --tile-safe, then packs tiles denser. */
+    --tile-w: 98px;
+    --tile-pitch: 112px;
+    width: min(calc(var(--tile-cols) * var(--tile-pitch)), var(--tile-safe));
     display: flex; flex-direction: column;
     gap: 22px;
   }
@@ -192,14 +205,16 @@
     border: 1px solid color-mix(in srgb, var(--border) calc(var(--tile-bg-opacity) * 100%), transparent);
     border-radius: 7px; padding: 5px 10px;
   }
+  /* Flex-wrap (not grid) so a row with fewer tiles than the column count stays
+     centered instead of leaving empty grid tracks that shove tiles to the left.
+     The .tiles block width caps how many fit per row. */
   .tile-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(98px, 1fr));
+    display: flex; flex-wrap: wrap; justify-content: center;
     gap: 14px;
-    justify-content: center;
   }
 
   .tile {
+    width: var(--tile-w);
     display: flex; flex-direction: column; align-items: center; gap: 9px;
     padding: 16px 8px 13px;
     background: color-mix(in srgb, var(--bg2) calc(var(--tile-bg-opacity) * 100%), transparent);
@@ -248,6 +263,14 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 26px; font-weight: 300;
   }
+
+  /* Compact tiles: smaller icon box + tighter padding + smaller pitch so more fit */
+  .tiles.compact { --tile-w: 70px; --tile-pitch: 80px; }
+  .tiles.compact .tile-grid { gap: 10px; }
+  .tiles.compact .tile { padding: 9px 5px 8px; gap: 6px; border-radius: 11px; }
+  .tiles.compact .tile-icon { width: 34px; height: 34px; border-radius: 9px; font-size: 16px; }
+  .tiles.compact .tile-add .plus { width: 34px; height: 34px; border-radius: 9px; font-size: 22px; }
+  .tiles.compact .tile-name { font-size: 11px; }
 
   @keyframes pop {
     from { opacity: 0; transform: translateY(6px) scale(0.97); }
@@ -1181,6 +1204,20 @@
 
         <section class="settings-pane" data-pane="tiles">
     <div class="settings-group">
+      <div class="settings-section-title" data-i18n="tileLayout">Layout</div>
+      <div class="field">
+        <label data-i18n="tilesPerLine">Tiles per line</label>
+        <div class="slider-row">
+          <input type="range" id="set-tile-cols" min="4" max="40" step="1" value="8">
+          <span class="slider-val" id="tile-cols-val">8</span>
+        </div>
+      </div>
+      <div class="toggle-row" id="set-tile-compact-row" style="padding-bottom:0">
+        <span data-i18n="compactTiles">Compact tiles</span>
+        <div class="toggle" id="set-tile-compact"></div>
+      </div>
+    </div>
+    <div class="settings-group">
       <div class="settings-section-title" data-i18n="tileGroups">Tile groups</div>
       <div class="feed-list-label">
         <span data-i18n="groups">Groups</span><span id="group-count"></span>
@@ -1226,6 +1263,8 @@
 
 <script>
 const STORAGE_KEY = 'startpage_v1';
+const TILE_COLS_MIN = 4, TILE_COLS_MAX = 40;   // tiles-per-line slider bounds (max fills a 4K row of compact tiles)
+const clampCols = v => Math.max(TILE_COLS_MIN, Math.min(TILE_COLS_MAX, Math.round(Number(v) || 8)));
 const FORCE_LETTER = 'letter';   // sentinel for link.icon: always show the coloured letter, never a favicon
 const ENGINES = {
   google:     { name: 'Google',     url: 'https://www.google.com/search?q=' },
@@ -1247,6 +1286,7 @@ const DEFAULT_SETTINGS = {
   theme: 'dark', background: '', lang: 'en', hideAdd: false,
   searchEnabled: true, accent: '',
   tileOpacity: 1, widgetOpacity: 1, searchOpacity: 1, clockOpacity: 0,
+  tileColumns: 8, tileCompact: false,
   groups: [],
   rss:     { enabled: false, urls: [], position: 'mr', highlight: '' },
   note:    { enabled: false, position: 'ml', text: '', checklist: false },
@@ -1297,6 +1337,7 @@ const I18N = {
     feeds: 'Feeds', noFeeds: 'No feeds added yet', filterPlaceholder: 'Filter by keywords (comma-separated)',
     highlight: 'Highlight', highlightPlaceholder: 'Exact matches to highlight (comma-separated)',
     note: 'Note', showNote: 'Show sticky note', notePlaceholder: 'Notes…',
+    tileLayout: 'Layout', tilesPerLine: 'Tiles per line', compactTiles: 'Compact tiles',
     tileGroups: 'Tile groups', groups: 'Groups', group: 'Group', none: 'None',
     groupName: 'Group name', noGroups: 'No groups added yet',
     confirmRemoveGroup: 'Remove group "{name}"? Tiles in it will become ungrouped.',
@@ -1357,6 +1398,7 @@ const I18N = {
     feeds: 'Feeds', noFeeds: 'Ingen feeds tilføjet endnu', filterPlaceholder: 'Filtrer på nøgleord (kommasepareret)',
     highlight: 'Fremhæv', highlightPlaceholder: 'Eksakte match der fremhæves (kommasepareret)',
     note: 'Note', showNote: 'Vis notesblok', notePlaceholder: 'Noter…',
+    tileLayout: 'Layout', tilesPerLine: 'Fliser pr. linje', compactTiles: 'Kompakte fliser',
     tileGroups: 'Flisegrupper', groups: 'Grupper', group: 'Gruppe', none: 'Ingen',
     groupName: 'Gruppenavn', noGroups: 'Ingen grupper tilføjet endnu',
     confirmRemoveGroup: 'Fjern gruppen "{name}"? Fliser i den bliver ugrupperede.',
@@ -1509,6 +1551,9 @@ const $ = {
   clockOpVal:   document.getElementById('clock-opacity-val'),
   setShowSearch:document.getElementById('set-showsearch'),
   setAccent:    document.getElementById('set-accent'),
+  setTileCols:    document.getElementById('set-tile-cols'),
+  setTileColsVal: document.getElementById('tile-cols-val'),
+  setTileCompact: document.getElementById('set-tile-compact'),
 };
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -1612,6 +1657,8 @@ function normalizeSettings(s) {
   s.seconds       = asBool(s.seconds,       true);
   s.hideAdd       = asBool(s.hideAdd,       false);
   s.searchEnabled = asBool(s.searchEnabled, true);
+  s.tileCompact   = asBool(s.tileCompact,   false);
+  s.tileColumns   = clampCols(s.tileColumns);
   s.tileOpacity   = clampOpacity(s.tileOpacity);
   s.widgetOpacity = clampOpacity(s.widgetOpacity);
   s.searchOpacity = clampOpacity(s.searchOpacity);
@@ -1847,6 +1894,14 @@ function applyOpacity() {
 function applySearch() {
   $.searchForm.style.display = settings.searchEnabled ? '' : 'none';
 }
+// Tiles-per-line + compact size. --tile-cols drives both the block width and the
+// grid column count; the .compact class shrinks the icon box and tile pitch.
+function applyTiles() {
+  const n = clampCols(settings.tileColumns);
+  document.documentElement.style.setProperty('--tile-cols', n);
+  $.tiles.classList.toggle('compact', !!settings.tileCompact);
+  if ($.setTileColsVal) $.setTileColsVal.textContent = n;
+}
 // Bind one opacity slider. Guards against persisting an uninitialised slider:
 // only react while the Settings panel is open (so openSettings has set the value
 // from settings first), and block the mouse wheel from nudging the slider when
@@ -1867,6 +1922,18 @@ document.getElementById('set-showsearch-row').addEventListener('click', () => {
   settings.searchEnabled = !settings.searchEnabled;
   $.setShowSearch.classList.toggle('on', settings.searchEnabled);
   save(); applySearch();
+});
+// Tiles-per-line slider (same open-panel guard + wheel block as the opacity sliders).
+$.setTileCols.addEventListener('input', () => {
+  if (!$.setModal.classList.contains('open')) return;
+  settings.tileColumns = clampCols($.setTileCols.value);
+  applyTiles(); save();
+});
+$.setTileCols.addEventListener('wheel', e => { e.preventDefault(); }, { passive: false });
+document.getElementById('set-tile-compact-row').addEventListener('click', () => {
+  settings.tileCompact = !settings.tileCompact;
+  $.setTileCompact.classList.toggle('on', settings.tileCompact);
+  applyTiles(); save();
 });
 
 // ── Drag to reorder ───────────────────────────────────────────────────────────
@@ -2018,7 +2085,10 @@ function openSettings() {
   $.setClockOp.value  = Math.round(clampOpacity(settings.clockOpacity)  * 100);
   $.setShowSearch.classList.toggle('on', settings.searchEnabled);
   $.setAccent.value = settings.accent || '#4fc4a8';
+  $.setTileCols.value = clampCols(settings.tileColumns);
+  $.setTileCompact.classList.toggle('on', settings.tileCompact);
   applyOpacity();   // refresh the % labels next to the sliders
+  applyTiles();     // refresh the tiles-per-line count label
   renderFeedList();
   renderGroupList();
   renderCountdownList();
@@ -2220,6 +2290,7 @@ function importData(input) {
       applyBackground();
       applyOpacity();
       applySearch();
+      applyTiles();
       applyLanguage();
       applyRss();
       applyNote();
@@ -3214,6 +3285,7 @@ applyAccent();
 applyBackground();
 applyOpacity();
 applySearch();
+applyTiles();
 applyLanguage();
 applyRss();
 applyNote();
