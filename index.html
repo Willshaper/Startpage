@@ -36,6 +36,10 @@
        --tile-safe reserves ~320px on each side for the fixed edge widgets so tiles
        never slide under them; it is viewport-relative, so it holds from 1080p to 4K. */
     --tile-cols: 8;
+    /* --tile-fit is the effective column count = the widest group's tile count,
+       capped at --tile-cols. It sizes the (centered) tile block, so a group with
+       fewer tiles than the setting no longer reserves empty space. Set via JS. */
+    --tile-fit: 8;
     --tile-safe: calc(100vw - 640px);
   }
   /* Below 1280px the edge widgets are hidden, so the tiles may use the full width. */
@@ -187,10 +191,13 @@
   .tiles {
     margin-top: 40px;
     /* --tile-w is one tile's width; --tile-pitch is that plus its gap. The block
-       grows with the column count up to --tile-safe, then packs tiles denser. */
+       sizes to the widest group (--tile-fit tiles: fit*pitch minus the trailing
+       gap) up to --tile-safe. It's centered, so the widest group centers and the
+       rest left-align to it. */
     --tile-w: 98px;
+    --tile-gap: 14px;
     --tile-pitch: 112px;
-    width: min(calc(var(--tile-cols) * var(--tile-pitch)), var(--tile-safe));
+    width: min(calc(var(--tile-fit) * var(--tile-pitch) - var(--tile-gap)), var(--tile-safe));
     display: flex; flex-direction: column;
     gap: 22px;
   }
@@ -205,12 +212,12 @@
     border: 1px solid color-mix(in srgb, var(--border) calc(var(--tile-bg-opacity) * 100%), transparent);
     border-radius: 7px; padding: 5px 10px;
   }
-  /* Flex-wrap (not grid) so a row with fewer tiles than the column count stays
-     centered instead of leaving empty grid tracks that shove tiles to the left.
-     The .tiles block width caps how many fit per row. */
+  /* Flex-wrap (not grid) so rows don't reserve empty grid tracks. Tiles left-align
+     inside the block; the block itself is sized to the widest group and centered,
+     so the widest group centers on screen and shorter groups align to its left. */
   .tile-grid {
-    display: flex; flex-wrap: wrap; justify-content: center;
-    gap: 14px;
+    display: flex; flex-wrap: wrap; justify-content: flex-start;
+    gap: var(--tile-gap);
   }
 
   .tile {
@@ -265,8 +272,7 @@
   }
 
   /* Compact tiles: smaller icon box + tighter padding + smaller pitch so more fit */
-  .tiles.compact { --tile-w: 70px; --tile-pitch: 80px; }
-  .tiles.compact .tile-grid { gap: 10px; }
+  .tiles.compact { --tile-w: 70px; --tile-gap: 10px; --tile-pitch: 80px; }
   .tiles.compact .tile { padding: 9px 5px 8px; gap: 6px; border-radius: 11px; }
   .tiles.compact .tile-icon { width: 34px; height: 34px; border-radius: 9px; font-size: 16px; }
   .tiles.compact .tile-add .plus { width: 34px; height: 34px; border-radius: 9px; font-size: 22px; }
@@ -710,6 +716,8 @@
     margin-bottom: 10px; flex-shrink: 0;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  .tracker-head-link { color: inherit; text-decoration: none; }
+  .tracker-head-link:hover { text-decoration: underline; }
 
   .tracker-body {
     flex: 1; min-height: 0; overflow-y: auto;
@@ -1199,6 +1207,9 @@
         </div>
       </div>
       <div class="settings-note" data-i18n="trackerHint">Reads your Weekly-Tracker items from this browser. Open the tracker on this browser to add or change them.</div>
+      <div class="io-row" style="margin-top:10px">
+        <a class="btn btn-ghost" href="https://willshaper.github.io/Weekly-Tracker/" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:flex; align-items:center; justify-content:center" data-i18n="openTracker">Open Weekly Tracker</a>
+      </div>
     </div>
         </section>
 
@@ -1263,6 +1274,7 @@
 
 <script>
 const STORAGE_KEY = 'startpage_v1';
+const TRACKER_URL = 'https://willshaper.github.io/Weekly-Tracker/';   // the standalone Weekly-Tracker site
 const TILE_COLS_MIN = 4, TILE_COLS_MAX = 40;   // tiles-per-line slider bounds (max fills a 4K row of compact tiles)
 const clampCols = v => Math.max(TILE_COLS_MIN, Math.min(TILE_COLS_MAX, Math.round(Number(v) || 8)));
 const FORCE_LETTER = 'letter';   // sentinel for link.icon: always show the coloured letter, never a favicon
@@ -1363,6 +1375,7 @@ const I18N = {
     weeklyTracker: 'Weekly Tracker', showTracker: 'Show weekly tracker',
     trackerToday: 'Today', trackerEmpty: 'No weekly items yet', trackerNoneToday: 'Nothing scheduled today',
     trackerHint: 'Reads your Weekly-Tracker items from this browser. Open the tracker in this browser to add or change them.',
+    openTracker: 'Open Weekly Tracker',
     confirmImport: 'Import will replace all your current links and settings. Continue?',
     alertImageTooLarge: 'That image is too large to save. Try a smaller one or use a URL instead.',
     alertSaveFailed: 'Could not save — the icon may be too large.',
@@ -1424,6 +1437,7 @@ const I18N = {
     weeklyTracker: 'Ugeplan', showTracker: 'Vis ugeplan',
     trackerToday: 'I dag', trackerEmpty: 'Ingen ugentlige punkter endnu', trackerNoneToday: 'Ingenting planlagt i dag',
     trackerHint: 'Læser dine Weekly-Tracker-punkter fra denne browser. Åbn traceren i denne browser for at tilføje eller ændre dem.',
+    openTracker: 'Åbn ugeplan',
     confirmImport: 'Import erstatter alle dine nuværende links og indstillinger. Fortsæt?',
     alertImageTooLarge: 'Billedet er for stort til at gemme. Prøv et mindre billede eller brug en URL.',
     alertSaveFailed: 'Kunne ikke gemme — ikonet er muligvis for stort.',
@@ -1842,12 +1856,14 @@ function renderTiles() {
 
   let html = '';
   let idx = 0;  // global tile index so the staggered entry animation is monotonic
+  let widest = 0;  // most tiles in any one section -> sizes the centered block
   const order = [...settings.groups, ''];  // user-defined groups first, ungrouped last
   for (const groupName of order) {
     const groupLinks = byGroup.get(groupName) || [];
     const isUngrouped = groupName === '';
     const showAddHere = isUngrouped && !settings.hideAdd;
     if (!groupLinks.length && !showAddHere) continue;  // hide empty sections
+    widest = Math.max(widest, groupLinks.length + (showAddHere ? 1 : 0));
     html += '<div class="tile-section">';
     if (groupName) html += `<div class="tile-section-title">${esc(groupName)}</div>`;
     html += '<div class="tile-grid">';
@@ -1861,6 +1877,8 @@ function renderTiles() {
     html += '</div></div>';
   }
   $.tiles.innerHTML = html;
+  maxRowTiles = widest;
+  applyTiles();   // resize the centered block to the widest section
   attachDrag();
 }
 // Hint text is tied to the Add tile — hide both together
@@ -1894,11 +1912,16 @@ function applyOpacity() {
 function applySearch() {
   $.searchForm.style.display = settings.searchEnabled ? '' : 'none';
 }
-// Tiles-per-line + compact size. --tile-cols drives both the block width and the
-// grid column count; the .compact class shrinks the icon box and tile pitch.
+// Tiles-per-line + compact size. --tile-cols is the setting (max per row); --tile-fit
+// is the effective width = the widest group's tile count capped at the setting, so the
+// centered block hugs the widest group. renderTiles updates maxRowTiles then calls this.
+let maxRowTiles = 0;   // largest section's tile count (set by renderTiles)
 function applyTiles() {
   const n = clampCols(settings.tileColumns);
-  document.documentElement.style.setProperty('--tile-cols', n);
+  const fit = Math.min(n, maxRowTiles || n);
+  const root = document.documentElement.style;
+  root.setProperty('--tile-cols', n);
+  root.setProperty('--tile-fit', fit);
   $.tiles.classList.toggle('compact', !!settings.tileCompact);
   if ($.setTileColsVal) $.setTileColsVal.textContent = n;
 }
@@ -3162,7 +3185,8 @@ function renderTracker() {
   const t = L();
   const now   = new Date();
   const today = now.getDay();
-  $.trackerHeader.textContent = t.weeklyTracker + ' - ' + t.days[today];   // "Weekly Tracker - Friday"
+  // Header doubles as a link to the standalone tracker
+  $.trackerHeader.innerHTML = `<a class="tracker-head-link" href="${TRACKER_URL}" target="_blank" rel="noopener noreferrer">${esc(t.weeklyTracker + ' - ' + t.days[today])}</a>`;
   const entries = readTrackerEntries();
   if (!entries || !entries.length) { trackerState('trackerEmpty'); return; }
   // Only today's entries, ordered by time of day (like the tracker's day column)
