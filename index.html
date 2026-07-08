@@ -84,11 +84,7 @@
     position: relative; z-index: 1;
     min-height: 100vh;
     display: flex; flex-direction: column;
-    align-items: center;
-    /* Vertical placement of the whole content stack (clock/search/tiles) — set by
-       the "Tiles vertical position" setting via JS (flex-start/center/flex-end). */
-    justify-content: var(--content-valign, center);
-    padding: 28px 24px 40px;
+    padding: 28px 24px;
   }
 
   /* ── Top controls ── */
@@ -105,14 +101,16 @@
   }
   .icon-btn:hover { color: var(--text); border-color: var(--text-dimmer); }
 
-  /* ── Center stack ── */
-  .center {
-    /* No width cap here: greeting/clock/date hug their content and search caps at
-       560px, so only the tile block widens. The tile block sizes itself (below).
-       Vertical placement is handled by .page justify-content (see --content-valign). */
-    width: 100%; max-width: none;
-    display: flex; flex-direction: column; align-items: center;
-  }
+  /* ── Vertical slots ──
+     The clock block and the content block (search + tiles) are each placed into the
+     top / middle / bottom slot by JS. When both land in the same slot, the clock sits
+     above the content. greeting/clock/date hug their content and search caps at 560px,
+     so only the tile block widens; it sizes itself (below). */
+  .slot { width: 100%; display: flex; flex-direction: column; align-items: center; }
+  #slot-top    { flex: 0 0 auto; }
+  #slot-middle { flex: 1 1 auto; justify-content: center; }
+  #slot-bottom { flex: 0 0 auto; }
+  .clock-block, .content-block { width: 100%; display: flex; flex-direction: column; align-items: center; }
 
   /* Each of greeting, clock, and date gets its own pill that hugs its content.
      All three share --clock-bg-opacity (set by the slider) — at 0 the pills are
@@ -896,23 +894,26 @@
     </button>
   </div>
 
-  <main class="center">
-    <div class="greeting" id="greeting"></div>
-    <div class="clock" id="clock"></div>
-    <div class="date" id="date"></div>
-
-    <form class="search" id="search-form">
-      <select class="search-engine" id="search-engine" title="Search engine"></select>
-      <input class="search-input" id="search-input" type="text" placeholder="Search the web…" data-i18n-ph="searchPlaceholder" autocomplete="off" spellcheck="false">
-      <button class="search-go" type="submit" title="Search">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      </button>
-    </form>
-
-    <div class="tiles" id="tiles"></div>
-
-    <div class="hint" data-i18n="hint">right-click a tile to edit or remove · drag to reorder</div>
+  <div class="slot" id="slot-top"></div>
+  <main class="slot" id="slot-middle">
+    <div class="clock-block" id="clock-block">
+      <div class="greeting" id="greeting"></div>
+      <div class="clock" id="clock"></div>
+      <div class="date" id="date"></div>
+    </div>
+    <div class="content-block" id="content-block">
+      <form class="search" id="search-form">
+        <select class="search-engine" id="search-engine" title="Search engine"></select>
+        <input class="search-input" id="search-input" type="text" placeholder="Search the web…" data-i18n-ph="searchPlaceholder" autocomplete="off" spellcheck="false">
+        <button class="search-go" type="submit" title="Search">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+      </form>
+      <div class="tiles" id="tiles"></div>
+      <div class="hint" data-i18n="hint">right-click a tile to edit or remove · drag to reorder</div>
+    </div>
   </main>
+  <div class="slot" id="slot-bottom"></div>
 </div>
 
 <!-- RSS feed panel -->
@@ -1036,14 +1037,6 @@
       <span data-i18n="openNewTab">Open links in a new tab</span>
       <div class="toggle" id="set-newtab"></div>
     </div>
-    <div class="toggle-row" id="set-showclock-row">
-      <span data-i18n="showClock">Show clock &amp; greeting</span>
-      <div class="toggle" id="set-showclock"></div>
-    </div>
-    <div class="toggle-row" id="set-seconds-row">
-      <span data-i18n="showSeconds">Show seconds on clock</span>
-      <div class="toggle" id="set-seconds"></div>
-    </div>
     <div class="toggle-row" id="set-showadd-row">
       <span data-i18n="showAddTile">Show "Add" tile</span>
       <div class="toggle" id="set-showadd"></div>
@@ -1114,6 +1107,30 @@
         </section>
 
         <section class="settings-pane" data-pane="widgets">
+    <div class="widget-card">
+      <div class="wc-head">
+        <div class="wc-head-main">
+          <div class="settings-section-title" data-i18n="clock">Clock</div>
+          <div class="toggle-row" id="set-clock-row">
+            <span data-i18n="showClock">Show clock &amp; greeting</span>
+            <div class="toggle" id="set-clock"></div>
+          </div>
+          <div class="toggle-row" id="set-seconds-row">
+            <span data-i18n="showSeconds">Show seconds on clock</span>
+            <div class="toggle" id="set-seconds"></div>
+          </div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label data-i18n="verticalPosition">Vertical position</label>
+        <div class="seg" id="set-clock-valign-seg">
+          <button type="button" data-valign="top" data-i18n="valignTop">Top</button>
+          <button type="button" data-valign="middle" data-i18n="valignMiddle">Middle</button>
+          <button type="button" data-valign="bottom" data-i18n="valignBottom">Bottom</button>
+        </div>
+      </div>
+    </div>
+
     <div class="widget-card">
       <div class="wc-head">
         <div class="wc-head-main">
@@ -1328,9 +1345,10 @@ const DEFAULT_LINKS = [
 const DEFAULT_SETTINGS = {
   greetingName: '', engine: 'google', newTab: false, seconds: true,
   theme: 'dark', background: '', lang: 'en', hideAdd: false,
-  searchEnabled: true, accent: '', showClock: true,
+  searchEnabled: true, accent: '',
   tileOpacity: 1, widgetOpacity: 1, searchOpacity: 1, clockOpacity: 0,
   tileColumns: 8, tileCompact: false, tileVAlign: 'middle',
+  clock:   { enabled: true, valign: 'middle' },
   groups: [],
   rss:     { enabled: false, urls: [], position: 'mr', highlight: '' },
   note:    { enabled: false, position: 'ml', text: '', checklist: false },
@@ -1385,7 +1403,7 @@ const I18N = {
     tileGroups: 'Tile groups', groups: 'Groups', group: 'Group', none: 'None',
     groupName: 'Group name', noGroups: 'No groups added yet',
     confirmRemoveGroup: 'Remove group "{name}"? Tiles in it will become ungrouped.',
-    showAddTile: 'Show "Add" tile', showSearch: 'Show search bar', showClock: 'Show clock & greeting',
+    showAddTile: 'Show "Add" tile', showSearch: 'Show search bar', showClock: 'Show clock & greeting', clock: 'Clock',
     theme: 'Theme', dark: 'Dark', light: 'Light',
     verticalPosition: 'Vertical position', valignTop: 'Top', valignMiddle: 'Middle', valignBottom: 'Bottom',
     appearance: 'Appearance', tileOpacity: 'Tile opacity', widgetOpacity: 'Widget opacity', searchOpacity: 'Search bar opacity', clockOpacity: 'Clock backdrop opacity',
@@ -1449,7 +1467,7 @@ const I18N = {
     tileGroups: 'Flisegrupper', groups: 'Grupper', group: 'Gruppe', none: 'Ingen',
     groupName: 'Gruppenavn', noGroups: 'Ingen grupper tilføjet endnu',
     confirmRemoveGroup: 'Fjern gruppen "{name}"? Fliser i den bliver ugrupperede.',
-    showAddTile: 'Vis "Tilføj"-flise', showSearch: 'Vis søgefelt', showClock: 'Vis ur & hilsen',
+    showAddTile: 'Vis "Tilføj"-flise', showSearch: 'Vis søgefelt', showClock: 'Vis ur & hilsen', clock: 'Ur',
     theme: 'Tema', dark: 'Mørk', light: 'Lys',
     verticalPosition: 'Lodret position', valignTop: 'Top', valignMiddle: 'Midt', valignBottom: 'Bund',
     appearance: 'Udseende', tileOpacity: 'Fliseopacitet', widgetOpacity: 'Widget-opacitet', searchOpacity: 'Søgefelts opacitet', clockOpacity: 'Uropacitet',
@@ -1521,6 +1539,8 @@ const $ = {
   clock:     document.getElementById('clock'),
   date:      document.getElementById('date'),
   tiles:     document.getElementById('tiles'),
+  clockBlock:   document.getElementById('clock-block'),
+  contentBlock: document.getElementById('content-block'),
   searchForm:document.getElementById('search-form'),
   searchEng: document.getElementById('search-engine'),
   searchIn:  document.getElementById('search-input'),
@@ -1600,13 +1620,14 @@ const $ = {
   searchOpVal:  document.getElementById('search-opacity-val'),
   clockOpVal:   document.getElementById('clock-opacity-val'),
   setShowSearch:document.getElementById('set-showsearch'),
-  setShowClock: document.getElementById('set-showclock'),
   setAccent:    document.getElementById('set-accent'),
   setTileCols:    document.getElementById('set-tile-cols'),
   setTileColsVal: document.getElementById('tile-cols-val'),
   setTileCompact: document.getElementById('set-tile-compact'),
   setThemeSeg:  document.getElementById('set-theme-seg'),
   setValignSeg: document.getElementById('set-valign-seg'),
+  setClock:     document.getElementById('set-clock'),
+  setClockValignSeg: document.getElementById('set-clock-valign-seg'),
 };
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -1701,6 +1722,13 @@ function normalizeGroups(g) {
   }
   return out;
 }
+// Pre-merge migration of stored settings (old field names -> current shape),
+// applied BEFORE the DEFAULT_SETTINGS merge so old values aren't masked by defaults.
+function migrateStored(s) {
+  s = s || {};
+  if (s.clock == null && typeof s.showClock === 'boolean') s.clock = { enabled: s.showClock, valign: 'middle' };
+  return s;
+}
 // Defensive type-coercion for top-level scalars — fixes hand-edited or stale
 // backups before they get used or save()'d back. Object subfields are handled
 // by normalizeRss / normalizeNote / normalizeGroups separately.
@@ -1710,10 +1738,16 @@ function normalizeSettings(s) {
   s.seconds       = asBool(s.seconds,       true);
   s.hideAdd       = asBool(s.hideAdd,       false);
   s.searchEnabled = asBool(s.searchEnabled, true);
-  s.showClock     = asBool(s.showClock,     true);
   s.tileCompact   = asBool(s.tileCompact,   false);
   s.tileColumns   = clampCols(s.tileColumns);
   s.tileVAlign    = ['top','middle','bottom'].includes(s.tileVAlign) ? s.tileVAlign : 'middle';
+  // Clock is a widget now: { enabled, valign }. Migrate the old top-level showClock.
+  const c = (s.clock && typeof s.clock === 'object') ? s.clock : {};
+  s.clock = {
+    enabled: asBool(c.enabled, asBool(s.showClock, true)),
+    valign: ['top','middle','bottom'].includes(c.valign) ? c.valign : 'middle',
+  };
+  delete s.showClock;
   s.tileOpacity   = clampOpacity(s.tileOpacity);
   s.widgetOpacity = clampOpacity(s.widgetOpacity);
   s.searchOpacity = clampOpacity(s.searchOpacity);
@@ -1743,7 +1777,7 @@ function load() {
   if (data && Array.isArray(data.links)) {
     links    = data.links.map(normalizeLink).filter(Boolean);
     nextId   = safeNextId(data.nextId);
-    settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
+    settings = { ...DEFAULT_SETTINGS, ...migrateStored(data.settings) };
     normalizeSettings(settings);
     normalizeAllSubfields();
   } else {
@@ -1953,12 +1987,22 @@ function applyOpacity() {
 function applySearch() {
   $.searchForm.style.display = settings.searchEnabled ? '' : 'none';
 }
-// Show/hide the whole clock section (greeting + clock + date) as one unit.
+// The clock is a widget now: show/hide the whole block and place it in its slot.
 function applyClock() {
-  const show = settings.showClock !== false;
-  $.greeting.style.display = show ? '' : 'none';
-  $.clock.style.display    = show ? '' : 'none';
-  $.date.style.display     = show ? '' : 'none';
+  $.clockBlock.style.display = settings.clock.enabled ? '' : 'none';
+  segSetActive($.setClockValignSeg, 'valign', settings.clock.valign || 'middle');
+  placeBlocks();
+}
+// Put the clock block and the content block (tiles) into their vertical slots.
+// When both land in the same slot the clock is appended first, so it sits above.
+// The search bar rides with the clock when the clock is on (always directly below
+// it), otherwise it sits above the tiles in the content block.
+function placeBlocks() {
+  if (settings.clock.enabled) $.clockBlock.appendChild($.searchForm);
+  else $.contentBlock.insertBefore($.searchForm, $.contentBlock.firstChild);
+  const slot = v => document.getElementById('slot-' + (['top','middle','bottom'].includes(v) ? v : 'middle'));
+  slot(settings.clock.valign).appendChild($.clockBlock);
+  slot(settings.tileVAlign).appendChild($.contentBlock);
 }
 // Tiles-per-line + compact size. --tile-cols is the setting (max per row); --tile-fit
 // is the effective width = the widest group's tile count capped at the setting, so the
@@ -1972,10 +2016,9 @@ function applyTiles() {
   root.setProperty('--tile-fit', fit);
   $.tiles.classList.toggle('compact', !!settings.tileCompact);
   if ($.setTileColsVal) $.setTileColsVal.textContent = n;
-  // Vertical placement of the whole content stack
-  const va = settings.tileVAlign || 'middle';
-  root.setProperty('--content-valign', va === 'top' ? 'flex-start' : va === 'bottom' ? 'flex-end' : 'center');
-  segSetActive($.setValignSeg, 'valign', va);
+  // Vertical placement of the content block (search + tiles)
+  segSetActive($.setValignSeg, 'valign', settings.tileVAlign || 'middle');
+  placeBlocks();
 }
 // Highlight the button in a .seg whose data-<attr> equals val
 function segSetActive(seg, attr, val) {
@@ -2015,10 +2058,16 @@ document.getElementById('set-tile-compact-row').addEventListener('click', () => 
   $.setTileCompact.classList.toggle('on', settings.tileCompact);
   applyTiles(); save();
 });
-document.getElementById('set-showclock-row').addEventListener('click', () => {
-  settings.showClock = !settings.showClock;
-  $.setShowClock.classList.toggle('on', settings.showClock);
-  save(); applyClock();
+// Clock widget: enable toggle + its own vertical-position segmented control
+document.getElementById('set-clock-row').addEventListener('click', () => {
+  settings.clock.enabled = !settings.clock.enabled;
+  $.setClock.classList.toggle('on', settings.clock.enabled);
+  applyClock(); save();
+});
+$.setClockValignSeg.addEventListener('click', e => {
+  const b = e.target.closest('button[data-valign]'); if (!b) return;
+  settings.clock.valign = b.dataset.valign;
+  applyClock(); save();
 });
 // Theme + tile-vertical segmented controls (delegated clicks)
 $.setThemeSeg.addEventListener('click', e => {
@@ -2180,7 +2229,8 @@ function openSettings() {
   $.setSearchOp.value = Math.round(clampOpacity(settings.searchOpacity) * 100);
   $.setClockOp.value  = Math.round(clampOpacity(settings.clockOpacity)  * 100);
   $.setShowSearch.classList.toggle('on', settings.searchEnabled);
-  $.setShowClock.classList.toggle('on', settings.showClock !== false);
+  $.setClock.classList.toggle('on', settings.clock.enabled);
+  segSetActive($.setClockValignSeg, 'valign', settings.clock.valign);
   $.setAccent.value = settings.accent || '#4fc4a8';
   $.setTileCols.value = clampCols(settings.tileColumns);
   $.setTileCompact.classList.toggle('on', settings.tileCompact);
@@ -2379,7 +2429,7 @@ function importData(input) {
       if (!Array.isArray(d.links)) throw 0;
       links    = d.links.map(normalizeLink).filter(Boolean);
       nextId   = safeNextId(d.nextId);
-      settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) };
+      settings = { ...DEFAULT_SETTINGS, ...migrateStored(d.settings) };
       normalizeSettings(settings);
       normalizeAllSubfields();
       if (!save()) { alert(L().alertImportTooLarge); }
