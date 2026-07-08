@@ -323,17 +323,19 @@
     letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim);
     margin-bottom: 5px;
   }
-  .field input, .field select {
+  .field input, .field select, .field textarea {
     width: 100%; background: var(--bg3);
     border: 1px solid var(--border2); border-radius: 8px;
     color: var(--text); font-family: var(--sans); font-size: 14px;
     padding: 9px 11px; outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .field input:focus, .field select:focus {
+  .field input:focus, .field select:focus, .field textarea:focus {
     border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 14%, transparent);
   }
   .field select option { background: var(--bg3); }
+  /* Background URL list: monospace so long links read cleanly, resizable */
+  #set-bg-urls { font-family: var(--mono); font-size: 12px; line-height: 1.5; resize: vertical; min-height: 66px; }
 
   /* Icon editor */
   .icon-edit { display: flex; gap: 11px; align-items: center; }
@@ -1061,8 +1063,19 @@
         <label class="btn btn-ghost file-label"><span data-i18n="uploadImage">Upload image</span><input type="file" id="bg-file" accept="image/*"></label>
         <button class="btn btn-ghost" data-i18n="default" onclick="resetBackground()">Default</button>
       </div>
-      <div class="field" style="margin-top:8px; margin-bottom:0">
-        <input id="set-bg-url" type="text" placeholder="…or paste image URL" data-i18n-ph="pasteImageUrl" autocomplete="off">
+      <div class="field" style="margin-top:8px">
+        <label data-i18n="bgUrlsLabel">Image URLs — one per line, they rotate</label>
+        <textarea id="set-bg-urls" rows="4" placeholder="https://imglink.cc/cdn/abc123.jpg&#10;https://imglink.cc/cdn/def456.jpg" data-i18n-ph="bgUrlsPlaceholder" spellcheck="false" autocomplete="off"></textarea>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label data-i18n="bgRotate">Rotate every</label>
+        <select id="set-bg-interval">
+          <option value="0" data-i18n="bgRotateLoad">On each load</option>
+          <option value="5">5 min</option>
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="60">1 hour</option>
+        </select>
       </div>
     </div>
 
@@ -1344,7 +1357,7 @@ const DEFAULT_LINKS = [
 ];
 const DEFAULT_SETTINGS = {
   greetingName: '', engine: 'google', newTab: false, seconds: true,
-  theme: 'dark', background: '', lang: 'en', hideAdd: false,
+  theme: 'dark', background: '', bgUrls: [], bgInterval: 0, lang: 'en', hideAdd: false,
   searchEnabled: true, accent: '',
   tileOpacity: 1, widgetOpacity: 1, searchOpacity: 1, clockOpacity: 0,
   tileColumns: 8, tileCompact: false, tileVAlign: 'middle',
@@ -1392,6 +1405,8 @@ const I18N = {
     openNewTab: 'Open links in a new tab',
     showSeconds: 'Show seconds on clock',
     background: 'Background', uploadImage: 'Upload image',
+    bgUrlsLabel: 'Image URLs — one per line, they rotate', bgUrlsPlaceholder: 'https://imglink.cc/cdn/abc123.jpg',
+    bgRotate: 'Rotate every', bgRotateLoad: 'On each load',
     backup: 'Backup', export: 'Export', import: 'Import', done: 'Done',
     edit: 'Edit', remove: 'Remove',
     general: 'General', widgets: 'Widgets', tiles: 'Tiles', opacity: 'Opacity',
@@ -1456,6 +1471,8 @@ const I18N = {
     openNewTab: 'Åbn links i ny fane',
     showSeconds: 'Vis sekunder på uret',
     background: 'Baggrund', uploadImage: 'Upload billede',
+    bgUrlsLabel: 'Billed-URLs — én pr. linje, de roterer', bgUrlsPlaceholder: 'https://imglink.cc/cdn/abc123.jpg',
+    bgRotate: 'Skift hver', bgRotateLoad: 'Ved hver indlæsning',
     backup: 'Sikkerhedskopi', export: 'Eksportér', import: 'Importér', done: 'Færdig',
     edit: 'Rediger', remove: 'Fjern',
     general: 'Generelt', widgets: 'Widgets', tiles: 'Fliser', opacity: 'Opacitet',
@@ -1561,7 +1578,8 @@ const $ = {
   setNewtab: document.getElementById('set-newtab'),
   setSeconds:document.getElementById('set-seconds'),
   setShowAdd:document.getElementById('set-showadd'),
-  setBgUrl:  document.getElementById('set-bg-url'),
+  setBgUrls:    document.getElementById('set-bg-urls'),
+  setBgInterval:document.getElementById('set-bg-interval'),
   setLang:   document.getElementById('set-lang'),
   hint:      document.querySelector('.hint'),
   rssPanel:  document.getElementById('rss-panel'),
@@ -1754,6 +1772,8 @@ function normalizeSettings(s) {
   s.clockOpacity  = clampOpacity(s.clockOpacity);
   if (!ENGINES[s.engine]) s.engine = 'google';                       // guard against stale/removed engines
   s.accent = (typeof s.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(s.accent)) ? s.accent : '';
+  s.bgUrls = Array.isArray(s.bgUrls) ? s.bgUrls.map(u => String(u || '').trim()).filter(Boolean) : [];
+  s.bgInterval = [0, 5, 15, 30, 60].includes(Number(s.bgInterval)) ? Number(s.bgInterval) : 0;
   return s;
 }
 // Apply every object-subfield normalizer + side-collision resolution in one place,
@@ -1869,9 +1889,17 @@ function safeHttpLink(link) {
 }
 
 // ── Background ────────────────────────────────────────────────────────────────
-function applyBackground() {
-  if (settings.background) {
-    document.body.style.backgroundImage = `url("${settings.background.replace(/"/g,'%22')}")`;
+// The background can be an uploaded image (settings.background, a data URI) or a
+// list of direct image URLs (settings.bgUrls) that rotate. The URL list takes
+// precedence. bgIndex is the currently-shown image; it's randomised once at start.
+let bgTimer = null, bgIndex = 0;
+function bgList() {
+  if (Array.isArray(settings.bgUrls) && settings.bgUrls.length) return settings.bgUrls;
+  return settings.background ? [settings.background] : [];
+}
+function paintBg(url) {
+  if (url) {
+    document.body.style.backgroundImage = `url("${url.replace(/"/g, '%22')}")`;
     document.body.style.backgroundSize = 'cover';
     document.body.style.backgroundPosition = 'center';
     document.body.style.backgroundAttachment = 'fixed';
@@ -1881,20 +1909,43 @@ function applyBackground() {
     document.documentElement.classList.remove('has-bg');
   }
 }
+function applyBackground() {
+  if (bgTimer) { clearInterval(bgTimer); bgTimer = null; }
+  const list = bgList();
+  if (!list.length) { paintBg(''); return; }
+  if (bgIndex < 0 || bgIndex >= list.length) bgIndex = 0;
+  paintBg(list[bgIndex]);
+  const mins = Number(settings.bgInterval) || 0;
+  if (list.length > 1 && mins > 0) bgTimer = setInterval(rotateBg, mins * 60000);
+}
+// Advance to a different random image; preload it first so the swap doesn't flash.
+function rotateBg() {
+  const list = bgList();
+  if (list.length < 2) return;
+  let n; do { n = Math.floor(Math.random() * list.length); } while (n === bgIndex);
+  bgIndex = n;
+  const url = list[bgIndex];
+  const img = new Image();
+  img.onload = img.onerror = () => paintBg(url);
+  img.src = url;
+}
 function setBackground(value) {
   const prev = settings.background;
   settings.background = value;
+  if (value) settings.bgUrls = [];   // an uploaded image replaces the URL list
   if (!save()) {
     settings.background = prev; save();
     alert(L().alertImageTooLarge);
     return false;
   }
+  bgIndex = 0;
   applyBackground();
   return true;
 }
 function resetBackground() {
+  settings.bgUrls = [];
+  if ($.setBgUrls) $.setBgUrls.value = '';
   setBackground('');
-  $.setBgUrl.value = '';
 }
 
 // ── Render tiles ──────────────────────────────────────────────────────────────
@@ -2211,7 +2262,8 @@ function openSettings() {
   $.setNewtab.classList.toggle('on', settings.newTab);
   $.setSeconds.classList.toggle('on', settings.seconds);
   $.setShowAdd.classList.toggle('on', !settings.hideAdd);
-  $.setBgUrl.value = (settings.background && !settings.background.startsWith('data:')) ? settings.background : '';
+  $.setBgUrls.value = (settings.bgUrls || []).join('\n');
+  $.setBgInterval.value = String(settings.bgInterval || 0);
   $.setRss.classList.toggle('on', settings.rss.enabled);
   $.setRssHighlight.value = settings.rss.highlight;
   $.setNote.classList.toggle('on', settings.note.enabled);
@@ -2288,12 +2340,6 @@ $.setEngine.addEventListener('change', () => {
   settings.engine = $.setEngine.value;
   $.searchEng.value = settings.engine;
   save();
-});
-let bgUrlDebounce = null;
-$.setBgUrl.addEventListener('input', () => {
-  // Debounce — applying/saving on every keystroke caused flicker and write churn
-  clearTimeout(bgUrlDebounce);
-  bgUrlDebounce = setTimeout(() => setBackground($.setBgUrl.value.trim()), 350);
 });
 $.setAccent.addEventListener('input', () => {
   settings.accent = $.setAccent.value;
@@ -2383,8 +2429,19 @@ document.getElementById('bg-file').addEventListener('change', function () {
   if (!f) return;
   processImageFile(f, 1600, 'image/jpeg', 0.85, dataUrl => {
     if (!dataUrl) { alert(L().alertReadFailed); return; }
-    if (setBackground(dataUrl)) $.setBgUrl.value = '';
+    if (setBackground(dataUrl)) $.setBgUrls.value = '';   // upload replaces the URL list
   });
+});
+// Rotating background URL list — one per line. Editing it clears any uploaded image.
+$.setBgUrls.addEventListener('input', () => {
+  settings.bgUrls = [...new Set($.setBgUrls.value.split('\n').map(s => s.trim()).filter(Boolean))];
+  if (settings.bgUrls.length) settings.background = '';
+  bgIndex = Math.floor(Math.random() * (settings.bgUrls.length || 1));
+  applyBackground(); save();
+});
+$.setBgInterval.addEventListener('change', () => {
+  settings.bgInterval = Number($.setBgInterval.value) || 0;
+  applyBackground(); save();
 });
 
 // ── Search ────────────────────────────────────────────────────────────────────
@@ -2435,6 +2492,7 @@ function importData(input) {
       if (!save()) { alert(L().alertImportTooLarge); }
       applyTheme(settings.theme);
       applyAccent();
+      bgIndex = Math.floor(Math.random() * (bgList().length || 1));
       applyBackground();
       applyOpacity();
       applySearch();
@@ -3449,6 +3507,7 @@ document.addEventListener('keydown', e => {
 load();
 applyTheme(settings.theme);
 applyAccent();
+bgIndex = Math.floor(Math.random() * (bgList().length || 1));   // random wallpaper per page load
 applyBackground();
 applyOpacity();
 applySearch();
