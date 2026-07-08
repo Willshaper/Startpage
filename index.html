@@ -1910,24 +1910,40 @@ function paintBg(url) {
   }
 }
 function applyBackground() {
-  if (bgTimer) { clearInterval(bgTimer); bgTimer = null; }
+  if (bgTimer) { clearTimeout(bgTimer); bgTimer = null; }
   const list = bgList();
   if (!list.length) { paintBg(''); return; }
-  if (bgIndex < 0 || bgIndex >= list.length) bgIndex = 0;
+  bgIndex = bgCurrentIndex();
   paintBg(list[bgIndex]);
-  const mins = Number(settings.bgInterval) || 0;
-  if (list.length > 1 && mins > 0) bgTimer = setInterval(rotateBg, mins * 60000);
+  scheduleBgRotation();
 }
-// Advance to a different random image; preload it first so the swap doesn't flash.
-function rotateBg() {
+// With a rotate interval set, which image shows is a function of the wall clock, so
+// every tab open in the same window shows the same one and it advances on real
+// N-minute boundaries (not from when a given tab happened to open). Interval 0
+// ("On each load") keeps the random per-load pick in bgIndex.
+function bgCurrentIndex() {
   const list = bgList();
-  if (list.length < 2) return;
-  let n; do { n = Math.floor(Math.random() * list.length); } while (n === bgIndex);
-  bgIndex = n;
-  const url = list[bgIndex];
-  const img = new Image();
-  img.onload = img.onerror = () => paintBg(url);
-  img.src = url;
+  const mins = Number(settings.bgInterval) || 0;
+  if (mins > 0 && list.length > 1) return Math.floor(Date.now() / (mins * 60000)) % list.length;
+  return (bgIndex >= 0 && bgIndex < list.length) ? bgIndex : 0;
+}
+// Fire at the next wall-clock boundary (aligned across tabs), then reschedule.
+function scheduleBgRotation() {
+  const list = bgList();
+  const mins = Number(settings.bgInterval) || 0;
+  if (mins <= 0 || list.length < 2) return;
+  const period = mins * 60000;
+  bgTimer = setTimeout(() => {
+    const cur = bgList();
+    if (cur.length > 1) {
+      const idx = Math.floor(Date.now() / period) % cur.length;
+      const url = cur[idx];
+      const img = new Image();
+      img.onload = img.onerror = () => { bgIndex = idx; paintBg(url); };  // preload so the swap doesn't flash
+      img.src = url;
+    }
+    scheduleBgRotation();
+  }, period - (Date.now() % period) + 100);
 }
 function setBackground(value) {
   const prev = settings.background;
