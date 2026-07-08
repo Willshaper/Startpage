@@ -85,12 +85,15 @@
     min-height: 100vh;
     display: flex; flex-direction: column;
     align-items: center;
-    padding: 28px 24px 60px;
+    /* Vertical placement of the whole content stack (clock/search/tiles) — set by
+       the "Tiles vertical position" setting via JS (flex-start/center/flex-end). */
+    justify-content: var(--content-valign, center);
+    padding: 28px 24px 40px;
   }
 
   /* ── Top controls ── */
   .top-controls {
-    position: fixed; top: 18px; right: 20px;
+    position: fixed; top: 16px; right: 16px;
     display: flex; gap: 8px; z-index: 50;
   }
   .icon-btn {
@@ -105,11 +108,10 @@
   /* ── Center stack ── */
   .center {
     /* No width cap here: greeting/clock/date hug their content and search caps at
-       560px, so only the tile block widens. The tile block sizes itself (below). */
+       560px, so only the tile block widens. The tile block sizes itself (below).
+       Vertical placement is handled by .page justify-content (see --content-valign). */
     width: 100%; max-width: none;
-    margin: auto 0;
     display: flex; flex-direction: column; align-items: center;
-    padding-top: 6vh;
   }
 
   /* Each of greeting, clock, and date gets its own pill that hugs its content.
@@ -405,6 +407,18 @@
   .btn-primary { background: var(--teal); border: 1px solid var(--teal); color: #07080d; font-weight: 500; }
   .btn-primary:hover { filter: brightness(1.1); }
 
+  /* Segmented control (theme, tile vertical position) */
+  .seg { display: inline-flex; border: 1px solid var(--border2); border-radius: 8px; overflow: hidden; }
+  .seg button {
+    background: transparent; border: none; cursor: pointer;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    color: var(--text-dim); padding: 7px 15px;
+    transition: background 0.12s, color 0.12s;
+  }
+  .seg button + button { border-left: 1px solid var(--border2); }
+  .seg button:hover { color: var(--text); }
+  .seg button.active { background: var(--teal); color: #07080d; }
+
   .settings-section { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 14px; }
   .settings-section-title {
     font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
@@ -508,12 +522,12 @@
     overflow: hidden;   /* clip to the panel so a widget that can't scroll can't overlap a neighbor */
   }
   .widget.show { display: flex; }
-  .widget.pos-tl { top: 18px;    left: 18px;  }
-  .widget.pos-ml { top: 50%;     left: 18px;  transform: translateY(-50%); }
-  .widget.pos-bl { bottom: 30px; left: 18px;  }
-  .widget.pos-tr { top: 64px;    right: 18px; }
-  .widget.pos-mr { top: 50%;     right: 18px; transform: translateY(-50%); }
-  .widget.pos-br { bottom: 30px; right: 18px; }
+  .widget.pos-tl { top: 16px;    left: 16px;  }
+  .widget.pos-ml { top: 50%;     left: 16px;  transform: translateY(-50%); }
+  .widget.pos-bl { bottom: 16px; left: 16px;  }
+  .widget.pos-tr { top: 16px;    right: 16px; }
+  .widget.pos-mr { top: 50%;     right: 16px; transform: translateY(-50%); }
+  .widget.pos-br { bottom: 16px; right: 16px; }
   /* Hide widgets when there isn't room beside the centred column */
   @media (max-width: 1280px) { .widget.show { display: none; } }
 
@@ -726,7 +740,7 @@
   }
   .wt-entry {
     background: var(--bg3); border: 1px solid var(--border); border-radius: 7px;
-    padding: 7px 10px 6px; display: flex; flex-direction: column; gap: 2px;
+    padding: 5px 9px; display: flex; flex-direction: column; gap: 0;
     position: relative; overflow: hidden;
     flex-shrink: 0;   /* keep full height so the body scrolls instead of clipping entries */
   }
@@ -748,14 +762,14 @@
     border-radius: 3px; padding: 1px 5px; pointer-events: none;
   }
   .wt-entry.wt-next .wt-name { padding-right: 44px; }
-  .wt-name { font-size: 13px; color: var(--text); line-height: 1.3; word-break: break-word; padding-left: 6px; }
+  .wt-name { font-size: 12.5px; color: var(--text); line-height: 1.2; word-break: break-word; padding-left: 6px; }
   .wt-notes {
     font-size: 10.5px; color: var(--text-dim); font-style: italic;
-    line-height: 1.3; padding-left: 6px; word-break: break-word;
+    line-height: 1.2; padding-left: 6px; word-break: break-word;
   }
   .wt-meta {
     display: flex; justify-content: space-between; align-items: center;
-    padding-left: 6px; margin-top: 1px;
+    padding-left: 6px; margin-top: 1px; line-height: 1.2;
   }
   .wt-time, .wt-cd { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; }
   .wt-time { color: var(--accent2); }
@@ -765,7 +779,7 @@
   .wt-meta-right { display: flex; align-items: center; gap: 7px; }
   .wt-link {
     display: flex; align-items: center; justify-content: center;
-    width: 20px; height: 20px; flex-shrink: 0;
+    width: 18px; height: 18px; flex-shrink: 0;
     background: var(--bg2); border: 1px solid var(--border2); border-radius: 4px;
     color: var(--text-dimmer); text-decoration: none;
     transition: border-color 0.15s, color 0.15s, background 0.15s;
@@ -879,9 +893,6 @@
   <div class="top-controls">
     <button class="icon-btn" id="btn-settings" title="Settings">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    </button>
-    <button class="icon-btn" id="btn-theme" title="Toggle theme">
-      <svg id="theme-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"></svg>
     </button>
   </div>
 
@@ -1025,6 +1036,10 @@
       <span data-i18n="openNewTab">Open links in a new tab</span>
       <div class="toggle" id="set-newtab"></div>
     </div>
+    <div class="toggle-row" id="set-showclock-row">
+      <span data-i18n="showClock">Show clock &amp; greeting</span>
+      <div class="toggle" id="set-showclock"></div>
+    </div>
     <div class="toggle-row" id="set-seconds-row">
       <span data-i18n="showSeconds">Show seconds on clock</span>
       <div class="toggle" id="set-seconds"></div>
@@ -1040,6 +1055,13 @@
         </section>
 
         <section class="settings-pane" data-pane="appearance">
+    <div class="settings-group">
+      <div class="settings-section-title" data-i18n="theme">Theme</div>
+      <div class="seg" id="set-theme-seg">
+        <button type="button" data-theme-val="dark" data-i18n="dark">Dark</button>
+        <button type="button" data-theme-val="light" data-i18n="light">Light</button>
+      </div>
+    </div>
     <div class="settings-group">
       <div class="settings-section-title" data-i18n="background">Background</div>
       <div class="io-row">
@@ -1225,6 +1247,14 @@
           <span class="slider-val" id="tile-cols-val">8</span>
         </div>
       </div>
+      <div class="field">
+        <label data-i18n="verticalPosition">Vertical position</label>
+        <div class="seg" id="set-valign-seg">
+          <button type="button" data-valign="top" data-i18n="valignTop">Top</button>
+          <button type="button" data-valign="middle" data-i18n="valignMiddle">Middle</button>
+          <button type="button" data-valign="bottom" data-i18n="valignBottom">Bottom</button>
+        </div>
+      </div>
       <div class="toggle-row" id="set-tile-compact-row" style="padding-bottom:0">
         <span data-i18n="compactTiles">Compact tiles</span>
         <div class="toggle" id="set-tile-compact"></div>
@@ -1298,9 +1328,9 @@ const DEFAULT_LINKS = [
 const DEFAULT_SETTINGS = {
   greetingName: '', engine: 'google', newTab: false, seconds: true,
   theme: 'dark', background: '', lang: 'en', hideAdd: false,
-  searchEnabled: true, accent: '',
+  searchEnabled: true, accent: '', showClock: true,
   tileOpacity: 1, widgetOpacity: 1, searchOpacity: 1, clockOpacity: 0,
-  tileColumns: 8, tileCompact: false,
+  tileColumns: 8, tileCompact: false, tileVAlign: 'middle',
   groups: [],
   rss:     { enabled: false, urls: [], position: 'mr', highlight: '' },
   note:    { enabled: false, position: 'ml', text: '', checklist: false },
@@ -1355,7 +1385,9 @@ const I18N = {
     tileGroups: 'Tile groups', groups: 'Groups', group: 'Group', none: 'None',
     groupName: 'Group name', noGroups: 'No groups added yet',
     confirmRemoveGroup: 'Remove group "{name}"? Tiles in it will become ungrouped.',
-    showAddTile: 'Show "Add" tile', showSearch: 'Show search bar',
+    showAddTile: 'Show "Add" tile', showSearch: 'Show search bar', showClock: 'Show clock & greeting',
+    theme: 'Theme', dark: 'Dark', light: 'Light',
+    verticalPosition: 'Vertical position', valignTop: 'Top', valignMiddle: 'Middle', valignBottom: 'Bottom',
     appearance: 'Appearance', tileOpacity: 'Tile opacity', widgetOpacity: 'Widget opacity', searchOpacity: 'Search bar opacity', clockOpacity: 'Clock backdrop opacity',
     confirmRemove: 'Remove "{name}"?',
     posTL: 'Top left', posML: 'Middle left', posBL: 'Bottom left',
@@ -1417,7 +1449,9 @@ const I18N = {
     tileGroups: 'Flisegrupper', groups: 'Grupper', group: 'Gruppe', none: 'Ingen',
     groupName: 'Gruppenavn', noGroups: 'Ingen grupper tilføjet endnu',
     confirmRemoveGroup: 'Fjern gruppen "{name}"? Fliser i den bliver ugrupperede.',
-    showAddTile: 'Vis "Tilføj"-flise', showSearch: 'Vis søgefelt',
+    showAddTile: 'Vis "Tilføj"-flise', showSearch: 'Vis søgefelt', showClock: 'Vis ur & hilsen',
+    theme: 'Tema', dark: 'Mørk', light: 'Lys',
+    verticalPosition: 'Lodret position', valignTop: 'Top', valignMiddle: 'Midt', valignBottom: 'Bund',
     appearance: 'Udseende', tileOpacity: 'Fliseopacitet', widgetOpacity: 'Widget-opacitet', searchOpacity: 'Søgefelts opacitet', clockOpacity: 'Uropacitet',
     confirmRemove: 'Fjern "{name}"?',
     posTL: 'Øverst venstre', posML: 'Midt venstre', posBL: 'Nederst venstre',
@@ -1490,7 +1524,7 @@ const $ = {
   searchForm:document.getElementById('search-form'),
   searchEng: document.getElementById('search-engine'),
   searchIn:  document.getElementById('search-input'),
-  themeIcon: document.getElementById('theme-icon'),
+  topControls: document.querySelector('.top-controls'),
   ctxMenu:   document.getElementById('ctx-menu'),
   linkModal: document.getElementById('link-modal'),
   linkTitle: document.getElementById('link-modal-title'),
@@ -1566,10 +1600,13 @@ const $ = {
   searchOpVal:  document.getElementById('search-opacity-val'),
   clockOpVal:   document.getElementById('clock-opacity-val'),
   setShowSearch:document.getElementById('set-showsearch'),
+  setShowClock: document.getElementById('set-showclock'),
   setAccent:    document.getElementById('set-accent'),
   setTileCols:    document.getElementById('set-tile-cols'),
   setTileColsVal: document.getElementById('tile-cols-val'),
   setTileCompact: document.getElementById('set-tile-compact'),
+  setThemeSeg:  document.getElementById('set-theme-seg'),
+  setValignSeg: document.getElementById('set-valign-seg'),
 };
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -1673,8 +1710,10 @@ function normalizeSettings(s) {
   s.seconds       = asBool(s.seconds,       true);
   s.hideAdd       = asBool(s.hideAdd,       false);
   s.searchEnabled = asBool(s.searchEnabled, true);
+  s.showClock     = asBool(s.showClock,     true);
   s.tileCompact   = asBool(s.tileCompact,   false);
   s.tileColumns   = clampCols(s.tileColumns);
+  s.tileVAlign    = ['top','middle','bottom'].includes(s.tileVAlign) ? s.tileVAlign : 'middle';
   s.tileOpacity   = clampOpacity(s.tileOpacity);
   s.widgetOpacity = clampOpacity(s.widgetOpacity);
   s.searchOpacity = clampOpacity(s.searchOpacity);
@@ -1914,6 +1953,13 @@ function applyOpacity() {
 function applySearch() {
   $.searchForm.style.display = settings.searchEnabled ? '' : 'none';
 }
+// Show/hide the whole clock section (greeting + clock + date) as one unit.
+function applyClock() {
+  const show = settings.showClock !== false;
+  $.greeting.style.display = show ? '' : 'none';
+  $.clock.style.display    = show ? '' : 'none';
+  $.date.style.display     = show ? '' : 'none';
+}
 // Tiles-per-line + compact size. --tile-cols is the setting (max per row); --tile-fit
 // is the effective width = the widest group's tile count capped at the setting, so the
 // centered block hugs the widest group. renderTiles updates maxRowTiles then calls this.
@@ -1926,6 +1972,15 @@ function applyTiles() {
   root.setProperty('--tile-fit', fit);
   $.tiles.classList.toggle('compact', !!settings.tileCompact);
   if ($.setTileColsVal) $.setTileColsVal.textContent = n;
+  // Vertical placement of the whole content stack
+  const va = settings.tileVAlign || 'middle';
+  root.setProperty('--content-valign', va === 'top' ? 'flex-start' : va === 'bottom' ? 'flex-end' : 'center');
+  segSetActive($.setValignSeg, 'valign', va);
+}
+// Highlight the button in a .seg whose data-<attr> equals val
+function segSetActive(seg, attr, val) {
+  if (!seg) return;
+  seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset[attr] === val));
 }
 // Bind one opacity slider. Guards against persisting an uninitialised slider:
 // only react while the Settings panel is open (so openSettings has set the value
@@ -1958,6 +2013,22 @@ $.setTileCols.addEventListener('wheel', e => { e.preventDefault(); }, { passive:
 document.getElementById('set-tile-compact-row').addEventListener('click', () => {
   settings.tileCompact = !settings.tileCompact;
   $.setTileCompact.classList.toggle('on', settings.tileCompact);
+  applyTiles(); save();
+});
+document.getElementById('set-showclock-row').addEventListener('click', () => {
+  settings.showClock = !settings.showClock;
+  $.setShowClock.classList.toggle('on', settings.showClock);
+  save(); applyClock();
+});
+// Theme + tile-vertical segmented controls (delegated clicks)
+$.setThemeSeg.addEventListener('click', e => {
+  const b = e.target.closest('button[data-theme-val]'); if (!b) return;
+  settings.theme = b.dataset.themeVal;
+  applyTheme(settings.theme); save();
+});
+$.setValignSeg.addEventListener('click', e => {
+  const b = e.target.closest('button[data-valign]'); if (!b) return;
+  settings.tileVAlign = b.dataset.valign;
   applyTiles(); save();
 });
 
@@ -2109,11 +2180,13 @@ function openSettings() {
   $.setSearchOp.value = Math.round(clampOpacity(settings.searchOpacity) * 100);
   $.setClockOp.value  = Math.round(clampOpacity(settings.clockOpacity)  * 100);
   $.setShowSearch.classList.toggle('on', settings.searchEnabled);
+  $.setShowClock.classList.toggle('on', settings.showClock !== false);
   $.setAccent.value = settings.accent || '#4fc4a8';
   $.setTileCols.value = clampCols(settings.tileColumns);
   $.setTileCompact.classList.toggle('on', settings.tileCompact);
+  segSetActive($.setThemeSeg, 'themeVal', settings.theme);
   applyOpacity();   // refresh the % labels next to the sliders
-  applyTiles();     // refresh the tiles-per-line count label
+  applyTiles();     // refresh the tiles-per-line count label + vertical-position seg
   renderFeedList();
   renderGroupList();
   renderCountdownList();
@@ -2315,6 +2388,7 @@ function importData(input) {
       applyBackground();
       applyOpacity();
       applySearch();
+      applyClock();
       applyTiles();
       applyLanguage();
       applyRss();
@@ -2441,11 +2515,30 @@ function measureNatural(el, child) {
   if (child) { child.style.flex = cf; child.style.maxHeight = cm; child.scrollTop = st; }
   return h;
 }
+const WIDGET_EDGE = 16;          // inset from the viewport edges (matches the pos-* CSS)
+const TRACKER_OTHERS_MIN = 180;  // min height each non-tracker widget keeps when the tracker has priority
+// Water-fill: short widgets keep their natural height, the rest share what's left
+// (floored at 80). Caps the total so the anchored placement can't overlap.
+function waterFill(items, avail) {
+  items.forEach(it => it.h = 0);
+  let remaining = avail, flexible = items.length, changed = true;
+  while (changed && flexible > 0) {
+    changed = false;
+    const share = remaining / flexible;
+    for (const it of items) {
+      if (!it.h && it.nat <= share) { it.h = it.nat; remaining -= it.nat; flexible--; changed = true; }
+    }
+  }
+  if (flexible > 0) {
+    const share = Math.max(80, Math.floor(remaining / flexible));
+    for (const it of items) if (!it.h) it.h = share;
+  }
+}
 function layoutWidgets() {
   const allPanels = WIDGET_KEYS.map(k => $[WIDGET_PANEL_REF[k]]).filter(Boolean);
   const clear = el => { el.style.top = ''; el.style.bottom = ''; el.style.transform = ''; el.style.maxHeight = ''; };
   // Below the responsive breakpoint the widgets are hidden — drop any overrides.
-  if (window.innerWidth <= 1280) { allPanels.forEach(clear); return; }
+  if (window.innerWidth <= 1280) { allPanels.forEach(clear); if ($.topControls) $.topControls.style.right = ''; return; }
 
   const groups = { l: [], r: [] };
   for (const k of WIDGET_KEYS) {
@@ -2454,29 +2547,30 @@ function layoutWidgets() {
     const side = ['tl', 'ml', 'bl'].includes(w.position) ? 'l' : 'r';
     groups[side].push({ el, key: k, order: WIDGET_SLOT_ORDER[w.position] ?? 1 });
   }
+  // Shift the settings gear left of a top-right widget so that widget can hug the corner.
+  const hasTR = groups.r.some(w => settings[w.key].position === 'tr');
+  if ($.topControls) $.topControls.style.right = hasTR ? (WIDGET_EDGE + 290 + 12) + 'px' : '';
+
+  const topPad = WIDGET_EDGE, botPad = WIDGET_EDGE, gap = 14;
   for (const side of ['l', 'r']) {
     const list = groups[side].sort((a, b) => a.order - b.order);
     list.forEach(({ el }) => clear(el));       // reset before measuring / re-placing
     if (list.length < 2) continue;             // a lone widget keeps its CSS anchor + 70vh cap
 
-    const topPad = side === 'r' ? 64 : 18;      // clear the top-right controls
-    const botPad = 30, gap = 14;
     const avail = window.innerHeight - topPad - botPad - gap * (list.length - 1);
     // Natural (uncapped) height of each widget
-    const items = list.map(({ el, key, order }) => ({ el, order, nat: measureNatural(el, widgetScrollChild(key)), h: 0 }));
-    // Water-fill: short widgets keep their height, the rest share what's left.
-    // This caps the total so the anchored placement below can't overlap.
-    let remaining = avail, flexible = items.length, changed = true;
-    while (changed && flexible > 0) {
-      changed = false;
-      const share = remaining / flexible;
-      for (const it of items) {
-        if (!it.h && it.nat <= share) { it.h = it.nat; remaining -= it.nat; flexible--; changed = true; }
-      }
-    }
-    if (flexible > 0) {
-      const share = Math.max(80, Math.floor(remaining / flexible));
-      for (const it of items) if (!it.h) it.h = share;
+    const items = list.map(({ el, key, order }) => ({ el, key, order, nat: measureNatural(el, widgetScrollChild(key)), h: 0 }));
+    // The Weekly Tracker has priority: it expands to its full natural height first,
+    // and the others share the rest, each floored at TRACKER_OTHERS_MIN so they still
+    // show a few entries and scroll. Otherwise everyone water-fills equally.
+    const tracker = items.find(it => it.key === 'tracker');
+    if (tracker) {
+      const others = items.filter(it => it !== tracker);
+      const othersReserve = others.reduce((s, it) => s + Math.min(it.nat, TRACKER_OTHERS_MIN), 0);
+      tracker.h = Math.min(tracker.nat, Math.max(Math.min(tracker.nat, TRACKER_OTHERS_MIN), avail - othersReserve));
+      waterFill(others, avail - tracker.h);
+    } else {
+      waterFill(items, avail);
     }
     // Place each at its own anchor — top→top edge, bottom→bottom edge,
     // middle→centred — so a "bottom" widget stays at the bottom instead of
@@ -3205,6 +3299,10 @@ function renderTracker() {
     const passed = now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m);
     if (!passed) { nextId = r.e.id; break; }
   }
+  // Preserve the scroll position across the 60s (and refocus/storage) re-renders,
+  // which rebuild the list to refresh the "5h 33m" figures and would otherwise
+  // snap the body back to the top.
+  const savedScroll = $.trackerBody.scrollTop;
   $.trackerBody.innerHTML = rows.map(r => {
     const e = r.e;
     const colorHex   = e.color ? TRACKER_COLORS[e.color] : null;
@@ -3226,6 +3324,7 @@ function renderTracker() {
       `</div>` +
     `</div>`;
   }).join('');
+  $.trackerBody.scrollTop = savedScroll;
   scheduleLayout();
 }
 function applyTracker() {
@@ -3249,16 +3348,9 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden && settings.tracker.enabled) renderTracker();
 });
 
-const MOON ='<circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 2A5.5 5.5 0 0 0 7.5 13 5.5 5.5 0 0 1 7.5 2z" fill="currentColor"/>';
-const SUN  = '<circle cx="7.5" cy="7.5" r="2.8" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1v1.4M7.5 12.6V14M1 7.5h1.4M12.6 7.5H14M3.2 3.2l1 1M10.8 10.8l1 1M11.8 3.2l-1 1M4.2 10.8l-1 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>';
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  $.themeIcon.innerHTML = theme === 'light' ? MOON : SUN;
-}
-function toggleTheme() {
-  settings.theme = settings.theme === 'light' ? 'dark' : 'light';
-  applyTheme(settings.theme);
-  save();
+  segSetActive($.setThemeSeg, 'themeVal', theme);
 }
 
 // ── Clock & greeting ──────────────────────────────────────────────────────────
@@ -3293,7 +3385,6 @@ function tick() {
 }
 
 // ── Global listeners ──────────────────────────────────────────────────────────
-document.getElementById('btn-theme').addEventListener('click', toggleTheme);
 document.getElementById('btn-settings').addEventListener('click', openSettings);
 [$.linkModal, $.setModal].forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
@@ -3311,6 +3402,7 @@ applyAccent();
 applyBackground();
 applyOpacity();
 applySearch();
+applyClock();
 applyTiles();
 applyLanguage();
 applyRss();
