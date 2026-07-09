@@ -544,16 +544,16 @@
   .rss-updated {
     margin-left: auto; margin-right: 7px;
     font-size: 9px; font-weight: 400; letter-spacing: 0.02em;
-    text-transform: none; color: var(--text-dimmer);
+    text-transform: none; color: var(--wt-today);
     white-space: nowrap; cursor: default;
   }
   .rss-updated:empty { display: none; }
   .rss-refresh {
     background: none; border: none; cursor: pointer;
-    color: var(--text-dimmer); padding: 2px; line-height: 0;
+    color: var(--wt-today); padding: 2px; line-height: 0;
     transition: color 0.15s, transform 0.6s;
   }
-  .rss-refresh:hover { color: var(--text); }
+  .rss-refresh:hover { filter: brightness(1.25); }
   .rss-refresh.spin { transform: rotate(360deg); }
   .rss-list { overflow-y: auto; flex: 1; min-height: 0; margin: -4px; padding: 4px; }
   /* Shared item card: solid fill + 1px border + rounded (matches the tracker) */
@@ -1453,7 +1453,7 @@ const I18N = {
     posTL: 'Top left', posML: 'Middle left', posBL: 'Bottom left',
     posTR: 'Top right', posMR: 'Middle right', posBR: 'Bottom right',
     feedLoading: 'Loading…', feedEmpty: 'Set a feed URL in settings', feedError: 'Could not load feed', feedFiltered: 'No items match your filter',
-    feedJustNow: 'just now', feedUpdatedTitle: 'Last updated:',
+    feedJustNow: 'now', feedUpdatedTitle: 'Last updated:',
     accentColor: 'Accent color',
     checklistMode: 'Checklist mode', addItem: 'Add item…', noteEmpty: 'No items yet',
     weather: 'Weather', showWeather: 'Show weather', useFahrenheit: 'Use Fahrenheit (°F)',
@@ -1525,7 +1525,7 @@ const I18N = {
     posTL: 'Øverst venstre', posML: 'Midt venstre', posBL: 'Nederst venstre',
     posTR: 'Øverst højre',   posMR: 'Midt højre',   posBR: 'Nederst højre',
     feedLoading: 'Indlæser…', feedEmpty: 'Angiv en feed-URL i indstillinger', feedError: 'Kunne ikke indlæse feed', feedFiltered: 'Ingen elementer matcher dit filter',
-    feedJustNow: 'lige nu', feedUpdatedTitle: 'Sidst opdateret:',
+    feedJustNow: 'nu', feedUpdatedTitle: 'Sidst opdateret:',
     accentColor: 'Accentfarve',
     checklistMode: 'Tjekliste-tilstand', addItem: 'Tilføj punkt…', noteEmpty: 'Ingen punkter endnu',
     weather: 'Vejr', showWeather: 'Vis vejr', useFahrenheit: 'Brug Fahrenheit (°F)',
