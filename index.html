@@ -1059,23 +1059,36 @@
     </div>
     <div class="settings-group">
       <div class="settings-section-title" data-i18n="background">Background</div>
-      <div class="io-row">
-        <label class="btn btn-ghost file-label"><span data-i18n="uploadImage">Upload image</span><input type="file" id="bg-file" accept="image/*"></label>
-        <button class="btn btn-ghost" data-i18n="default" onclick="resetBackground()">Default</button>
+      <div class="field" style="margin-bottom:6px">
+        <label data-i18n="bgSource">Source</label>
+        <div class="seg" id="set-bg-mode">
+          <button type="button" data-bgmode="none" data-i18n="bgModeNone">None</button>
+          <button type="button" data-bgmode="upload" data-i18n="bgModeUpload">Uploaded</button>
+          <button type="button" data-bgmode="urls" data-i18n="bgModeUrls">Links</button>
+        </div>
       </div>
-      <div class="field" style="margin-top:8px">
-        <label data-i18n="bgUrlsLabel">Image URLs — one per line, they rotate</label>
-        <textarea id="set-bg-urls" rows="4" placeholder="https://imglink.cc/cdn/abc123.jpg&#10;https://imglink.cc/cdn/def456.jpg" data-i18n-ph="bgUrlsPlaceholder" spellcheck="false" autocomplete="off"></textarea>
+      <div class="settings-note" id="bg-mode-help" style="margin-top:0"></div>
+      <div id="bg-upload-controls" style="margin-top:10px">
+        <div class="io-row">
+          <label class="btn btn-ghost file-label"><span data-i18n="uploadImage">Upload image</span><input type="file" id="bg-file" accept="image/*"></label>
+          <button class="btn btn-ghost" data-i18n="remove" onclick="removeUploadedBg()">Remove</button>
+        </div>
       </div>
-      <div class="field" style="margin-bottom:0">
-        <label data-i18n="bgRotate">Rotate every</label>
-        <select id="set-bg-interval">
-          <option value="0" data-i18n="bgRotateLoad">On each load</option>
-          <option value="5">5 min</option>
-          <option value="15">15 min</option>
-          <option value="30">30 min</option>
-          <option value="60">1 hour</option>
-        </select>
+      <div id="bg-urls-controls" style="margin-top:10px">
+        <div class="field">
+          <label data-i18n="bgUrlsLabel">Image URLs — one per line, they rotate</label>
+          <textarea id="set-bg-urls" rows="4" placeholder="https://imglink.cc/cdn/abc123.jpg&#10;https://imglink.cc/cdn/def456.jpg" data-i18n-ph="bgUrlsPlaceholder" spellcheck="false" autocomplete="off"></textarea>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label data-i18n="bgRotate">Rotate every</label>
+          <select id="set-bg-interval">
+            <option value="0" data-i18n="bgRotateLoad">On each load</option>
+            <option value="5">5 min</option>
+            <option value="15">15 min</option>
+            <option value="30">30 min</option>
+            <option value="60">1 hour</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -1357,7 +1370,7 @@ const DEFAULT_LINKS = [
 ];
 const DEFAULT_SETTINGS = {
   greetingName: '', engine: 'google', newTab: false, seconds: true,
-  theme: 'dark', background: '', bgUrls: [], bgInterval: 0, lang: 'en', hideAdd: false,
+  theme: 'dark', background: '', bgUrls: [], bgInterval: 0, bgMode: 'none', lang: 'en', hideAdd: false,
   searchEnabled: true, accent: '',
   tileOpacity: 1, widgetOpacity: 1, searchOpacity: 1, clockOpacity: 0,
   tileColumns: 8, tileCompact: false, tileVAlign: 'middle',
@@ -1407,6 +1420,11 @@ const I18N = {
     background: 'Background', uploadImage: 'Upload image',
     bgUrlsLabel: 'Image URLs — one per line, they rotate', bgUrlsPlaceholder: 'https://imglink.cc/cdn/abc123.jpg',
     bgRotate: 'Rotate every', bgRotateLoad: 'On each load',
+    bgSource: 'Source', bgModeNone: 'None', bgModeUpload: 'Uploaded', bgModeUrls: 'Links',
+    bgHelpNone: 'No background image.',
+    bgHelpUpload: 'One image you upload, saved in this browser. It is included in backups, so it can make them large.',
+    bgHelpUrls: 'Direct image links that rotate. Only the links are saved, so backups stay small.',
+    bgNoImage: 'No image uploaded yet.',
     backup: 'Backup', export: 'Export', import: 'Import', done: 'Done',
     edit: 'Edit', remove: 'Remove',
     general: 'General', widgets: 'Widgets', tiles: 'Tiles', opacity: 'Opacity',
@@ -1473,6 +1491,11 @@ const I18N = {
     background: 'Baggrund', uploadImage: 'Upload billede',
     bgUrlsLabel: 'Billed-URLs — én pr. linje, de roterer', bgUrlsPlaceholder: 'https://imglink.cc/cdn/abc123.jpg',
     bgRotate: 'Skift hver', bgRotateLoad: 'Ved hver indlæsning',
+    bgSource: 'Kilde', bgModeNone: 'Ingen', bgModeUpload: 'Uploadet', bgModeUrls: 'Links',
+    bgHelpNone: 'Intet baggrundsbillede.',
+    bgHelpUpload: 'Ét billede du uploader, gemt i denne browser. Det er med i backups, så de kan blive store.',
+    bgHelpUrls: 'Direkte billed-links der roterer. Kun linkene gemmes, så backups forbliver små.',
+    bgNoImage: 'Intet billede uploadet endnu.',
     backup: 'Sikkerhedskopi', export: 'Eksportér', import: 'Importér', done: 'Færdig',
     edit: 'Rediger', remove: 'Fjern',
     general: 'Generelt', widgets: 'Widgets', tiles: 'Fliser', opacity: 'Opacitet',
@@ -1578,6 +1601,7 @@ const $ = {
   setNewtab: document.getElementById('set-newtab'),
   setSeconds:document.getElementById('set-seconds'),
   setShowAdd:document.getElementById('set-showadd'),
+  setBgMode:    document.getElementById('set-bg-mode'),
   setBgUrls:    document.getElementById('set-bg-urls'),
   setBgInterval:document.getElementById('set-bg-interval'),
   setLang:   document.getElementById('set-lang'),
@@ -1745,6 +1769,8 @@ function normalizeGroups(g) {
 function migrateStored(s) {
   s = s || {};
   if (s.clock == null && typeof s.showClock === 'boolean') s.clock = { enabled: s.showClock, valign: 'middle' };
+  // Background used to be a single active source; derive the new mode from what was set.
+  if (s.bgMode == null) s.bgMode = (Array.isArray(s.bgUrls) && s.bgUrls.length) ? 'urls' : (s.background ? 'upload' : 'none');
   return s;
 }
 // Defensive type-coercion for top-level scalars — fixes hand-edited or stale
@@ -1774,6 +1800,7 @@ function normalizeSettings(s) {
   s.accent = (typeof s.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(s.accent)) ? s.accent : '';
   s.bgUrls = Array.isArray(s.bgUrls) ? s.bgUrls.map(u => String(u || '').trim()).filter(Boolean) : [];
   s.bgInterval = [0, 5, 15, 30, 60].includes(Number(s.bgInterval)) ? Number(s.bgInterval) : 0;
+  s.bgMode = ['none', 'upload', 'urls'].includes(s.bgMode) ? s.bgMode : 'none';
   return s;
 }
 // Apply every object-subfield normalizer + side-collision resolution in one place,
@@ -1889,13 +1916,15 @@ function safeHttpLink(link) {
 }
 
 // ── Background ────────────────────────────────────────────────────────────────
-// The background can be an uploaded image (settings.background, a data URI) or a
-// list of direct image URLs (settings.bgUrls) that rotate. The URL list takes
-// precedence. bgIndex is the currently-shown image; it's randomised once at start.
+// settings.bgMode picks the active source: 'upload' (settings.background, a single
+// uploaded data URI), 'urls' (settings.bgUrls, direct links that rotate), or 'none'.
+// Both sources are kept independently, so switching modes never wipes the other.
+// bgIndex is the currently-shown image; it's randomised once at start.
 let bgTimer = null, bgIndex = 0;
 function bgList() {
-  if (Array.isArray(settings.bgUrls) && settings.bgUrls.length) return settings.bgUrls;
-  return settings.background ? [settings.background] : [];
+  if (settings.bgMode === 'urls')   return Array.isArray(settings.bgUrls) ? settings.bgUrls : [];
+  if (settings.bgMode === 'upload') return settings.background ? [settings.background] : [];
+  return [];
 }
 function paintBg(url) {
   if (url) {
@@ -1945,23 +1974,35 @@ function scheduleBgRotation() {
     scheduleBgRotation();
   }, period - (Date.now() % period) + 100);
 }
+// Quota-safe setter for the uploaded image; leaves the URL list and mode untouched.
 function setBackground(value) {
   const prev = settings.background;
   settings.background = value;
-  if (value) settings.bgUrls = [];   // an uploaded image replaces the URL list
   if (!save()) {
     settings.background = prev; save();
     alert(L().alertImageTooLarge);
     return false;
   }
-  bgIndex = 0;
-  applyBackground();
   return true;
 }
-function resetBackground() {
-  settings.bgUrls = [];
-  if ($.setBgUrls) $.setBgUrls.value = '';
+function removeUploadedBg() {
   setBackground('');
+  applyBackground();
+  applyBgModeUI();
+}
+// Show the controls + help text for the active source, and highlight the selector.
+function applyBgModeUI() {
+  const mode = settings.bgMode || 'none';
+  segSetActive($.setBgMode, 'bgmode', mode);
+  const up = document.getElementById('bg-upload-controls');
+  const ur = document.getElementById('bg-urls-controls');
+  if (up) up.style.display = mode === 'upload' ? '' : 'none';
+  if (ur) ur.style.display = mode === 'urls'   ? '' : 'none';
+  const help = document.getElementById('bg-mode-help');
+  if (help) help.textContent =
+    mode === 'upload' ? L().bgHelpUpload + (settings.background ? '' : ' ' + L().bgNoImage)
+  : mode === 'urls'   ? L().bgHelpUrls
+  :                     L().bgHelpNone;
 }
 
 // ── Render tiles ──────────────────────────────────────────────────────────────
@@ -2280,6 +2321,7 @@ function openSettings() {
   $.setShowAdd.classList.toggle('on', !settings.hideAdd);
   $.setBgUrls.value = (settings.bgUrls || []).join('\n');
   $.setBgInterval.value = String(settings.bgInterval || 0);
+  applyBgModeUI();
   $.setRss.classList.toggle('on', settings.rss.enabled);
   $.setRssHighlight.value = settings.rss.highlight;
   $.setNote.classList.toggle('on', settings.note.enabled);
@@ -2440,18 +2482,24 @@ document.getElementById('settings-modal').addEventListener('click', e => {
 });
 
 $.groupInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addGroup(); } });
+// Background source selector — switching never wipes the other source's data.
+$.setBgMode.addEventListener('click', e => {
+  const b = e.target.closest('button[data-bgmode]'); if (!b) return;
+  settings.bgMode = b.dataset.bgmode;
+  bgIndex = Math.floor(Math.random() * (bgList().length || 1));
+  applyBackground(); applyBgModeUI(); save();
+});
 document.getElementById('bg-file').addEventListener('change', function () {
   const f = this.files[0]; this.value = '';
   if (!f) return;
   processImageFile(f, 1600, 'image/jpeg', 0.85, dataUrl => {
     if (!dataUrl) { alert(L().alertReadFailed); return; }
-    if (setBackground(dataUrl)) $.setBgUrls.value = '';   // upload replaces the URL list
+    if (setBackground(dataUrl)) { settings.bgMode = 'upload'; save(); applyBackground(); applyBgModeUI(); }
   });
 });
-// Rotating background URL list — one per line. Editing it clears any uploaded image.
+// Rotating background URL list — one per line. Independent of the uploaded image.
 $.setBgUrls.addEventListener('input', () => {
   settings.bgUrls = [...new Set($.setBgUrls.value.split('\n').map(s => s.trim()).filter(Boolean))];
-  if (settings.bgUrls.length) settings.background = '';
   bgIndex = Math.floor(Math.random() * (settings.bgUrls.length || 1));
   applyBackground(); save();
 });
