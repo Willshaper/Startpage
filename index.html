@@ -540,6 +540,14 @@
     text-transform: uppercase; color: var(--wt-today);
     margin-bottom: 10px; flex-shrink: 0;
   }
+  /* Last-updated stamp: small + dim, pushed to sit just left of the refresh button */
+  .rss-updated {
+    margin-left: auto; margin-right: 7px;
+    font-size: 9px; font-weight: 400; letter-spacing: 0.02em;
+    text-transform: none; color: var(--text-dimmer);
+    white-space: nowrap; cursor: default;
+  }
+  .rss-updated:empty { display: none; }
   .rss-refresh {
     background: none; border: none; cursor: pointer;
     color: var(--text-dimmer); padding: 2px; line-height: 0;
@@ -922,6 +930,7 @@
 <aside class="widget rss-panel" id="rss-panel">
   <div class="rss-head">
     <span data-i18n="feed">Feed</span>
+    <span class="rss-updated" id="rss-updated"></span>
     <button class="rss-refresh" id="rss-refresh" title="Refresh">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
     </button>
@@ -1444,6 +1453,7 @@ const I18N = {
     posTL: 'Top left', posML: 'Middle left', posBL: 'Bottom left',
     posTR: 'Top right', posMR: 'Middle right', posBR: 'Bottom right',
     feedLoading: 'Loading…', feedEmpty: 'Set a feed URL in settings', feedError: 'Could not load feed', feedFiltered: 'No items match your filter',
+    feedJustNow: 'just now', feedUpdatedTitle: 'Last updated:',
     accentColor: 'Accent color',
     checklistMode: 'Checklist mode', addItem: 'Add item…', noteEmpty: 'No items yet',
     weather: 'Weather', showWeather: 'Show weather', useFahrenheit: 'Use Fahrenheit (°F)',
@@ -1515,6 +1525,7 @@ const I18N = {
     posTL: 'Øverst venstre', posML: 'Midt venstre', posBL: 'Nederst venstre',
     posTR: 'Øverst højre',   posMR: 'Midt højre',   posBR: 'Nederst højre',
     feedLoading: 'Indlæser…', feedEmpty: 'Angiv en feed-URL i indstillinger', feedError: 'Kunne ikke indlæse feed', feedFiltered: 'Ingen elementer matcher dit filter',
+    feedJustNow: 'lige nu', feedUpdatedTitle: 'Sidst opdateret:',
     accentColor: 'Accentfarve',
     checklistMode: 'Tjekliste-tilstand', addItem: 'Tilføj punkt…', noteEmpty: 'Ingen punkter endnu',
     weather: 'Vejr', showWeather: 'Vis vejr', useFahrenheit: 'Brug Fahrenheit (°F)',
@@ -1564,6 +1575,7 @@ function applyLanguage() {
   if (typeof updateCountdown     === 'function') updateCountdown();
   if (typeof renderTracker       === 'function') renderTracker();
   if (typeof syncWidgetPositions === 'function') syncWidgetPositions();
+  if (typeof renderFeedUpdated   === 'function') renderFeedUpdated();
 }
 
 let links     = [];
@@ -1608,6 +1620,7 @@ const $ = {
   hint:      document.querySelector('.hint'),
   rssPanel:  document.getElementById('rss-panel'),
   rssList:   document.getElementById('rss-list'),
+  rssUpdated:document.getElementById('rss-updated'),
   rssRefresh:document.getElementById('rss-refresh'),
   setRss:    document.getElementById('set-rss'),
   setRssUrl: document.getElementById('set-rss-url'),
@@ -2587,6 +2600,7 @@ let rssLastSig = '';     // signature of the URL set last fetched (avoids needle
 let rssUrlDebounce = null;
 let rssHighlightDebounce = null;
 let lastFeedItems = [];  // last rendered items, so a highlight-only change can re-style without refetching
+let feedUpdatedAt = 0;   // timestamp of the last SUCCESSFUL fetch (persisted in the cache)
 
 // Signature of the current feed set (url + keyword filter). Highlight is not part
 // of it — highlighting is visual-only and never triggers a refetch.
@@ -2597,17 +2611,35 @@ function feedSig() { return settings.rss.urls.map(f => f.url + '|' + f.filter).j
 function loadFeedCache() {
   try {
     const c = JSON.parse(localStorage.getItem(FEED_CACHE_KEY) || 'null');
-    if (c && c.sig === feedSig() && Array.isArray(c.items) && c.items.length) return c.items;
+    if (c && c.sig === feedSig() && Array.isArray(c.items) && c.items.length) {
+      feedUpdatedAt = typeof c.fetchedAt === 'number' ? c.fetchedAt : 0;  // so "last updated" survives reloads
+      return c.items;
+    }
   } catch {}
   return null;
 }
 function saveFeedCache(items) {
+  feedUpdatedAt = Date.now();
   try {
     localStorage.setItem(FEED_CACHE_KEY, JSON.stringify({
       sig: feedSig(),
+      fetchedAt: feedUpdatedAt,
       items: items.map(it => ({ title: it.title, link: it.link, ts: it.ts })),
     }));
   } catch {}
+  renderFeedUpdated();
+}
+// Relative "time since last successful update" shown between the Feed label and refresh.
+function renderFeedUpdated() {
+  if (!$.rssUpdated) return;
+  if (!feedUpdatedAt || !settings.rss.enabled || !settings.rss.urls.length) { $.rssUpdated.textContent = ''; $.rssUpdated.title = ''; return; }
+  const s = Math.max(0, Math.floor((Date.now() - feedUpdatedAt) / 1000));
+  const rel = s < 60 ? L().feedJustNow
+            : s < 3600 ? Math.floor(s / 60) + 'm'
+            : s < 86400 ? Math.floor(s / 3600) + 'h'
+            : Math.floor(s / 86400) + 'd';
+  $.rssUpdated.textContent = rel;
+  $.rssUpdated.title = L().feedUpdatedTitle + ' ' + new Date(feedUpdatedAt).toLocaleString();
 }
 
 // ── Widget position constraint ────────────────────────────────────────────────
@@ -2866,6 +2898,7 @@ function applyRss() {
       if (!$.rssList.querySelector('.rss-item')) {
         const cached = loadFeedCache();
         if (cached) renderFeed(cached);
+        else feedUpdatedAt = 0;   // new/unknown feed set: no successful update yet
       }
       if (feedSig() !== rssLastSig) fetchFeed();
       rssTimer = setInterval(fetchFeed, RSS_REFRESH_MS);
@@ -2875,6 +2908,7 @@ function applyRss() {
   } else {
     $.rssPanel.classList.remove('show');
   }
+  renderFeedUpdated();
   scheduleLayout();
 }
 
@@ -3034,6 +3068,7 @@ function renderFeed(items) {
     const hl = titleIsHighlighted(it.title, phrases) ? ' rss-item--hl' : '';
     return `<a class="rss-item${hl}" href="${esc(it.link)}"${target}>${esc(it.title)}</a>`;
   }).join('');
+  renderFeedUpdated();
   scheduleLayout();   // feed height changed — re-fit the column
 }
 
@@ -3591,6 +3626,7 @@ updateGreeting();
 tick();
 setInterval(tick, 1000);
 setInterval(updateGreeting, 60000);
+setInterval(renderFeedUpdated, 30000);   // keep the feed's "last updated" figure current
 window.addEventListener('load', () => { if (settings.searchEnabled) $.searchIn.focus(); });
 </script>
 </body>
