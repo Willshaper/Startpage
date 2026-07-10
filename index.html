@@ -94,12 +94,12 @@
   }
   .icon-btn {
     background: var(--bg3); border: 1px solid var(--border2);
-    border-radius: 8px; color: var(--text-dim); cursor: pointer;
+    border-radius: 8px; color: var(--wt-today); cursor: pointer;
     width: 32px; height: 32px;
     display: flex; align-items: center; justify-content: center;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    transition: border-color 0.15s, filter 0.15s, background 0.15s;
   }
-  .icon-btn:hover { color: var(--text); border-color: var(--text-dimmer); }
+  .icon-btn:hover { filter: brightness(1.25); border-color: var(--text-dimmer); }
 
   /* ── Vertical slots ──
      The clock block and the content block (search + tiles) are each placed into the
@@ -540,7 +540,7 @@
     text-transform: uppercase; color: var(--wt-today);
     margin-bottom: 10px; flex-shrink: 0;
   }
-  /* Last-updated stamp: small + dim, pushed to sit just left of the refresh button */
+  /* Last-updated stamp: small, in the header cyan, just left of the refresh button */
   .rss-updated {
     margin-left: auto; margin-right: 7px;
     font-size: 9px; font-weight: 400; letter-spacing: 0.02em;
@@ -551,7 +551,7 @@
   .rss-refresh {
     background: none; border: none; cursor: pointer;
     color: var(--wt-today); padding: 2px; line-height: 0;
-    transition: color 0.15s, transform 0.6s;
+    transition: filter 0.15s, transform 0.6s;
   }
   .rss-refresh:hover { filter: brightness(1.25); }
   .rss-refresh.spin { transform: rotate(360deg); }
@@ -569,12 +569,12 @@
   .rss-item + .rss-item { margin-top: 4px; }
   /* Global "highlight" filter — exact token matches get a cyan backdrop */
   .rss-item--hl {
-    background: color-mix(in srgb, #22d3ee 14%, var(--bg3));
-    border-color: color-mix(in srgb, #22d3ee 40%, var(--border));
-    box-shadow: inset 2px 0 0 #22d3ee;
+    background: color-mix(in srgb, var(--wt-today) 14%, var(--bg3));
+    border-color: color-mix(in srgb, var(--wt-today) 40%, var(--border));
+    box-shadow: inset 2px 0 0 var(--wt-today);
     color: var(--text);
   }
-  .rss-item--hl:hover { border-color: color-mix(in srgb, #22d3ee 55%, var(--border)); }
+  .rss-item--hl:hover { border-color: color-mix(in srgb, var(--wt-today) 55%, var(--border)); }
   .rss-state {
     padding: 14px 4px; font-size: 11px; color: var(--text-dimmer);
     text-align: center; font-family: var(--mono); letter-spacing: 0.05em;
@@ -590,10 +590,10 @@
   }
   .note-mode-btn {
     background: none; border: none; cursor: pointer;
-    color: var(--text-dimmer); padding: 2px; line-height: 0;
-    transition: color 0.15s;
+    color: var(--wt-today); padding: 2px; line-height: 0;
+    transition: filter 0.15s;
   }
-  .note-mode-btn:hover { color: var(--text); }
+  .note-mode-btn:hover { filter: brightness(1.25); }
   .note-text {
     flex: 1; width: 100%; min-height: 0;
     background: transparent; border: none; outline: none; resize: none;
@@ -662,10 +662,10 @@
   }
   .weather-refresh {
     background: none; border: none; cursor: pointer;
-    color: var(--text-dimmer); padding: 2px; line-height: 0;
-    transition: color 0.15s, transform 0.6s;
+    color: var(--wt-today); padding: 2px; line-height: 0;
+    transition: filter 0.15s, transform 0.6s;
   }
-  .weather-refresh:hover { color: var(--text); }
+  .weather-refresh:hover { filter: brightness(1.25); }
   .weather-refresh.spin { transform: rotate(360deg); }
   .weather-main { display: flex; align-items: center; gap: 12px; }
   .weather-icon { font-size: 40px; line-height: 1; flex-shrink: 0; }
