@@ -20,9 +20,15 @@
     --text:       #d4d6e8;
     --text-dim:   #8088a8;
     --text-dimmer:#4a4f6a;
-    /* Weekly-Tracker widget: mid-range countdown + "today" accent (match the tracker) */
+    /* Weekly-Tracker widget: "today" identity cyan (kept fixed — the tracker never
+       follows the chosen accent, it matches the standalone Weekly-Tracker). */
     --wt-mid:     #d4860f;
     --wt-today:   #3ab8d8;
+    /* Fixed time-nearness colours for the tracker + countdown readouts (red→orange→
+       green by how long is left), matching the standalone exactly; never the accent. */
+    --cd-near:    #e8615a;
+    --cd-mid:     #d4860f;
+    --cd-far:     #4fc4a8;
     --mono:   'DM Mono', monospace;
     --sans:   'Noto Sans JP', sans-serif;
     --display:'Syne', sans-serif;
@@ -59,6 +65,9 @@
     --text-dimmer:#8088a8;
     --wt-mid:     #9e5e08;
     --wt-today:   #1480a8;
+    --cd-near:    #c43c36;
+    --cd-mid:     #9e5e08;
+    --cd-far:     #1e9070;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -94,7 +103,7 @@
   }
   .icon-btn {
     background: var(--bg3); border: 1px solid var(--border2);
-    border-radius: 8px; color: var(--wt-today); cursor: pointer;
+    border-radius: 8px; color: var(--teal); cursor: pointer;
     width: 32px; height: 32px;
     display: flex; align-items: center; justify-content: center;
     transition: border-color 0.15s, filter 0.15s, background 0.15s;
@@ -537,20 +546,20 @@
   .rss-head {
     display: flex; justify-content: space-between; align-items: center;
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--wt-today);
+    text-transform: uppercase; color: var(--teal);
     margin-bottom: 10px; flex-shrink: 0;
   }
   /* Last-updated stamp: small, in the header cyan, just left of the refresh button */
   .rss-updated {
     margin-left: auto; margin-right: 7px;
     font-size: 9px; font-weight: 400; letter-spacing: 0.02em;
-    text-transform: none; color: var(--wt-today);
+    text-transform: none; color: var(--teal);
     white-space: nowrap; cursor: default;
   }
   .rss-updated:empty { display: none; }
   .rss-refresh {
     background: none; border: none; cursor: pointer;
-    color: var(--wt-today); padding: 2px; line-height: 0;
+    color: var(--teal); padding: 2px; line-height: 0;
     transition: filter 0.15s, transform 0.6s;
   }
   .rss-refresh:hover { filter: brightness(1.25); }
@@ -569,12 +578,12 @@
   .rss-item + .rss-item { margin-top: 4px; }
   /* Global "highlight" filter — exact token matches get a cyan backdrop */
   .rss-item--hl {
-    background: color-mix(in srgb, var(--wt-today) 14%, var(--bg3));
-    border-color: color-mix(in srgb, var(--wt-today) 40%, var(--border));
-    box-shadow: inset 2px 0 0 var(--wt-today);
+    background: color-mix(in srgb, var(--teal) 14%, var(--bg3));
+    border-color: color-mix(in srgb, var(--teal) 40%, var(--border));
+    box-shadow: inset 2px 0 0 var(--teal);
     color: var(--text);
   }
-  .rss-item--hl:hover { border-color: color-mix(in srgb, var(--wt-today) 55%, var(--border)); }
+  .rss-item--hl:hover { border-color: color-mix(in srgb, var(--teal) 55%, var(--border)); }
   .rss-state {
     padding: 14px 4px; font-size: 11px; color: var(--text-dimmer);
     text-align: center; font-family: var(--mono); letter-spacing: 0.05em;
@@ -585,12 +594,12 @@
   .note-head {
     display: flex; align-items: center; justify-content: space-between;
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--wt-today);
+    text-transform: uppercase; color: var(--teal);
     margin-bottom: 10px; flex-shrink: 0;
   }
   .note-mode-btn {
     background: none; border: none; cursor: pointer;
-    color: var(--wt-today); padding: 2px; line-height: 0;
+    color: var(--teal); padding: 2px; line-height: 0;
     transition: filter 0.15s;
   }
   .note-mode-btn:hover { filter: brightness(1.25); }
@@ -657,12 +666,12 @@
   .weather-head {
     display: flex; justify-content: space-between; align-items: center;
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--wt-today);
+    text-transform: uppercase; color: var(--teal);
     margin-bottom: 12px; flex-shrink: 0;
   }
   .weather-refresh {
     background: none; border: none; cursor: pointer;
-    color: var(--wt-today); padding: 2px; line-height: 0;
+    color: var(--teal); padding: 2px; line-height: 0;
     transition: filter 0.15s, transform 0.6s;
   }
   .weather-refresh:hover { filter: brightness(1.25); }
@@ -693,7 +702,7 @@
   .countdown-panel { padding: 14px 14px 12px; }
   .countdown-head {
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--wt-today);
+    text-transform: uppercase; color: var(--teal);
     margin-bottom: 10px; flex-shrink: 0;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
@@ -720,12 +729,12 @@
   }
   .countdown-time .seg { white-space: nowrap; }
   .countdown-time .u { font-size: 13px; color: var(--text-dim); margin-left: 1px; }
-  .countdown-time.cd-near { color: var(--accent); }
-  .countdown-time.cd-mid  { color: var(--wt-mid); }
-  .countdown-time.cd-far  { color: var(--teal); }
+  .countdown-time.cd-near { color: var(--cd-near); }
+  .countdown-time.cd-mid  { color: var(--cd-mid); }
+  .countdown-time.cd-far  { color: var(--cd-far); }
   .countdown-done {
     font-family: var(--display); font-size: 16px; font-weight: 600;
-    color: var(--teal); line-height: 1; padding: 1px 0;
+    color: var(--cd-far); line-height: 1; padding: 1px 0;
   }
   .countdown-state {
     font-family: var(--mono); font-size: 11px; color: var(--text-dimmer); padding: 1px 0;
@@ -735,7 +744,7 @@
   .tracker-panel { padding: 14px 14px 12px; }
   .tracker-head {
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--wt-today);
+    text-transform: uppercase; color: var(--wt-today);   /* fixed cyan — never the accent */
     margin-bottom: 10px; flex-shrink: 0;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
@@ -781,9 +790,9 @@
   }
   .wt-time, .wt-cd { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; }
   .wt-time { color: var(--accent2); }
-  .wt-cd-near { color: var(--accent); }
-  .wt-cd-mid  { color: var(--wt-mid); }
-  .wt-cd-far  { color: var(--teal); }
+  .wt-cd-near { color: var(--cd-near); }
+  .wt-cd-mid  { color: var(--cd-mid); }
+  .wt-cd-far  { color: var(--cd-far); }
   .wt-meta-right { display: flex; align-items: center; gap: 7px; }
   .wt-link {
     display: flex; align-items: center; justify-content: center;
@@ -824,7 +833,7 @@
     color: var(--text-dim); transition: background 0.12s, color 0.12s;
   }
   .settings-tab:hover { color: var(--text); background: var(--bg3); }
-  .settings-tab.active { color: var(--wt-today); background: color-mix(in srgb, var(--wt-today) 12%, transparent); }
+  .settings-tab.active { color: var(--teal); background: color-mix(in srgb, var(--teal) 12%, transparent); }
   .settings-tab svg { flex-shrink: 0; }
   .settings-panes { flex: 1; min-width: 0; overflow-y: auto; padding: 16px 20px 20px; }
   .settings-pane { display: none; }
@@ -2563,10 +2572,11 @@ $.searchEng.addEventListener('change', () => {
 function exportData() {
   const blob = new Blob([JSON.stringify({ links, nextId, settings }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
+  a.href = url;
   a.download = 'startpage-backup.json';
   a.click();
-  URL.revokeObjectURL(a.href);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);   // revoke after the download starts, not before
 }
 function importData(input) {
   const file = input.files[0];
@@ -3379,7 +3389,7 @@ function countdownCdClass(ms) {
   const h = ms / 3600000;
   return h < 6 ? 'cd-near' : h < 48 ? 'cd-mid' : 'cd-far';
 }
-// Render one countdown's body: a prominent D/H/M line (no seconds), "time's up",
+// Render one countdown's body: a prominent D/H/M/S line, "time's up",
 // or a "set a target" hint
 function countdownItemHtml(item, now, t) {
   const p2 = n => String(n).padStart(2, '0');
