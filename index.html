@@ -1192,6 +1192,10 @@
         <label data-i18n="highlight">Highlight</label>
         <input id="set-rss-highlight" type="text" placeholder="Exact matches to highlight (comma-separated)" data-i18n-ph="highlightPlaceholder" autocomplete="off">
       </div>
+      <div class="field" style="margin-top:12px; margin-bottom:0">
+        <label data-i18n="blacklist">Blacklist</label>
+        <input id="set-rss-blacklist" type="text" placeholder="Hide items containing these words (comma-separated)" data-i18n-ph="blacklistPlaceholder" autocomplete="off">
+      </div>
     </div>
 
     <div class="widget-card">
@@ -1385,7 +1389,7 @@ const DEFAULT_SETTINGS = {
   tileColumns: 8, tileCompact: false, tileVAlign: 'middle',
   clock:   { enabled: true, valign: 'middle' },
   groups: [],
-  rss:     { enabled: false, urls: [], position: 'mr', highlight: '' },
+  rss:     { enabled: false, urls: [], position: 'mr', highlight: '', blacklist: '' },
   note:    { enabled: false, position: 'ml', text: '', checklist: false },
   weather: { enabled: false, position: 'tr', units: 'c', location: null },
   countdown: { enabled: false, position: 'br', items: [] },
@@ -1440,6 +1444,7 @@ const I18N = {
     feed: 'Feed', showFeed: 'Show RSS feed', position: 'Position',
     feeds: 'Feeds', noFeeds: 'No feeds added yet', filterPlaceholder: 'Filter by keywords (comma-separated)',
     highlight: 'Highlight', highlightPlaceholder: 'Exact matches to highlight (comma-separated)',
+    blacklist: 'Blacklist', blacklistPlaceholder: 'Hide items containing these words (comma-separated)',
     note: 'Note', showNote: 'Show sticky note', notePlaceholder: 'Notes…',
     tileLayout: 'Layout', tilesPerLine: 'Tiles per line', compactTiles: 'Compact tiles',
     tileGroups: 'Tile groups', groups: 'Groups', group: 'Group', none: 'None',
@@ -1512,6 +1517,7 @@ const I18N = {
     feed: 'Feed', showFeed: 'Vis RSS-feed', position: 'Placering',
     feeds: 'Feeds', noFeeds: 'Ingen feeds tilføjet endnu', filterPlaceholder: 'Filtrer på nøgleord (kommasepareret)',
     highlight: 'Fremhæv', highlightPlaceholder: 'Eksakte match der fremhæves (kommasepareret)',
+    blacklist: 'Sortliste', blacklistPlaceholder: 'Skjul emner med disse ord (kommasepareret)',
     note: 'Note', showNote: 'Vis notesblok', notePlaceholder: 'Noter…',
     tileLayout: 'Layout', tilesPerLine: 'Fliser pr. linje', compactTiles: 'Kompakte fliser',
     tileGroups: 'Flisegrupper', groups: 'Grupper', group: 'Gruppe', none: 'Ingen',
@@ -1625,6 +1631,7 @@ const $ = {
   setRss:    document.getElementById('set-rss'),
   setRssUrl: document.getElementById('set-rss-url'),
   setRssHighlight: document.getElementById('set-rss-highlight'),
+  setRssBlacklist: document.getElementById('set-rss-blacklist'),
   feedList:  document.getElementById('feed-list'),
   feedCount: document.getElementById('feed-count'),
   feedAddBtn:document.getElementById('feed-add-btn'),
@@ -1712,6 +1719,7 @@ function normalizeRss(r) {
     urls:      feeds.slice(0, MAX_FEEDS),
     position:  ALL_POSITIONS.includes(r.position) ? r.position : 'mr',
     highlight: typeof r.highlight === 'string' ? r.highlight : '',  // global exact-match highlight phrases
+    blacklist: typeof r.blacklist === 'string' ? r.blacklist : '',  // global substring words that hide items
   };
 }
 function normalizeNote(n) {
@@ -2337,6 +2345,7 @@ function openSettings() {
   applyBgModeUI();
   $.setRss.classList.toggle('on', settings.rss.enabled);
   $.setRssHighlight.value = settings.rss.highlight;
+  $.setRssBlacklist.value = settings.rss.blacklist;
   $.setNote.classList.toggle('on', settings.note.enabled);
   $.setNoteChecklist.classList.toggle('on', settings.note.checklist);
   $.setWeather.classList.toggle('on', settings.weather.enabled);
@@ -2450,6 +2459,13 @@ $.setRssHighlight.addEventListener('input', () => {
   // Highlighting is purely visual, so just re-style the items already shown — no refetch
   clearTimeout(rssHighlightDebounce);
   rssHighlightDebounce = setTimeout(() => { if (lastFeedItems.length) renderFeed(lastFeedItems); }, 150);
+});
+$.setRssBlacklist.addEventListener('input', () => {
+  settings.rss.blacklist = $.setRssBlacklist.value;   // store as-typed; trim/lowercase at match time
+  save();
+  // Blacklist filters at render time, so re-run it on the fetched items — no refetch needed
+  clearTimeout(rssBlacklistDebounce);
+  rssBlacklistDebounce = setTimeout(() => { if (lastFeedItems.length) renderFeed(lastFeedItems); }, 150);
 });
 
 document.getElementById('set-note-row').addEventListener('click', () => {
@@ -2599,6 +2615,7 @@ let rssTimer = null;
 let rssLastSig = '';     // signature of the URL set last fetched (avoids needless refetch)
 let rssUrlDebounce = null;
 let rssHighlightDebounce = null;
+let rssBlacklistDebounce = null;
 let lastFeedItems = [];  // last rendered items, so a highlight-only change can re-style without refetching
 let feedUpdatedAt = 0;   // timestamp of the last SUCCESSFUL fetch (persisted in the cache)
 
@@ -3060,11 +3077,19 @@ function titleIsHighlighted(title, phrases) {
     return false;
   });
 }
+// Global blacklist: comma-separated words; a title is hidden when it contains any
+// of them as a substring (case-insensitive), matching the per-feed whitelist.
+function blacklistWords() {
+  return settings.rss.blacklist.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+}
 function renderFeed(items) {
-  lastFeedItems = items;   // cache so a highlight change can re-style without refetching
+  lastFeedItems = items;   // full set (pre-blacklist) so a highlight/blacklist change can re-run without refetching
+  const bl = blacklistWords();
+  const shown = bl.length ? items.filter(it => { const t = it.title.toLowerCase(); return !bl.some(w => t.includes(w)); }) : items;
+  if (!shown.length) { showRssState('feedFiltered'); renderFeedUpdated(); return; }
   const target  = settings.newTab ? ' target="_blank" rel="noopener"' : '';
   const phrases = highlightPhrases();
-  $.rssList.innerHTML = items.map(it => {
+  $.rssList.innerHTML = shown.map(it => {
     const hl = titleIsHighlighted(it.title, phrases) ? ' rss-item--hl' : '';
     return `<a class="rss-item${hl}" href="${esc(it.link)}"${target}>${esc(it.title)}</a>`;
   }).join('');
