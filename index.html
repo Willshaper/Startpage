@@ -836,6 +836,27 @@
     transition: border-color 0.15s, color 0.15s, background 0.15s;
   }
   .wt-link:hover { border-color: var(--wt-today); color: var(--wt-today); background: color-mix(in srgb, var(--wt-today) 8%, transparent); }
+  /* Auto-tracked anime entries (from the Anime Feed): accent bar + "AniList" tag.
+     A cover link makes the whole card open the discussion; the button sits above it. */
+  .wt-entry.wt-auto {
+    border-color: color-mix(in srgb, var(--teal) 30%, var(--border));
+    background: color-mix(in srgb, var(--teal) 6%, var(--bg3));
+    box-shadow: inset 3px 0 0 var(--teal);
+  }
+  .wt-entry.wt-auto:hover { border-color: color-mix(in srgb, var(--teal) 50%, var(--border)); }
+  .wt-cover { position: absolute; inset: 0; z-index: 0; }
+  .wt-auto .wt-link { position: relative; z-index: 1; }
+  .wt-meta-left { display: flex; align-items: center; gap: 6px; }
+  .wt-al-tag {
+    font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--teal);
+    background: color-mix(in srgb, var(--teal) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--teal) 24%, transparent);
+    border-radius: 3px; padding: 1px 5px;
+  }
+  .track-time-row { display: flex; gap: 6px; }
+  .track-time-row .feed-filter-input { flex: 1; min-width: 0; width: auto; }
+  .track-time-row input[type="time"] { flex: 0 0 92px; }
   .tracker-state {
     font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
     text-align: center; padding: 12px 6px; line-height: 1.5;
@@ -872,7 +893,7 @@
   .settings-nav-sep { height: 1px; background: var(--border); margin: 6px 6px; flex-shrink: 0; }
   /* Anime settings sub-tabs: full-width segmented control, one panel at a time */
   .seg--sub { display: flex; width: 100%; margin-bottom: 14px; }
-  .seg--sub button { flex: 1; padding: 7px 4px; white-space: nowrap; }
+  .seg--sub button { flex: 1; padding: 7px 2px; white-space: nowrap; font-size: 10.5px; letter-spacing: 0.02em; }
   .anime-sub { display: none; }
   .anime-sub.active { display: block; animation: fade 0.15s ease; }
   .anime-season-list { display: flex; flex-direction: column; gap: 4px; }
@@ -1316,6 +1337,7 @@
       <button type="button" data-sub="links" data-i18n="animeLinksTab">Links</button>
       <button type="button" data-sub="highlights" data-i18n="highlight">Highlight</button>
       <button type="button" data-sub="blacklist" data-i18n="blacklist">Blacklist</button>
+      <button type="button" data-sub="tracked" data-i18n="animeTrackedTab">Tracked</button>
     </div>
     <div class="anime-sub" data-sub="general">
       <div class="field" style="margin-bottom:8px">
@@ -1358,6 +1380,11 @@
       <div class="settings-note" style="margin:0 0 10px" data-i18n="animeBlHint">Right-click an entry in the feed to hide its season.</div>
       <input class="anime-search" type="text" data-list="blacklist" placeholder="Search seasons…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
       <div id="anime-bl-list"></div>
+    </div>
+    <div class="anime-sub" data-sub="tracked">
+      <div class="settings-note" style="margin:0 0 10px" data-i18n="animeTrackHint">Right-click an entry in the feed to track its season. Tracked seasons show in the Weekly Tracker on the days they air. Set a day and time to override AniList's broadcast time.</div>
+      <input class="anime-search" type="text" data-list="tracked" placeholder="Search seasons…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
+      <div id="anime-track-list"></div>
     </div>
         </section>
 
@@ -1429,6 +1456,11 @@
     <div class="io-row" style="margin-top:10px">
       <a class="btn btn-ghost" href="https://willshaper.github.io/Weekly-Tracker/" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:flex; align-items:center; justify-content:center" data-i18n="openTracker">Open Weekly Tracker</a>
     </div>
+    <div class="toggle-row" id="set-tracker-anime-row" style="margin-top:12px">
+      <span data-i18n="showTrackedAnime">Show tracked anime</span>
+      <div class="toggle" id="set-tracker-anime"></div>
+    </div>
+    <div class="settings-note" style="margin-top:0" data-i18n="trackedAnimeHint">Seasons you track in the Anime Feed (right-click → Track) appear here on the days they air.</div>
         </section>
 
         <section class="settings-pane" data-pane="tiles">
@@ -1512,10 +1544,41 @@
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1.8l1.6 3.3 3.6.5-2.6 2.5.6 3.6L7 10l-3.2 1.7.6-3.6L1.8 5.6l3.6-.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
     <span id="anime-ctx-hl" data-i18n="animeHighlightSeason">Highlight season</span>
   </div>
+  <div class="ctx-item" onclick="animeCtxTrack()">
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1.8" y="2.8" width="10.4" height="9.4" rx="1.4" stroke="currentColor" stroke-width="1.2"/><path d="M1.8 5.8h10.4M4.6 1.6v2.4M9.4 1.6v2.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    <span id="anime-ctx-track" data-i18n="animeTrack">Track</span>
+  </div>
+  <div class="ctx-item" id="anime-ctx-time" onclick="animeCtxTime()">
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.2"/><path d="M7 4.2V7l2 1.3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    <span data-i18n="animeEditTime">Edit time…</span>
+  </div>
   <div class="ctx-divider"></div>
   <div class="ctx-item danger" onclick="animeCtxBlacklist()">
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 10.5l7-7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
     <span data-i18n="animeBlacklistSeason">Blacklist season</span>
+  </div>
+</div>
+
+<!-- Tracked season: custom weekday + time (overrides AniList's broadcast time) -->
+<div class="modal-overlay" id="track-time-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="track-time-title"></span>
+      <button class="modal-close" onclick="closeTrackTimeModal()">✕</button>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label data-i18n="trackDayTime">Day &amp; time</label>
+      <div class="track-time-row">
+        <select id="track-time-day"></select>
+        <input id="track-time-time" type="time">
+      </div>
+    </div>
+    <div class="settings-note" data-i18n="trackTimeHint">"AniList time" uses the broadcast time from AniList.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-i18n="animeDayAuto" onclick="$.trackTimeDay.value = ''; syncTrackTimeInput()">AniList time</button>
+      <button class="btn btn-ghost" data-i18n="cancel" onclick="closeTrackTimeModal()">Cancel</button>
+      <button class="btn btn-primary" data-i18n="save" onclick="saveTrackTime()">Save</button>
+    </div>
   </div>
 </div>
 
@@ -1672,6 +1735,12 @@ const I18N = {
     animeNoneYet: 'None yet', animeNoMatch: 'No matches',
     animeEditLink: 'Edit link', animeResetLink: 'Reset link', animeBlacklistSeason: 'Blacklist season',
     animeHighlightSeason: 'Highlight season', animeUnhighlight: 'Remove highlight',
+    animeTrack: 'Track', animeUntrack: 'Untrack', animeTrackedTab: 'Tracked',
+    animeTrackHint: 'Right-click an entry in the feed to track its season. Tracked seasons show in the Weekly Tracker on the days they air. Set a day and time to override AniList\'s broadcast time.',
+    animeDayAuto: 'AniList time', animeEditTime: 'Edit time…', trackDayTime: 'Day & time',
+    trackTimeHint: '"AniList time" uses the broadcast time from AniList.',
+    showTrackedAnime: 'Show tracked anime',
+    trackedAnimeHint: 'Seasons you track in the Anime Feed (right-click → Track) appear here on the days they air.',
     widgetsHint: 'Each widget you turn on gets its own settings page in the sidebar.',
     animeRestore: 'Restore', animeOpenAniList: 'Open on AniList', animeAgo: '{t} ago',
     animeLinkHint: 'Leave empty to use the default Reddit search.',
@@ -1764,6 +1833,12 @@ const I18N = {
     animeNoneYet: 'Ingen endnu', animeNoMatch: 'Ingen match',
     animeEditLink: 'Rediger link', animeResetLink: 'Nulstil link', animeBlacklistSeason: 'Sortlist sæson',
     animeHighlightSeason: 'Fremhæv sæson', animeUnhighlight: 'Fjern fremhævning',
+    animeTrack: 'Følg', animeUntrack: 'Stop med at følge', animeTrackedTab: 'Fulgte',
+    animeTrackHint: 'Højreklik på en post i feedet for at følge dens sæson. Fulgte sæsoner vises i ugeplanen på de dage de sendes. Angiv en dag og et tidspunkt for at erstatte AniLists sendetid.',
+    animeDayAuto: 'AniList-tid', animeEditTime: 'Rediger tidspunkt…', trackDayTime: 'Dag & tidspunkt',
+    trackTimeHint: '"AniList-tid" bruger sendetiden fra AniList.',
+    showTrackedAnime: 'Vis fulgte anime',
+    trackedAnimeHint: 'Sæsoner du følger i anime-feedet (højreklik → Følg) vises her på de dage de sendes.',
     widgetsHint: 'Hver widget du slår til får sin egen indstillingsside i sidepanelet.',
     animeRestore: 'Gendan', animeOpenAniList: 'Åbn på AniList', animeAgo: '{t} siden',
     animeLinkHint: 'Lad feltet stå tomt for at bruge standard-Reddit-søgningen.',
@@ -1909,6 +1984,14 @@ const $ = {
   animeLinkList: document.getElementById('anime-link-list'),
   animeBlList:   document.getElementById('anime-bl-list'),
   animeHlList:   document.getElementById('anime-hl-list'),
+  animeTrackList:document.getElementById('anime-track-list'),
+  animeCtxTrack: document.getElementById('anime-ctx-track'),
+  animeCtxTime:  document.getElementById('anime-ctx-time'),
+  trackTimeModal:document.getElementById('track-time-modal'),
+  trackTimeTitle:document.getElementById('track-time-title'),
+  trackTimeDay:  document.getElementById('track-time-day'),
+  trackTimeTime: document.getElementById('track-time-time'),
+  setTrackerAnime: document.getElementById('set-tracker-anime'),
   animeSubnav:   document.getElementById('anime-subnav'),
   animeCtxHl:    document.getElementById('anime-ctx-hl'),
   settingsNavSep:document.getElementById('settings-nav-sep'),
@@ -2014,16 +2097,19 @@ function normalizeTracker(t) {
   return {
     enabled:  !!t.enabled,
     position: ALL_POSITIONS.includes(t.position) ? t.position : 'tl',
+    anime:    t.anime !== false,   // show seasons tracked in the Anime Feed (on unless turned off)
   };
 }
 function normalizeAnime(a) {
   a = a || {};
   // Per-season lists keyed by AniList media id: custom links {id,title,url,last},
-  // highlighted and blacklisted seasons {id,title,last}. The title is kept so settings
-  // can list them offline; `last` (unix s) is when the season last aired an episode
+  // highlighted and blacklisted seasons {id,title,last}, and tracked seasons
+  // {id,title,last,day,time} where day (0=Sun..6) + "HH:MM" optionally override
+  // AniList's air time (day null = use AniList). The title is kept so settings can
+  // list them offline; `last` (unix s) is when the season last aired an episode
   // we've seen, which splits the settings lists into "airing" and "finished".
   const nowSec = Math.floor(Date.now() / 1000);
-  const seasons = (arr, withUrl) => {
+  const seasons = (arr, kind) => {
     const seen = new Set(), out = [];
     for (const x of Array.isArray(arr) ? arr : []) {
       if (!x || typeof x !== 'object') continue;
@@ -2031,10 +2117,14 @@ function normalizeAnime(a) {
       if (!Number.isInteger(id) || id <= 0 || seen.has(id)) continue;
       const title = typeof x.title === 'string' ? x.title.slice(0, 200) : '';
       const last  = Number.isFinite(x.last) && x.last > 0 ? Math.floor(x.last) : nowSec;
-      if (withUrl) {
+      if (kind === 'link') {
         const url = typeof x.url === 'string' ? x.url.trim() : '';
         if (!url) continue;
         out.push({ id, title, url, last });
+      } else if (kind === 'track') {
+        const day  = Number.isInteger(x.day) && x.day >= 0 && x.day <= 6 ? x.day : null;
+        const time = typeof x.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x.time) ? x.time : '';
+        out.push({ id, title, last, day, time });
       } else out.push({ id, title, last });
       seen.add(id);
     }
@@ -2048,9 +2138,10 @@ function normalizeAnime(a) {
     formats:   Array.isArray(a.formats)   ? ANIME_FORMATS.filter(f => a.formats.includes(f))     : ANIME_FORMATS.filter(f => f !== 'MUSIC'),
     countries: Array.isArray(a.countries) ? ANIME_COUNTRIES.filter(c => a.countries.includes(c)) : [...ANIME_COUNTRIES],
     highlight: typeof a.highlight === 'string' ? a.highlight : '',
-    links:     seasons(a.links, true),
-    hlSeasons: seasons(a.hlSeasons, false),
-    blacklist: seasons(a.blacklist, false),
+    links:     seasons(a.links, 'link'),
+    hlSeasons: seasons(a.hlSeasons),
+    blacklist: seasons(a.blacklist),
+    tracked:   seasons(a.tracked, 'track'),
   };
 }
 function normalizeGroups(g) {
@@ -2564,7 +2655,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('contextmenu', e => {
   if (!$.ctxMenu.contains(e.target) && !e.target.closest('.tile')) closeCtx();
-  if (!$.animeCtx.contains(e.target) && !e.target.closest('.anime-item')) closeAnimeCtx();
+  if (!$.animeCtx.contains(e.target) && !e.target.closest('.anime-item, .wt-auto')) closeAnimeCtx();
 });
 
 // ── Link modal (add / edit) ───────────────────────────────────────────────────
@@ -2651,6 +2742,7 @@ function openSettings() {
   $.setCountdownTarget.value = '';
   $.setTracker.classList.toggle('on', settings.tracker.enabled);
   $.setAnime.classList.toggle('on', settings.anime.enabled);
+  $.setTrackerAnime.classList.toggle('on', settings.tracker.anime);
   $.setAnimeUser.value = settings.anime.user;
   $.setAnimeHighlight.value = settings.anime.highlight;
   renderAnimeSettings();
@@ -2815,6 +2907,11 @@ $.setCountdownTarget.addEventListener('keydown', e => { if (e.key === 'Enter') {
 document.getElementById('set-tracker-row').addEventListener('click', () => {
   onWidgetEnabledToggle('tracker', $.setTracker);
   applyAllWidgets();
+});
+document.getElementById('set-tracker-anime-row').addEventListener('click', () => {
+  settings.tracker.anime = !settings.tracker.anime;
+  $.setTrackerAnime.classList.toggle('on', settings.tracker.anime);
+  save(); applyTracker();
 });
 
 document.getElementById('set-anime-row').addEventListener('click', () => {
@@ -3821,7 +3918,7 @@ function removeCountdown(i) {
 // Reads the Weekly-Tracker's data straight from this origin's localStorage. Both
 // sites are served from willshaper.github.io, so they share one store. Read-only:
 // the widget never writes TRACKER_KEY, so it can't corrupt the tracker.
-let trackerTimer = null;
+let trackerTimer = null, trackFetchTimer = null;
 function readTrackerEntries() {
   let data = null;
   try { data = JSON.parse(localStorage.getItem(TRACKER_KEY) || 'null'); } catch { return null; }
@@ -3871,13 +3968,15 @@ function renderTracker() {
   const today = now.getDay();
   // Header doubles as a link to the standalone tracker
   $.trackerHeader.innerHTML = `<a class="tracker-head-link" href="${TRACKER_URL}" target="_blank" rel="noopener noreferrer">${esc(t.weeklyTracker + ' - ' + t.days[today])}</a>`;
-  const entries = readTrackerEntries();
-  if (!entries || !entries.length) { trackerState('trackerEmpty'); return; }
+  const entries = readTrackerEntries() || [];
+  const auto    = trackedAnimeToday(now);   // tracked Anime Feed seasons airing today
+  if (!entries.length && !auto.length) { trackerState('trackerEmpty'); return; }
   // Only today's entries, ordered by time of day (like the tracker's day column)
-  const rows = entries.filter(e => e.day === today)
+  const rows = entries.filter(e => e.day === today).concat(auto)
     .map(e => ({ e, ms: trackerMsUntilNext(e.day, e.time, now) }))
     .sort((a, b) => a.e.time.localeCompare(b.e.time));
   if (!rows.length) { trackerState('trackerNoneToday'); return; }
+  const target = settings.newTab ? ' target="_blank" rel="noopener"' : '';
   // Next-up = the earliest entry today that hasn't started yet. If every event
   // today has already passed, badge nothing (msUntilNext would point a week ahead,
   // which isn't the actual next thing).
@@ -3893,9 +3992,22 @@ function renderTracker() {
   const savedScroll = $.trackerBody.scrollTop;
   $.trackerBody.innerHTML = rows.map(r => {
     const e = r.e;
+    const isNext = e.id === nextId ? ' wt-next' : '';
+    if (e.auto) {
+      return `<div class="wt-entry wt-auto${isNext}" data-m="${e.m}">` +
+        `<a class="wt-cover" href="${esc(e.link)}"${target} aria-label="${esc(e.name)}"></a>` +
+        `<div class="wt-name">${esc(e.name)}</div>` +
+        `<div class="wt-meta">` +
+          `<span class="wt-meta-left"><span class="wt-time">${esc(e.time)}</span><span class="wt-al-tag">AniList</span></span>` +
+          `<div class="wt-meta-right">` +
+            `<span class="wt-cd ${trackerCdClass(r.ms)}">${esc(trackerCountdown(r.ms))}</span>` +
+            `<a class="wt-link" href="${esc(e.al)}" target="_blank" rel="noopener noreferrer" title="${esc(t.animeOpenAniList)}">${TRACKER_LINK_SVG}</a>` +
+          `</div>` +
+        `</div>` +
+      `</div>`;
+    }
     const colorHex   = e.color ? TRACKER_COLORS[e.color] : null;
     const colorAttrs = colorHex ? ` data-ec="${e.color}" style="--ec:${colorHex}"` : '';
-    const isNext = e.id === nextId ? ' wt-next' : '';
     const link   = safeHttpLink(e.link);
     const linkBtn = link
       ? `<a class="wt-link" href="${esc(link)}" target="_blank" rel="noopener noreferrer" title="${esc(link)}">${TRACKER_LINK_SVG}</a>`
@@ -3921,9 +4033,15 @@ function applyTracker() {
   $.trackerPanel.classList.add('pos-' + (ALL_POSITIONS.includes(tk.position) ? tk.position : 'tl'));
   $.trackerPanel.classList.toggle('show', tk.enabled);
   if (trackerTimer) { clearInterval(trackerTimer); trackerTimer = null; }
+  if (trackFetchTimer) { clearInterval(trackFetchTimer); trackFetchTimer = null; }
   if (tk.enabled) {
+    if (!trackSched) loadTrackCache();
     renderTracker();
     trackerTimer = setInterval(renderTracker, 60000);  // keep the "in Xd Yh" figures current
+    if (tk.anime) {
+      fetchTracked();
+      trackFetchTimer = setInterval(fetchTracked, 10 * 60 * 1000);   // refetches once the 30-min cache goes stale
+    }
   }
   scheduleLayout();
 }
@@ -4209,13 +4327,27 @@ $.animeRefresh.addEventListener('click', () => {
 $.animeList.addEventListener('contextmenu', e => {
   const row = e.target.closest('.anime-item'); if (!row) return;
   const it = animeShown.find(x => x.id === Number(row.dataset.id)); if (!it) return;
+  openAnimeCtx(e, it);
+});
+// Tracked entries in the Weekly Tracker widget get the same menu (your own entries
+// come from the standalone tracker and keep the browser's normal menu)
+$.trackerBody.addEventListener('contextmenu', e => {
+  const card = e.target.closest('.wt-auto'); if (!card) return;
+  const tr = settings.anime.tracked.find(x => x.id === Number(card.dataset.m)); if (!tr) return;
+  openAnimeCtx(e, { m: tr.id, t: tr.title });
+});
+// `it` only needs the season: { m: media id, t: title }
+function openAnimeCtx(e, it) {
   e.preventDefault();
   closeCtx();
   animeCtxItem = it;
-  $.animeCtxReset.style.display = settings.anime.links.some(l => l.id === it.m) ? '' : 'none';
-  $.animeCtxHl.textContent = settings.anime.hlSeasons.some(h => h.id === it.m) ? L().animeUnhighlight : L().animeHighlightSeason;
+  const a = settings.anime, tracked = a.tracked.some(x => x.id === it.m);
+  $.animeCtxReset.style.display = a.links.some(l => l.id === it.m) ? '' : 'none';
+  $.animeCtxHl.textContent = a.hlSeasons.some(h => h.id === it.m) ? L().animeUnhighlight : L().animeHighlightSeason;
+  $.animeCtxTrack.textContent = tracked ? L().animeUntrack : L().animeTrack;
+  $.animeCtxTime.style.display = tracked ? '' : 'none';
   placeMenu($.animeCtx, e);
-});
+}
 function closeAnimeCtx() { $.animeCtx.classList.remove('open'); animeCtxItem = null; }
 function animeCtxEdit() {
   const it = animeCtxItem; closeAnimeCtx();
@@ -4236,6 +4368,7 @@ function setAnimeLink(id, title, url) {
   a.links = a.links.filter(l => l.id !== id);
   if (url) a.links.push({ id, title, url, last: animeSeasonLast(id) });
   save(); renderAnime(); renderAnimeSettings();
+  if (settings.tracker.enabled) renderTracker();   // tracked entries open the same link
 }
 function saveAnimeLink() {
   if (!animeEditItem) return;
@@ -4261,6 +4394,15 @@ function animeCtxHighlight() {
   else a.hlSeasons.push({ id: it.m, title: it.t, last: animeSeasonLast(it.m) });
   save(); renderAnime(); renderAnimeSettings();
 }
+// Toggle tracking: a tracked season's episodes show in the Weekly Tracker widget
+function animeCtxTrack() {
+  const it = animeCtxItem; closeAnimeCtx();
+  if (!it) return;
+  const a = settings.anime;
+  if (a.tracked.some(x => x.id === it.m)) a.tracked = a.tracked.filter(x => x.id !== it.m);
+  else a.tracked.push({ id: it.m, title: it.t, last: animeSeasonLast(it.m), day: null, time: '' });
+  save(); renderAnimeSettings(); trackedChanged();
+}
 // Newest air time we've seen for a season (falls back to now for one not in the cache)
 function animeSeasonLast(m) {
   const it = animeItems.find(x => x.m === m);   // items are newest-first
@@ -4272,7 +4414,7 @@ function touchAnimeSeasons() {
   for (const it of animeItems) if (!latest.has(it.m)) latest.set(it.m, it.at);
   const a = settings.anime;
   let changed = false;
-  for (const list of [a.links, a.hlSeasons, a.blacklist]) {
+  for (const list of [a.links, a.hlSeasons, a.blacklist, a.tracked]) {
     for (const e of list) {
       const at = latest.get(e.id);
       if (at && at > e.last) { e.last = at; changed = true; }
@@ -4287,8 +4429,8 @@ function touchAnimeSeasons() {
 // with a search box over both — so years of entries never become one long scroll.
 const ANIME_ACTIVE_DAYS = 30;
 let animeSub = 'general';
-const animeSearch = { links: '', highlights: '', blacklist: '' };
-const animeArchiveOpen = { links: false, highlights: false, blacklist: false };
+const animeSearch = { links: '', highlights: '', blacklist: '', tracked: '' };
+const animeArchiveOpen = { links: false, highlights: false, blacklist: false, tracked: false };
 function setAnimeSub(sub) {
   animeSub = sub;
   segSetActive($.animeSubnav, 'sub', sub);
@@ -4310,12 +4452,28 @@ function renderAnimeSettings() {
     `<button type="button" class="chip${a.formats.includes(f) ? ' on' : ''}" data-fmt="${f}">${esc(t.animeFmt[f])}</button>`).join('');
   $.setAnimeCountries.innerHTML = ANIME_COUNTRIES.map(c =>
     `<button type="button" class="chip${a.countries.includes(c) ? ' on' : ''}" data-cc="${c}">${esc(t.animeCountry[c])}</button>`).join('');
-  ['links', 'highlights', 'blacklist'].forEach(renderAnimeSeasonList);
+  ['links', 'highlights', 'blacklist', 'tracked'].forEach(renderAnimeSeasonList);
+}
+const ANIME_LISTS = {
+  links:      { key: 'links',     el: () => $.animeLinkList },
+  highlights: { key: 'hlSeasons', el: () => $.animeHlList },
+  blacklist:  { key: 'blacklist', el: () => $.animeBlList },
+  tracked:    { key: 'tracked',   el: () => $.animeTrackList },
+};
+// Tracked row: weekday select (or "AniList time") + time, Monday-first
+function trackTimeControls(e) {
+  const t = L();
+  const opts = [`<option value="">${esc(t.animeDayAuto)}</option>`]
+    .concat([1, 2, 3, 4, 5, 6, 0].map(d => `<option value="${d}"${e.day === d ? ' selected' : ''}>${esc(t.days[d])}</option>`));
+  return `<div class="track-time-row">` +
+    `<select class="feed-filter-input" onchange="setTrackDay(${e.id}, this.value)">${opts.join('')}</select>` +
+    `<input class="feed-filter-input" type="time" value="${esc(e.time)}"${e.day === null ? ' disabled' : ''} onchange="setTrackTime(${e.id}, this.value)">` +
+  `</div>`;
 }
 function renderAnimeSeasonList(kind) {
   const a = settings.anime, t = L();
-  const list = kind === 'links' ? a.links : kind === 'highlights' ? a.hlSeasons : a.blacklist;
-  const el   = kind === 'links' ? $.animeLinkList : kind === 'highlights' ? $.animeHlList : $.animeBlList;
+  const list = a[ANIME_LISTS[kind].key];
+  const el   = ANIME_LISTS[kind].el();
   const q = animeSearch[kind].trim().toLowerCase();
   const cutoff = Math.floor(Date.now() / 1000) - ANIME_ACTIVE_DAYS * 86400;
   const match = q ? list.filter(e => e.title.toLowerCase().includes(q)) : list;
@@ -4327,6 +4485,12 @@ function renderAnimeSeasonList(kind) {
         `<div class="feed-row-top"><span title="${esc(e.title)}">${esc(e.title || '#' + e.id)}</span>` +
         `<button type="button" title="${esc(t.remove)}" onclick="setAnimeLink(${e.id}, '', '')">✕</button></div>` +
         `<input class="feed-filter-input" type="text" value="${esc(e.url)}" spellcheck="false" onchange="updateAnimeLinkUrl(${e.id}, this.value)">` +
+      `</div>`
+    : kind === 'tracked'
+    ? `<div class="feed-row feed-row--stacked">` +
+        `<div class="feed-row-top"><span title="${esc(e.title)}">${esc(e.title || '#' + e.id)}</span>` +
+        `<button type="button" title="${esc(t.animeUntrack)}" onclick="removeAnimeSeason('tracked', ${e.id})">✕</button></div>` +
+        trackTimeControls(e) +
       `</div>`
     : `<div class="feed-row"><span class="anime-bl-title" title="${esc(e.title)}">${esc(e.title || '#' + e.id)}</span>` +
         `<button type="button" title="${esc(kind === 'blacklist' ? t.animeRestore : t.remove)}" onclick="removeAnimeSeason('${kind}', ${e.id})">✕</button></div>`;
@@ -4350,13 +4514,159 @@ function updateAnimeLinkUrl(id, value) {
   l.url = value.trim();
   save(); renderAnime();
 }
-// Remove a season from the highlight list or the blacklist (restoring it)
+// Remove a season from the highlight, blacklist (restoring it) or tracked list
 function removeAnimeSeason(kind, id) {
-  const a = settings.anime;
-  if (kind === 'highlights') a.hlSeasons = a.hlSeasons.filter(h => h.id !== id);
-  else a.blacklist = a.blacklist.filter(b => b.id !== id);
+  const a = settings.anime, key = ANIME_LISTS[kind].key;
+  a[key] = a[key].filter(x => x.id !== id);
   save(); renderAnimeSeasonList(kind); renderAnime();
+  if (kind === 'tracked') trackedChanged();
 }
+
+// ── Tracked seasons → Weekly Tracker widget ──
+// Fetches the airing schedule (±8 days) of every tracked season and shows the
+// episodes airing today as auto entries in the tracker. A season with a custom
+// day + time shows on that day at that time, using the AniList episode nearest
+// to that slot (none within ±3.5 days = no episode that week).
+const TRACK_CACHE_KEY  = 'startpage_trackcache';
+const TRACK_REFRESH_MS = 30 * 60 * 1000;
+const ANIME_TRACK_Q = 'query($p:Int,$ids:[Int],$from:Int,$to:Int){Page(page:$p,perPage:50){pageInfo{hasNextPage} airingSchedules(mediaId_in:$ids,airingAt_greater:$from,airingAt_lesser:$to,sort:TIME){id episode airingAt mediaId}}}';
+let trackSched = null;   // { key, fetchedAt, items: [{ id, m, ep, at }] }
+let trackBusy = false, trackAgain = false;
+function trackKey() { return settings.anime.tracked.map(x => x.id).sort((a, b) => a - b).join(','); }
+function loadTrackCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem(TRACK_CACHE_KEY) || 'null');
+    if (c && typeof c.key === 'string' && Array.isArray(c.items)) trackSched = c;
+  } catch {}
+}
+async function fetchTracked(force) {
+  const tk = settings.tracker;
+  if (!tk.enabled || !tk.anime) return;
+  if (trackBusy) { if (force) trackAgain = true; return; }   // a timer tick during a fetch needs no re-run
+  const key = trackKey();
+  if (!key) { trackSched = { key: '', fetchedAt: Date.now(), items: [] }; return; }
+  if (!force && trackSched && trackSched.key === key && Date.now() - trackSched.fetchedAt < TRACK_REFRESH_MS) return;
+  trackBusy = true; trackAgain = false;
+  try {
+    const ids = key.split(',').map(Number), now = Math.floor(Date.now() / 1000), items = [];
+    for (let p = 1; p <= 5; p++) {
+      const d = await anilist(ANIME_TRACK_Q, { p, ids, from: now - 8 * 86400, to: now + 8 * 86400 });
+      const pg = d.Page || {};
+      for (const s of pg.airingSchedules || []) {
+        if (Number.isInteger(s.id) && Number.isInteger(s.mediaId)) items.push({ id: s.id, m: s.mediaId, ep: Number(s.episode) || 0, at: Number(s.airingAt) || 0 });
+      }
+      if (!(pg.pageInfo && pg.pageInfo.hasNextPage)) break;
+    }
+    if (trackKey() !== key) { trackAgain = true; return; }   // list changed mid-flight
+    trackSched = { key, fetchedAt: Date.now(), items };
+    try { localStorage.setItem(TRACK_CACHE_KEY, JSON.stringify(trackSched)); } catch {}
+    // Aired episodes also keep a tracked season in the "airing" part of its list
+    let changed = false;
+    for (const tr of settings.anime.tracked) {
+      for (const s of items) if (s.m === tr.id && s.at <= now && s.at > tr.last) { tr.last = s.at; changed = true; }
+    }
+    if (changed) save();
+  } catch {}   // offline / rate-limited: keep the cached schedule
+  finally {
+    trackBusy = false;
+    if (settings.tracker.enabled) renderTracker();
+    if (trackAgain) fetchTracked(true);
+  }
+}
+// The tracked list or a custom time changed: refresh the tracker (refetch if seasons changed)
+function trackedChanged() {
+  if (!settings.tracker.enabled) return;
+  renderTracker();
+  if (settings.tracker.anime && (!trackSched || trackSched.key !== trackKey())) fetchTracked(true);
+}
+function trackedAnimeToday(now) {
+  if (!settings.tracker.anime || !trackSched) return [];
+  const pad = n => String(n).padStart(2, '0');
+  const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+  const out = [];
+  for (const tr of settings.anime.tracked) {
+    const eps = trackSched.items.filter(s => s.m === tr.id);
+    if (!eps.length) continue;
+    let pick, time = '';
+    if (tr.day !== null && tr.time) {
+      if (tr.day !== now.getDay()) continue;
+      const [h, m] = tr.time.split(':').map(Number);
+      const slot = new Date(dayStart); slot.setHours(h, m, 0, 0);
+      const best = eps.reduce((b, s) => Math.abs(s.at * 1000 - slot) < Math.abs(b.at * 1000 - slot) ? s : b);
+      if (Math.abs(best.at * 1000 - slot) > 3.5 * 86400000) continue;   // no episode that week
+      pick = [best]; time = tr.time;
+    } else {
+      pick = eps.filter(s => s.at * 1000 >= dayStart && s.at * 1000 < dayEnd);
+    }
+    for (const s of pick) {
+      const d = new Date(s.at * 1000);
+      out.push({
+        id: 'al' + s.id, auto: true, m: tr.id, day: now.getDay(),
+        time: time || `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+        name: `${tr.title} - Episode ${s.ep}`,
+        link: animeLinkFor({ m: tr.id, t: tr.title }),
+        al: `https://anilist.co/anime/${tr.id}`,
+      });
+    }
+  }
+  return out;
+}
+// ── Custom day/time for a tracked season (both needed; day null = AniList time) ──
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+// AniList's local time of day for a season, used to prefill when a day is picked
+function trackAniListTime(id) {
+  const s = trackSched && trackSched.items.find(x => x.m === id);
+  if (!s) return '12:00';
+  const d = new Date(s.at * 1000);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function setTrackSlot(id, day, time) {
+  const tr = settings.anime.tracked.find(x => x.id === id); if (!tr) return;
+  tr.day  = day;
+  tr.time = day === null ? '' : (TIME_RE.test(time) ? time : (tr.time || trackAniListTime(id)));
+  save(); renderAnimeSeasonList('tracked'); trackedChanged();
+}
+function setTrackDay(id, value) {
+  const tr = settings.anime.tracked.find(x => x.id === id); if (!tr) return;
+  setTrackSlot(id, value === '' ? null : Number(value), tr.time);
+}
+function setTrackTime(id, value) {
+  const tr = settings.anime.tracked.find(x => x.id === id); if (!tr || tr.day === null) return;
+  setTrackSlot(id, tr.day, value);
+}
+// "Edit time…" dialog (right-click on a tracked season in either widget)
+let trackTimeId = null;
+function animeCtxTime() {
+  const it = animeCtxItem; closeAnimeCtx();
+  const tr = it && settings.anime.tracked.find(x => x.id === it.m); if (!tr) return;
+  const t = L();
+  trackTimeId = tr.id;
+  $.trackTimeTitle.textContent = tr.title;
+  $.trackTimeDay.innerHTML = [`<option value="">${esc(t.animeDayAuto)}</option>`]
+    .concat([1, 2, 3, 4, 5, 6, 0].map(d => `<option value="${d}">${esc(t.days[d])}</option>`)).join('');
+  $.trackTimeDay.value = tr.day === null ? '' : String(tr.day);
+  $.trackTimeTime.value = tr.time;
+  syncTrackTimeInput();
+  $.trackTimeModal.classList.add('open');
+  setTimeout(() => $.trackTimeDay.focus(), 30);
+}
+// Time is only editable with a day picked; picking one prefills AniList's time
+function syncTrackTimeInput() {
+  const auto = $.trackTimeDay.value === '';
+  $.trackTimeTime.disabled = auto;
+  if (auto) $.trackTimeTime.value = '';
+  else if (!$.trackTimeTime.value) $.trackTimeTime.value = trackAniListTime(trackTimeId);
+}
+function closeTrackTimeModal() { $.trackTimeModal.classList.remove('open'); trackTimeId = null; }
+function saveTrackTime() {
+  if (trackTimeId === null) return;
+  const v = $.trackTimeDay.value;
+  setTrackSlot(trackTimeId, v === '' ? null : Number(v), $.trackTimeTime.value);
+  closeTrackTimeModal();
+}
+$.trackTimeDay.addEventListener('change', syncTrackTimeInput);
+$.trackTimeTime.addEventListener('keydown', e => { if (e.key === 'Enter') saveTrackTime(); });
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -4396,14 +4706,14 @@ function tick() {
 
 // ── Global listeners ──────────────────────────────────────────────────────────
 document.getElementById('btn-settings').addEventListener('click', openSettings);
-[$.linkModal, $.setModal, $.animeLinkModal].forEach(m => {
+[$.linkModal, $.setModal, $.animeLinkModal, $.trackTimeModal].forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
 });
 $.linkName.addEventListener('keydown', e => { if (e.key === 'Enter') saveLink(); });
 $.linkUrl .addEventListener('keydown', e => { if (e.key === 'Enter') saveLink(); });
 $.animeLinkUrl.addEventListener('keydown', e => { if (e.key === 'Enter') saveAnimeLink(); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeCtx(); closeAnimeCtx(); closeLinkModal(); closeAnimeLinkModal(); closeSettings(); }
+  if (e.key === 'Escape') { closeCtx(); closeAnimeCtx(); closeLinkModal(); closeAnimeLinkModal(); closeTrackTimeModal(); closeSettings(); }
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
