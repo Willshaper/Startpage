@@ -777,13 +777,40 @@
   /* ── Weekly-Tracker widget (mirrors the Weekly-Tracker card style) ── */
   .tracker-panel { padding: 14px 14px 12px; }
   .tracker-head {
+    display: flex; align-items: center; gap: 8px;
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
     text-transform: uppercase; color: var(--wt-today);   /* fixed cyan — never the accent */
     margin-bottom: 10px; flex-shrink: 0;
+  }
+  .tracker-head-link {
+    flex: 1; min-width: 0; color: inherit; text-decoration: none;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .tracker-head-link { color: inherit; text-decoration: none; }
   .tracker-head-link:hover { text-decoration: underline; }
+  /* Header toggle: also list today's not-yet-aired anime (dimmed, with a + to track) */
+  .tracker-today-btn {
+    flex-shrink: 0; background: none; border: 1px solid transparent; border-radius: 4px;
+    cursor: pointer; color: var(--text-dimmer); padding: 2px 3px; line-height: 0;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+  }
+  .tracker-today-btn:hover { color: var(--wt-today); }
+  .tracker-today-btn.on {
+    color: var(--wt-today);
+    background: color-mix(in srgb, var(--wt-today) 14%, transparent);
+    border-color: color-mix(in srgb, var(--wt-today) 35%, transparent);
+  }
+  /* Untracked shows airing later today: dimmed until hovered */
+  .wt-entry.wt-up { opacity: 0.6; transition: opacity 0.15s; }
+  .wt-entry.wt-up:hover { opacity: 1; }
+  .wt-up .wt-link, .wt-up .wt-add { position: relative; z-index: 1; }
+  .wt-add {
+    display: flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; flex-shrink: 0; padding: 0; cursor: pointer;
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 4px;
+    color: var(--text-dimmer); font-size: 14px; line-height: 1;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .wt-add:hover { border-color: var(--wt-today); color: var(--wt-today); background: color-mix(in srgb, var(--wt-today) 8%, transparent); }
 
   .tracker-body {
     flex: 1; min-height: 0; overflow-y: auto;
@@ -1755,6 +1782,7 @@ const I18N = {
     animeDayAuto: 'AniList time', animeEditTime: 'Edit time…', trackDayTime: 'Day & time',
     trackTimeHint: '"AniList time" uses the broadcast time from AniList.',
     showTrackedAnime: 'Show tracked anime',
+    trackerUpcomingBtn: 'Show anime still airing today', trackerTrackShow: 'Track this show',
     trackedAnimeHint: 'Seasons you track in the Anime Feed (right-click → Track) appear here on the days they air.',
     widgetsHint: 'Each widget you turn on gets its own settings page in the sidebar.',
     animeRestore: 'Restore', animeOpenAniList: 'Open on AniList', animeAgo: '{t} ago',
@@ -1857,6 +1885,7 @@ const I18N = {
     animeDayAuto: 'AniList-tid', animeEditTime: 'Rediger tidspunkt…', trackDayTime: 'Dag & tidspunkt',
     trackTimeHint: '"AniList-tid" bruger sendetiden fra AniList.',
     showTrackedAnime: 'Vis fulgte anime',
+    trackerUpcomingBtn: 'Vis anime der sendes senere i dag', trackerTrackShow: 'Følg denne serie',
     trackedAnimeHint: 'Sæsoner du følger i anime-feedet (højreklik → Følg) vises her på de dage de sendes.',
     widgetsHint: 'Hver widget du slår til får sin egen indstillingsside i sidepanelet.',
     animeRestore: 'Gendan', animeOpenAniList: 'Åbn på AniList', animeAgo: '{t} siden',
@@ -2118,6 +2147,7 @@ function normalizeTracker(t) {
     enabled:  !!t.enabled,
     position: ALL_POSITIONS.includes(t.position) ? t.position : 'tl',
     anime:    t.anime !== false,   // show seasons tracked in the Anime Feed (on unless turned off)
+    upcoming: !!t.upcoming,        // header toggle: also list today's not-yet-aired anime
   };
 }
 function normalizeAnime(a) {
@@ -2260,7 +2290,7 @@ function load() {
   } else {
     links  = DEFAULT_LINKS.map((l, i) => ({ id: i + 1, name: l.name, url: l.url, icon: '', group: '' }));
     nextId = links.length + 1;
-    settings.anime = normalizeAnime(settings.anime);   // fill in the anime defaults (formats, countries, lists)
+    normalizeAllSubfields();   // fill in every widget's defaults (anime formats/lists, tracker options, …)
   }
 }
 function save() {
@@ -2689,7 +2719,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('contextmenu', e => {
   if (!$.ctxMenu.contains(e.target) && !e.target.closest('.tile')) closeCtx();
-  if (!$.animeCtx.contains(e.target) && !e.target.closest('.anime-item, .wt-auto')) closeAnimeCtx();
+  if (!$.animeCtx.contains(e.target) && !e.target.closest('.anime-item, .wt-auto, .wt-up')) closeAnimeCtx();
 });
 
 // ── Link modal (add / edit) ───────────────────────────────────────────────────
@@ -3991,6 +4021,22 @@ function trackerCdClass(ms) {
   return h < 6 ? 'wt-cd-near' : h < 48 ? 'wt-cd-mid' : 'wt-cd-far';
 }
 const TRACKER_LINK_SVG = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M4.5 2H2a1 1 0 00-1 1v6a1 1 0 001 1h6a1 1 0 001-1V6.5M6.5 1H10m0 0v3.5M10 1L5 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const TRACKER_TODAY_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 3l4 4 4-4"/></svg>';
+// Header button: toggle listing today's not-yet-aired anime
+$.trackerHeader.addEventListener('click', e => {
+  if (!e.target.closest('.tracker-today-btn')) return;
+  settings.tracker.upcoming = !settings.tracker.upcoming;
+  save();
+  if (settings.tracker.upcoming) fetchUpcoming();
+  renderTracker();
+});
+// "+" on an airing-today card: track that show
+$.trackerBody.addEventListener('click', e => {
+  const b = e.target.closest('.wt-add'); if (!b) return;
+  const card = b.closest('.wt-up');
+  const s = ensureShow(Number(b.dataset.add), card ? card.dataset.t : '');
+  if (!s.track) toggleShowFlag(s.id, 'track');
+});
 function trackerState(key) {
   $.trackerBody.innerHTML = `<div class="tracker-state">${esc(L()[key] || '')}</div>`;
   scheduleLayout();
@@ -4000,22 +4046,29 @@ function renderTracker() {
   const t = L();
   const now   = new Date();
   const today = now.getDay();
-  // Header doubles as a link to the standalone tracker
-  $.trackerHeader.innerHTML = `<a class="tracker-head-link" href="${TRACKER_URL}" target="_blank" rel="noopener noreferrer">${esc(t.weeklyTracker + ' - ' + t.days[today])}</a>`;
-  const entries = readTrackerEntries() || [];
-  const auto    = trackedAnimeToday(now);   // tracked Anime Feed seasons airing today
-  if (!entries.length && !auto.length) { trackerState('trackerEmpty'); return; }
+  // Header doubles as a link to the standalone tracker; the button on the right
+  // toggles listing today's not-yet-aired anime
+  const upOn = settings.tracker.upcoming;
+  $.trackerHeader.innerHTML =
+    `<a class="tracker-head-link" href="${TRACKER_URL}" target="_blank" rel="noopener noreferrer">${esc(t.weeklyTracker + ' - ' + t.days[today])}</a>` +
+    `<button type="button" class="tracker-today-btn${upOn ? ' on' : ''}" title="${esc(t.trackerUpcomingBtn)}" aria-pressed="${upOn}">${TRACKER_TODAY_SVG}</button>`;
+  const entries  = readTrackerEntries() || [];
+  const auto     = trackedAnimeToday(now);    // tracked Anime Feed seasons airing today
+  const upcoming = upcomingAnimeToday(now);   // other shows still to air today (header toggle)
+  if (!entries.length && !auto.length && !upcoming.length) { trackerState('trackerEmpty'); return; }
   // Only today's entries, ordered by time of day (like the tracker's day column)
-  const rows = entries.filter(e => e.day === today).concat(auto)
+  const rows = entries.filter(e => e.day === today).concat(auto, upcoming)
     .map(e => ({ e, ms: trackerMsUntilNext(e.day, e.time, now) }))
     .sort((a, b) => a.e.time.localeCompare(b.e.time));
   if (!rows.length) { trackerState('trackerNoneToday'); return; }
   const target = settings.newTab ? ' target="_blank" rel="noopener"' : '';
-  // Next-up = the earliest entry today that hasn't started yet. If every event
-  // today has already passed, badge nothing (msUntilNext would point a week ahead,
-  // which isn't the actual next thing).
+  // Next-up = the earliest of your entries today that hasn't started yet (the
+  // untracked "airing today" shows never take the badge). If every event today has
+  // already passed, badge nothing (msUntilNext would point a week ahead, which
+  // isn't the actual next thing).
   let nextId = null;
   for (const r of rows) {
+    if (r.e.upcoming) continue;
     const [h, m] = r.e.time.split(':').map(Number);
     const passed = now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m);
     if (!passed) { nextId = r.e.id; break; }
@@ -4027,6 +4080,20 @@ function renderTracker() {
   $.trackerBody.innerHTML = rows.map(r => {
     const e = r.e;
     const isNext = e.id === nextId ? ' wt-next' : '';
+    if (e.upcoming) {
+      // Not aired yet, so no discussion thread: the card opens the AniList entry
+      return `<div class="wt-entry wt-up" data-m="${e.m}" data-t="${esc(e.title)}">` +
+        `<a class="wt-cover" href="${esc(e.al)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(e.name)}"></a>` +
+        `<div class="wt-name">${esc(e.name)}</div>` +
+        `<div class="wt-meta">` +
+          `<span class="wt-time">${esc(e.time)}</span>` +
+          `<div class="wt-meta-right">` +
+            `<span class="wt-cd ${trackerCdClass(r.ms)}">${esc(trackerCountdown(r.ms))}</span>` +
+            `<button type="button" class="wt-add" title="${esc(t.trackerTrackShow)}" data-add="${e.m}">+</button>` +
+          `</div>` +
+        `</div>` +
+      `</div>`;
+    }
     if (e.auto) {
       return `<div class="wt-entry wt-auto${isNext}" data-m="${e.m}">` +
         `<a class="wt-cover" href="${esc(e.link)}"${target} aria-label="${esc(e.name)}"></a>` +
@@ -4072,10 +4139,10 @@ function applyTracker() {
     if (!trackSched) loadTrackCache();
     renderTracker();
     trackerTimer = setInterval(renderTracker, 60000);  // keep the "in Xd Yh" figures current
-    if (tk.anime) {
-      fetchTracked();
-      trackFetchTimer = setInterval(fetchTracked, 10 * 60 * 1000);   // refetches once the 30-min cache goes stale
-    }
+    if (tk.anime) fetchTracked();
+    if (tk.upcoming) fetchUpcoming();
+    // Both refetch only once their 30-min cache goes stale (or the source/day changed)
+    trackFetchTimer = setInterval(() => { fetchTracked(); fetchUpcoming(); }, 10 * 60 * 1000);
   }
   scheduleLayout();
 }
@@ -4279,6 +4346,7 @@ async function fetchAnime() {
       stale();
       const lists = (d.MediaListCollection && d.MediaListCollection.lists) || [];
       ids = [...new Set(lists.flatMap(l => (l.entries || []).map(e => e.mediaId)).filter(Number.isInteger))];
+      animeUserIds = { user: a.user.toLowerCase(), ids, at: Date.now() };   // reused by the tracker's "airing today"
       const key = hashIds(ids);
       if (key !== animeListKey) { animeItems = []; animeExhausted = false; animeListKey = key; }   // list changed → rebuild
     }
@@ -4377,9 +4445,10 @@ $.animeList.addEventListener('contextmenu', e => {
 // Tracked entries in the Weekly Tracker widget get the same menu (your own entries
 // come from the standalone tracker and keep the browser's normal menu)
 $.trackerBody.addEventListener('contextmenu', e => {
-  const card = e.target.closest('.wt-auto'); if (!card) return;
-  const s = animeShow(Number(card.dataset.m)); if (!s) return;
-  openAnimeCtx(e, { m: s.id, t: s.title });
+  const card = e.target.closest('.wt-auto, .wt-up'); if (!card) return;
+  const m = Number(card.dataset.m), s = animeShow(m);
+  if (!s && !card.dataset.t) return;
+  openAnimeCtx(e, { m, t: s ? s.title : card.dataset.t });
 });
 // `it` only needs the season: { m: media id, t: title }
 function openAnimeCtx(e, it) {
@@ -4687,6 +4756,79 @@ function trackedAnimeToday(now) {
     }
   }
   return out;
+}
+// ── "Airing today" in the Weekly Tracker (header toggle) ──
+// Every episode still to air today from the Anime Feed's source (All airing or the
+// AniList user's list), through its format/country filters and blacklist, minus
+// shows already tracked. Shown dimmed, mixed in by time, with a + to track.
+const ANIME_UPCOMING_FIELDS = 'pageInfo{hasNextPage} airingSchedules(airingAt_greater:$from,airingAt_lesser:$to,%IDS%sort:TIME){id episode airingAt media{id format countryOfOrigin title{english romaji}}}';
+const ANIME_UPCOMING_ALL  = 'query($p:Int,$from:Int,$to:Int){Page(page:$p,perPage:50){' + ANIME_UPCOMING_FIELDS.replace('%IDS%', '') + '}}';
+const ANIME_UPCOMING_USER = 'query($p:Int,$from:Int,$to:Int,$ids:[Int]){Page(page:$p,perPage:50){' + ANIME_UPCOMING_FIELDS.replace('%IDS%', 'mediaId_in:$ids,') + '}}';
+let animeUserIds = null;   // { user, ids, at } — the AniList user's list ids, shared with the feed fetch
+let upSched = null;        // { key, fetchedAt, items } — the same item shape as the feed's
+let upBusy = false, upTriedAt = 0;
+function upcomingKey() {
+  const d = new Date();
+  return animeSig() + '|' + d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();   // source + local day
+}
+async function fetchUpcoming() {
+  const tk = settings.tracker, a = settings.anime;
+  if (!tk.enabled || !tk.upcoming || upBusy) return;
+  if (a.source === 'user' && !a.user) { upSched = { key: upcomingKey(), fetchedAt: Date.now(), items: [] }; return; }
+  const key = upcomingKey();
+  if (upSched && upSched.key === key && Date.now() - upSched.fetchedAt < TRACK_REFRESH_MS) return;
+  if (Date.now() - upTriedAt < 60000) return;   // don't hammer AniList after a failure
+  upBusy = true; upTriedAt = Date.now();
+  try {
+    let ids = null;
+    if (a.source === 'user') {
+      const u = a.user.toLowerCase();
+      if (animeUserIds && animeUserIds.user === u && Date.now() - animeUserIds.at < 60 * 60 * 1000) ids = animeUserIds.ids;
+      else {
+        const d = await anilist(ANIME_LIST_Q, { u: a.user });
+        const lists = (d.MediaListCollection && d.MediaListCollection.lists) || [];
+        ids = [...new Set(lists.flatMap(l => (l.entries || []).map(e => e.mediaId)).filter(Number.isInteger))];
+        animeUserIds = { user: u, ids, at: Date.now() };
+      }
+    }
+    const end = new Date(); end.setHours(24, 0, 0, 0);
+    const from = Math.floor(Date.now() / 1000), to = Math.floor(end / 1000);
+    const items = [];
+    if (!ids || ids.length) {
+      for (let p = 1; p <= 6; p++) {
+        const d = await anilist(ids ? ANIME_UPCOMING_USER : ANIME_UPCOMING_ALL, ids ? { p, from, to, ids } : { p, from, to });
+        const pg = d.Page || {};
+        items.push(...(pg.airingSchedules || []).map(toAnimeItem).filter(Boolean));
+        if (!(pg.pageInfo && pg.pageInfo.hasNextPage)) break;
+      }
+    }
+    if (upcomingKey() !== key) return;   // source or day changed mid-flight; the next tick refetches
+    upSched = { key, fetchedAt: Date.now(), items };
+  } catch {}   // offline / rate-limited: keep what we had
+  finally {
+    upBusy = false;
+    if (settings.tracker.enabled) renderTracker();
+  }
+}
+function upcomingAnimeToday(now) {
+  if (!settings.tracker.upcoming) return [];
+  if (!upSched || upSched.key !== upcomingKey()) { fetchUpcoming(); return []; }   // stale source/day
+  const pad = n => String(n).padStart(2, '0');
+  // Tracked shows appear as tracked entries instead — but only once their schedule
+  // has loaded, so a show just tracked with "+" doesn't blink out in between
+  const trackedReady = !settings.tracker.anime || (trackSched && trackSched.key === trackKey());
+  const tracked = new Set(trackedReady ? trackedShows().map(s => s.id) : []);
+  return animeVisible(upSched.items)
+    .filter(it => it.at * 1000 > now && !tracked.has(it.m))
+    .map(it => {
+      const d = new Date(it.at * 1000);
+      return {
+        id: 'up' + it.id, upcoming: true, m: it.m, title: it.t, day: now.getDay(),
+        time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+        name: `${it.t} - Episode ${it.ep}`,
+        al: it.u,
+      };
+    });
 }
 // ── Custom day/time for a tracked season (both needed; day null = AniList time) ──
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
