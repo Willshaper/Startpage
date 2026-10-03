@@ -854,6 +854,21 @@
     border: 1px solid color-mix(in srgb, var(--teal) 24%, transparent);
     border-radius: 3px; padding: 1px 5px;
   }
+  #anime-show-add-msg { margin-top: 6px; }
+  #anime-show-add-msg:empty { display: none; }
+  #anime-show-add-msg.err { color: var(--accent); }
+  /* Small chips inside a list row (Shows): restate the chip look over the generic `.feed-row button` reset */
+  .feed-row .chip--sm {
+    background: transparent; border: 1px solid var(--border2); border-radius: 7px;
+    font-family: var(--mono); font-size: 10px; line-height: 1.3; letter-spacing: 0.04em;
+    color: var(--text-dimmer); padding: 3px 9px;
+  }
+  .feed-row .chip--sm:hover { color: var(--text); }
+  .feed-row .chip--sm.on {
+    color: var(--teal);
+    background: color-mix(in srgb, var(--teal) 14%, transparent);
+    border-color: color-mix(in srgb, var(--teal) 55%, var(--border2));
+  }
   .track-time-row { display: flex; gap: 6px; }
   .track-time-row .feed-filter-input { flex: 1; min-width: 0; width: auto; }
   .track-time-row input[type="time"] { flex: 0 0 92px; }
@@ -1334,10 +1349,8 @@
     <div class="seg seg--sub" id="anime-subnav">
       <button type="button" data-sub="general" data-i18n="general">General</button>
       <button type="button" data-sub="filters" data-i18n="animeFilters">Filters</button>
-      <button type="button" data-sub="links" data-i18n="animeLinksTab">Links</button>
-      <button type="button" data-sub="highlights" data-i18n="highlight">Highlight</button>
+      <button type="button" data-sub="shows" data-i18n="animeShowsTab">Shows</button>
       <button type="button" data-sub="blacklist" data-i18n="blacklist">Blacklist</button>
-      <button type="button" data-sub="tracked" data-i18n="animeTrackedTab">Tracked</button>
     </div>
     <div class="anime-sub" data-sub="general">
       <div class="field" style="margin-bottom:8px">
@@ -1357,34 +1370,29 @@
         <label data-i18n="animeFormats">Formats</label>
         <div class="chip-row" id="set-anime-formats"></div>
       </div>
-      <div class="field" style="margin-bottom:0">
+      <div class="field" style="margin-bottom:12px">
         <label data-i18n="animeCountries">Countries</label>
         <div class="chip-row" id="set-anime-countries"></div>
       </div>
-    </div>
-    <div class="anime-sub" data-sub="links">
-      <div class="settings-note" style="margin:0 0 10px" data-i18n="animeLinksHint">Right-click an entry in the feed to set a link for its season.</div>
-      <input class="anime-search" type="text" data-list="links" placeholder="Search seasons…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
-      <div id="anime-link-list"></div>
-    </div>
-    <div class="anime-sub" data-sub="highlights">
-      <div class="field" style="margin-bottom:14px">
+      <div class="field" style="margin-bottom:0">
         <label data-i18n="animeHlPhrases">Highlight phrases</label>
         <input id="set-anime-highlight" type="text" placeholder="Exact matches to highlight (comma-separated)" data-i18n-ph="highlightPlaceholder" autocomplete="off">
       </div>
-      <div class="settings-note" style="margin:0 0 10px" data-i18n="animeHlHint">Right-click an entry in the feed to highlight its whole season.</div>
-      <input class="anime-search" type="text" data-list="highlights" placeholder="Search seasons…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
-      <div id="anime-hl-list"></div>
+    </div>
+    <div class="anime-sub" data-sub="shows">
+      <div class="settings-note" style="margin:0 0 10px" data-i18n="animeShowsHint">Add a show by right-clicking it in the feed, or by pasting its AniList link or ID below. Each show can be tracked (shows in the Weekly Tracker on the days it airs, optionally at your own day and time), highlighted, and given its own link.</div>
+      <div class="feed-add-row">
+        <input id="anime-show-add" type="text" placeholder="AniList link or ID" data-i18n-ph="animeShowAddPh" autocomplete="off" spellcheck="false">
+        <button class="btn btn-ghost" id="anime-show-add-btn" data-i18n="add" onclick="addShowFromInput()">Add</button>
+      </div>
+      <div class="settings-note" id="anime-show-add-msg"></div>
+      <input class="anime-search" type="text" style="margin-top:10px" data-list="shows" placeholder="Search shows…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
+      <div id="anime-show-list"></div>
     </div>
     <div class="anime-sub" data-sub="blacklist">
       <div class="settings-note" style="margin:0 0 10px" data-i18n="animeBlHint">Right-click an entry in the feed to hide its season.</div>
-      <input class="anime-search" type="text" data-list="blacklist" placeholder="Search seasons…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
+      <input class="anime-search" type="text" data-list="blacklist" placeholder="Search shows…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
       <div id="anime-bl-list"></div>
-    </div>
-    <div class="anime-sub" data-sub="tracked">
-      <div class="settings-note" style="margin:0 0 10px" data-i18n="animeTrackHint">Right-click an entry in the feed to track its season. Tracked seasons show in the Weekly Tracker on the days they air. Set a day and time to override AniList's broadcast time.</div>
-      <input class="anime-search" type="text" data-list="tracked" placeholder="Search seasons…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
-      <div id="anime-track-list"></div>
     </div>
         </section>
 
@@ -1461,6 +1469,9 @@
       <div class="toggle" id="set-tracker-anime"></div>
     </div>
     <div class="settings-note" style="margin-top:0" data-i18n="trackedAnimeHint">Seasons you track in the Anime Feed (right-click → Track) appear here on the days they air.</div>
+    <div class="io-row" style="margin-top:10px">
+      <button class="btn btn-ghost" type="button" data-i18n="animeManageShows" onclick="setSettingsTab('w-anime'); setAnimeSub('shows')">Manage tracked shows</button>
+    </div>
         </section>
 
         <section class="settings-pane" data-pane="tiles">
@@ -1727,16 +1738,20 @@ const I18N = {
     animeFormats: 'Formats', animeCountries: 'Countries',
     animeFmt: { TV: 'TV', TV_SHORT: 'TV Short', MOVIE: 'Movie', SPECIAL: 'Special', OVA: 'OVA', ONA: 'ONA', MUSIC: 'Music' },
     animeCountry: { JP: 'Japan', CN: 'China', KR: 'Korea' },
-    animeFilters: 'Filters', animeLinksTab: 'Links', animeHlPhrases: 'Highlight phrases',
-    animeLinksHint: 'Right-click an entry in the feed to set a link for its season.',
-    animeHlHint: 'Right-click an entry in the feed to highlight its whole season.',
+    animeFilters: 'Filters', animeHlPhrases: 'Highlight phrases', animeShowsTab: 'Shows',
+    animeShowsHint: 'Add a show by right-clicking it in the feed, or by pasting its AniList link or ID below. Each show can be tracked (shows in the Weekly Tracker on the days it airs, optionally at your own day and time), highlighted, and given its own link.',
+    animeChipTracked: 'Tracked', animeChipHl: 'Highlighted', animeRemoveShow: 'Remove show',
+    animeLinkPh: 'Custom link (empty = Reddit search)', animeManageShows: 'Manage tracked shows',
     animeBlHint: 'Right-click an entry in the feed to hide its season.',
-    animeSearchPh: 'Search seasons…', animeAiring: 'Airing', animeFinished: 'Finished',
+    animeSearchPh: 'Search shows…', animeAiring: 'Airing', animeFinished: 'Finished',
     animeNoneYet: 'None yet', animeNoMatch: 'No matches',
     animeEditLink: 'Edit link', animeResetLink: 'Reset link', animeBlacklistSeason: 'Blacklist season',
     animeHighlightSeason: 'Highlight season', animeUnhighlight: 'Remove highlight',
-    animeTrack: 'Track', animeUntrack: 'Untrack', animeTrackedTab: 'Tracked',
-    animeTrackHint: 'Right-click an entry in the feed to track its season. Tracked seasons show in the Weekly Tracker on the days they air. Set a day and time to override AniList\'s broadcast time.',
+    animeTrack: 'Track', animeUntrack: 'Untrack',
+    animeShowAddPh: 'AniList link or ID', animeLooking: 'Looking up…', animeShowAdded: 'Added: {t}',
+    animeShowDup: 'Already in your shows: {t}', animeBadId: 'Paste an AniList anime link (anilist.co/anime/…) or its ID number.',
+    animeNotAnime: 'That AniList entry isn\'t an anime.', animeNotFound: 'No AniList anime with that ID.',
+    animeFail: 'Couldn\'t reach AniList — try again.',
     animeDayAuto: 'AniList time', animeEditTime: 'Edit time…', trackDayTime: 'Day & time',
     trackTimeHint: '"AniList time" uses the broadcast time from AniList.',
     showTrackedAnime: 'Show tracked anime',
@@ -1825,16 +1840,20 @@ const I18N = {
     animeFormats: 'Formater', animeCountries: 'Lande',
     animeFmt: { TV: 'TV', TV_SHORT: 'TV-kort', MOVIE: 'Film', SPECIAL: 'Special', OVA: 'OVA', ONA: 'ONA', MUSIC: 'Musik' },
     animeCountry: { JP: 'Japan', CN: 'Kina', KR: 'Korea' },
-    animeFilters: 'Filtre', animeLinksTab: 'Links', animeHlPhrases: 'Fremhæv-sætninger',
-    animeLinksHint: 'Højreklik på en post i feedet for at angive et link til dens sæson.',
-    animeHlHint: 'Højreklik på en post i feedet for at fremhæve hele dens sæson.',
+    animeFilters: 'Filtre', animeHlPhrases: 'Fremhæv-sætninger', animeShowsTab: 'Serier',
+    animeShowsHint: 'Tilføj en serie ved at højreklikke på den i feedet, eller ved at indsætte dens AniList-link eller ID herunder. Hver serie kan følges (vises i ugeplanen på de dage den sendes, evt. på din egen dag og tid), fremhæves og få sit eget link.',
+    animeChipTracked: 'Fulgt', animeChipHl: 'Fremhævet', animeRemoveShow: 'Fjern serie',
+    animeLinkPh: 'Eget link (tomt = Reddit-søgning)', animeManageShows: 'Administrer fulgte serier',
     animeBlHint: 'Højreklik på en post i feedet for at skjule dens sæson.',
-    animeSearchPh: 'Søg sæsoner…', animeAiring: 'Sendes', animeFinished: 'Afsluttet',
+    animeSearchPh: 'Søg serier…', animeAiring: 'Sendes', animeFinished: 'Afsluttet',
     animeNoneYet: 'Ingen endnu', animeNoMatch: 'Ingen match',
     animeEditLink: 'Rediger link', animeResetLink: 'Nulstil link', animeBlacklistSeason: 'Sortlist sæson',
     animeHighlightSeason: 'Fremhæv sæson', animeUnhighlight: 'Fjern fremhævning',
-    animeTrack: 'Følg', animeUntrack: 'Stop med at følge', animeTrackedTab: 'Fulgte',
-    animeTrackHint: 'Højreklik på en post i feedet for at følge dens sæson. Fulgte sæsoner vises i ugeplanen på de dage de sendes. Angiv en dag og et tidspunkt for at erstatte AniLists sendetid.',
+    animeTrack: 'Følg', animeUntrack: 'Stop med at følge',
+    animeShowAddPh: 'AniList-link eller ID', animeLooking: 'Slår op…', animeShowAdded: 'Tilføjet: {t}',
+    animeShowDup: 'Allerede i dine serier: {t}', animeBadId: 'Indsæt et AniList-anime-link (anilist.co/anime/…) eller dets ID-nummer.',
+    animeNotAnime: 'Den AniList-post er ikke en anime.', animeNotFound: 'Ingen AniList-anime med det ID.',
+    animeFail: 'Kunne ikke nå AniList — prøv igen.',
     animeDayAuto: 'AniList-tid', animeEditTime: 'Rediger tidspunkt…', trackDayTime: 'Dag & tidspunkt',
     trackTimeHint: '"AniList-tid" bruger sendetiden fra AniList.',
     showTrackedAnime: 'Vis fulgte anime',
@@ -1981,12 +2000,13 @@ const $ = {
   setAnimeFormats:   document.getElementById('set-anime-formats'),
   setAnimeCountries: document.getElementById('set-anime-countries'),
   setAnimeHighlight: document.getElementById('set-anime-highlight'),
-  animeLinkList: document.getElementById('anime-link-list'),
+  animeShowList: document.getElementById('anime-show-list'),
   animeBlList:   document.getElementById('anime-bl-list'),
-  animeHlList:   document.getElementById('anime-hl-list'),
-  animeTrackList:document.getElementById('anime-track-list'),
   animeCtxTrack: document.getElementById('anime-ctx-track'),
   animeCtxTime:  document.getElementById('anime-ctx-time'),
+  animeShowAdd:    document.getElementById('anime-show-add'),
+  animeShowAddBtn: document.getElementById('anime-show-add-btn'),
+  animeShowAddMsg: document.getElementById('anime-show-add-msg'),
   trackTimeModal:document.getElementById('track-time-modal'),
   trackTimeTitle:document.getElementById('track-time-title'),
   trackTimeDay:  document.getElementById('track-time-day'),
@@ -2102,34 +2122,50 @@ function normalizeTracker(t) {
 }
 function normalizeAnime(a) {
   a = a || {};
-  // Per-season lists keyed by AniList media id: custom links {id,title,url,last},
-  // highlighted and blacklisted seasons {id,title,last}, and tracked seasons
-  // {id,title,last,day,time} where day (0=Sun..6) + "HH:MM" optionally override
-  // AniList's air time (day null = use AniList). The title is kept so settings can
-  // list them offline; `last` (unix s) is when the season last aired an episode
-  // we've seen, which splits the settings lists into "airing" and "finished".
+  // Per-season settings keyed by AniList media id. `shows` holds every season the
+  // user has configured: { id, title, last, track, hl, url, day, time } — tracked
+  // (Weekly Tracker), highlighted, a custom link, and an optional day (0=Sun..6) +
+  // "HH:MM" overriding AniList's air time (day null = AniList). `blacklist` holds
+  // hidden seasons { id, title, last }. The title is kept so settings can list them
+  // offline; `last` (unix s) is when the season last aired an episode we've seen,
+  // which splits the settings lists into "airing" and "finished".
   const nowSec = Math.floor(Date.now() / 1000);
-  const seasons = (arr, kind) => {
-    const seen = new Set(), out = [];
-    for (const x of Array.isArray(arr) ? arr : []) {
-      if (!x || typeof x !== 'object') continue;
-      const id = Number(x.id);
-      if (!Number.isInteger(id) || id <= 0 || seen.has(id)) continue;
-      const title = typeof x.title === 'string' ? x.title.slice(0, 200) : '';
-      const last  = Number.isFinite(x.last) && x.last > 0 ? Math.floor(x.last) : nowSec;
-      if (kind === 'link') {
-        const url = typeof x.url === 'string' ? x.url.trim() : '';
-        if (!url) continue;
-        out.push({ id, title, url, last });
-      } else if (kind === 'track') {
-        const day  = Number.isInteger(x.day) && x.day >= 0 && x.day <= 6 ? x.day : null;
-        const time = typeof x.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x.time) ? x.time : '';
-        out.push({ id, title, last, day, time });
-      } else out.push({ id, title, last });
-      seen.add(id);
-    }
-    return out;
+  const validId = x => (x && typeof x === 'object' && Number.isInteger(Number(x.id)) && Number(x.id) > 0) ? Number(x.id) : 0;
+  const titleOf = x => typeof x.title === 'string' ? x.title.slice(0, 200) : '';
+  const lastOf  = x => Number.isFinite(x.last) && x.last > 0 ? Math.floor(x.last) : 0;
+  const blacklist = [], blSeen = new Set();
+  for (const x of Array.isArray(a.blacklist) ? a.blacklist : []) {
+    const id = validId(x);
+    if (!id || blSeen.has(id)) continue;
+    blSeen.add(id);
+    blacklist.push({ id, title: titleOf(x), last: lastOf(x) || nowSec });
+  }
+  const shows = new Map();
+  const showFor = x => {
+    const id = validId(x);
+    if (!id) return null;
+    let s = shows.get(id);
+    if (!s) { s = { id, title: '', last: 0, track: false, hl: false, url: '', day: null, time: '' }; shows.set(id, s); }
+    if (!s.title) s.title = titleOf(x);
+    s.last = Math.max(s.last, lastOf(x));
+    return s;
   };
+  const slotOf = (s, x) => {
+    const day  = Number.isInteger(x.day) && x.day >= 0 && x.day <= 6 ? x.day : null;
+    const time = typeof x.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x.time) ? x.time : '';
+    if (day !== null && time) { s.day = day; s.time = time; }
+  };
+  for (const x of Array.isArray(a.shows) ? a.shows : []) {
+    const s = showFor(x); if (!s) continue;
+    s.track = !!x.track; s.hl = !!x.hl;
+    if (typeof x.url === 'string') s.url = x.url.trim();
+    slotOf(s, x);
+  }
+  // Older settings kept separate links / hlSeasons / tracked lists — merge them in
+  for (const x of Array.isArray(a.links) ? a.links : []) { const s = showFor(x); if (s && typeof x.url === 'string' && x.url.trim()) s.url = x.url.trim(); }
+  for (const x of Array.isArray(a.hlSeasons) ? a.hlSeasons : []) { const s = showFor(x); if (s) s.hl = true; }
+  for (const x of Array.isArray(a.tracked) ? a.tracked : []) { const s = showFor(x); if (s) { s.track = true; slotOf(s, x); } }
+  for (const s of shows.values()) if (!s.last) s.last = nowSec;
   return {
     enabled:   !!a.enabled,
     position:  ALL_POSITIONS.includes(a.position) ? a.position : 'bl',
@@ -2138,10 +2174,8 @@ function normalizeAnime(a) {
     formats:   Array.isArray(a.formats)   ? ANIME_FORMATS.filter(f => a.formats.includes(f))     : ANIME_FORMATS.filter(f => f !== 'MUSIC'),
     countries: Array.isArray(a.countries) ? ANIME_COUNTRIES.filter(c => a.countries.includes(c)) : [...ANIME_COUNTRIES],
     highlight: typeof a.highlight === 'string' ? a.highlight : '',
-    links:     seasons(a.links, 'link'),
-    hlSeasons: seasons(a.hlSeasons),
-    blacklist: seasons(a.blacklist),
-    tracked:   seasons(a.tracked, 'track'),
+    shows:     [...shows.values()],
+    blacklist,
   };
 }
 function normalizeGroups(g) {
@@ -4132,9 +4166,20 @@ function animeSearchUrl(title) {
   });
 }
 function animeLinkFor(it) {
-  const c = settings.anime.links.find(l => l.id === it.m);
-  return c ? withProtocol(c.url) : animeSearchUrl(it.t);
+  const s = animeShow(it.m);
+  return s && s.url ? withProtocol(s.url) : animeSearchUrl(it.t);
 }
+// The user's per-season settings ("Shows"): look one up, or create it on first use
+function animeShow(m) { return settings.anime.shows.find(s => s.id === m); }
+function ensureShow(m, title) {
+  let s = animeShow(m);
+  if (!s) {
+    s = { id: m, title, last: animeSeasonLast(m), track: false, hl: false, url: '', day: null, time: '' };
+    settings.anime.shows.push(s);
+  }
+  return s;
+}
+function trackedShows() { return settings.anime.shows.filter(s => s.track); }
 function animeAge(at) {
   const ms = Date.now() - at * 1000;
   return ms < 60000 ? L().feedJustNow : L().animeAgo.replace('{t}', relShort(ms));
@@ -4159,7 +4204,7 @@ function renderAnime() {
   if (!shown.length) { showAnimeState(animeBusy ? 'feedLoading' : (animeErr || 'animeEmpty')); return; }
   const target  = settings.newTab ? ' target="_blank" rel="noopener"' : '';
   const phrases = highlightPhrases(a.highlight);
-  const hlSeasons = new Set(a.hlSeasons.map(h => h.id));
+  const hlSeasons = new Set(a.shows.filter(s => s.hl).map(s => s.id));
   const alTitle = esc(L().animeOpenAniList);
   const scroll  = $.animeList.scrollTop;
   animeShown = shown;
@@ -4333,17 +4378,17 @@ $.animeList.addEventListener('contextmenu', e => {
 // come from the standalone tracker and keep the browser's normal menu)
 $.trackerBody.addEventListener('contextmenu', e => {
   const card = e.target.closest('.wt-auto'); if (!card) return;
-  const tr = settings.anime.tracked.find(x => x.id === Number(card.dataset.m)); if (!tr) return;
-  openAnimeCtx(e, { m: tr.id, t: tr.title });
+  const s = animeShow(Number(card.dataset.m)); if (!s) return;
+  openAnimeCtx(e, { m: s.id, t: s.title });
 });
 // `it` only needs the season: { m: media id, t: title }
 function openAnimeCtx(e, it) {
   e.preventDefault();
   closeCtx();
   animeCtxItem = it;
-  const a = settings.anime, tracked = a.tracked.some(x => x.id === it.m);
-  $.animeCtxReset.style.display = a.links.some(l => l.id === it.m) ? '' : 'none';
-  $.animeCtxHl.textContent = a.hlSeasons.some(h => h.id === it.m) ? L().animeUnhighlight : L().animeHighlightSeason;
+  const s = animeShow(it.m), tracked = !!(s && s.track);
+  $.animeCtxReset.style.display = s && s.url ? '' : 'none';
+  $.animeCtxHl.textContent = s && s.hl ? L().animeUnhighlight : L().animeHighlightSeason;
   $.animeCtxTrack.textContent = tracked ? L().animeUntrack : L().animeTrack;
   $.animeCtxTime.style.display = tracked ? '' : 'none';
   placeMenu($.animeCtx, e);
@@ -4353,9 +4398,9 @@ function animeCtxEdit() {
   const it = animeCtxItem; closeAnimeCtx();
   if (!it) return;
   animeEditItem = it;
-  const c = settings.anime.links.find(l => l.id === it.m);
+  const s = animeShow(it.m);
   $.animeLinkTitle.textContent = it.t;
-  $.animeLinkUrl.value = c ? c.url : '';
+  $.animeLinkUrl.value = s ? s.url : '';
   $.animeLinkUrl.placeholder = animeSearchUrl(it.t);   // shows what "default" means
   $.animeLinkModal.classList.add('open');
   setTimeout(() => $.animeLinkUrl.focus(), 30);
@@ -4363,10 +4408,9 @@ function animeCtxEdit() {
 function closeAnimeLinkModal() { $.animeLinkModal.classList.remove('open'); animeEditItem = null; }
 // Set (or, with an empty url, clear) one season's custom link
 function setAnimeLink(id, title, url) {
-  const a = settings.anime;
   url = url.trim();
-  a.links = a.links.filter(l => l.id !== id);
-  if (url) a.links.push({ id, title, url, last: animeSeasonLast(id) });
+  const s = url ? ensureShow(id, title) : animeShow(id);   // clearing never creates a show
+  if (s) s.url = url;
   save(); renderAnime(); renderAnimeSettings();
   if (settings.tracker.enabled) renderTracker();   // tracked entries open the same link
 }
@@ -4388,21 +4432,55 @@ function animeCtxBlacklist() {
 // Toggle the whole season's highlight (every episode, now and future)
 function animeCtxHighlight() {
   const it = animeCtxItem; closeAnimeCtx();
-  if (!it) return;
-  const a = settings.anime;
-  if (a.hlSeasons.some(h => h.id === it.m)) a.hlSeasons = a.hlSeasons.filter(h => h.id !== it.m);
-  else a.hlSeasons.push({ id: it.m, title: it.t, last: animeSeasonLast(it.m) });
-  save(); renderAnime(); renderAnimeSettings();
+  if (it) toggleShowFlag(ensureShow(it.m, it.t).id, 'hl');
 }
 // Toggle tracking: a tracked season's episodes show in the Weekly Tracker widget
 function animeCtxTrack() {
   const it = animeCtxItem; closeAnimeCtx();
-  if (!it) return;
-  const a = settings.anime;
-  if (a.tracked.some(x => x.id === it.m)) a.tracked = a.tracked.filter(x => x.id !== it.m);
-  else a.tracked.push({ id: it.m, title: it.t, last: animeSeasonLast(it.m), day: null, time: '' });
-  save(); renderAnimeSettings(); trackedChanged();
+  if (it) toggleShowFlag(ensureShow(it.m, it.t).id, 'track');
 }
+// Flip a show's Tracked / Highlighted flag (right-click menu or the Shows chips)
+function toggleShowFlag(id, flag) {
+  const s = animeShow(id); if (!s) return;
+  s[flag] = !s[flag];
+  save(); renderAnime(); renderAnimeSettings();
+  if (flag === 'track') trackedChanged();
+}
+// Add a show by pasting an AniList link (anilist.co/anime/12345/…) or a bare ID.
+// The entry is looked up first, for its title and to confirm it's an anime; it's
+// added with nothing switched on, ready to be set up in the list.
+const ANIME_MEDIA_Q = 'query($id:Int){Media(id:$id){id type title{english romaji}}}';
+function parseAniListId(s) {
+  s = s.trim();
+  if (/^\d+$/.test(s)) return { id: Number(s) };
+  const m = /anilist\.co\/(anime|manga)\/(\d+)/i.exec(s);
+  if (!m) return null;
+  return { id: Number(m[2]), manga: m[1].toLowerCase() === 'manga' };
+}
+async function addShowFromInput() {
+  const t = L(), msg = (text, err) => { $.animeShowAddMsg.textContent = text; $.animeShowAddMsg.classList.toggle('err', !!err); };
+  const p = parseAniListId($.animeShowAdd.value);
+  if (!p || !p.id) { msg(t.animeBadId, true); return; }
+  if (p.manga) { msg(t.animeNotAnime, true); return; }
+  const dup = animeShow(p.id);
+  if (dup) { msg(t.animeShowDup.replace('{t}', dup.title), true); return; }
+  msg(t.animeLooking);
+  $.animeShowAddBtn.disabled = true;
+  try {
+    const md = (await anilist(ANIME_MEDIA_Q, { id: p.id })).Media;
+    if (!md || md.type !== 'ANIME') { msg(t.animeNotAnime, true); return; }
+    const title = ((md.title && (md.title.english || md.title.romaji)) || '').trim() || ('#' + md.id);
+    ensureShow(md.id, title);   // no-op if it was added meanwhile
+    save(); renderAnimeSeasonList('shows');
+    $.animeShowAdd.value = '';
+    msg(t.animeShowAdded.replace('{t}', title));
+  } catch (e) {
+    msg(e.status === 404 ? t.animeNotFound : t.animeFail, true);
+  } finally {
+    $.animeShowAddBtn.disabled = false;
+  }
+}
+$.animeShowAdd.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addShowFromInput(); } });
 // Newest air time we've seen for a season (falls back to now for one not in the cache)
 function animeSeasonLast(m) {
   const it = animeItems.find(x => x.m === m);   // items are newest-first
@@ -4414,7 +4492,7 @@ function touchAnimeSeasons() {
   for (const it of animeItems) if (!latest.has(it.m)) latest.set(it.m, it.at);
   const a = settings.anime;
   let changed = false;
-  for (const list of [a.links, a.hlSeasons, a.blacklist, a.tracked]) {
+  for (const list of [a.shows, a.blacklist]) {
     for (const e of list) {
       const at = latest.get(e.id);
       if (at && at > e.last) { e.last = at; changed = true; }
@@ -4423,14 +4501,14 @@ function touchAnimeSeasons() {
   if (changed) save();
 }
 
-// ── Settings page: sub-tabs, source, chips, and the three per-season lists ──
-// Each list (links / highlights / blacklist) shows seasons that aired within the
-// last ANIME_ACTIVE_DAYS on top, and the rest in a collapsed "Finished" section,
-// with a search box over both — so years of entries never become one long scroll.
+// ── Settings page: sub-tabs, source, chips, and the Shows / Blacklist lists ──
+// Each list shows seasons that aired within the last ANIME_ACTIVE_DAYS on top and
+// the rest in a collapsed "Finished" section, with a search box over both — so
+// years of entries never become one long scroll.
 const ANIME_ACTIVE_DAYS = 30;
 let animeSub = 'general';
-const animeSearch = { links: '', highlights: '', blacklist: '', tracked: '' };
-const animeArchiveOpen = { links: false, highlights: false, blacklist: false, tracked: false };
+const animeSearch = { shows: '', blacklist: '' };
+const animeArchiveOpen = { shows: false, blacklist: false };
 function setAnimeSub(sub) {
   animeSub = sub;
   segSetActive($.animeSubnav, 'sub', sub);
@@ -4452,15 +4530,13 @@ function renderAnimeSettings() {
     `<button type="button" class="chip${a.formats.includes(f) ? ' on' : ''}" data-fmt="${f}">${esc(t.animeFmt[f])}</button>`).join('');
   $.setAnimeCountries.innerHTML = ANIME_COUNTRIES.map(c =>
     `<button type="button" class="chip${a.countries.includes(c) ? ' on' : ''}" data-cc="${c}">${esc(t.animeCountry[c])}</button>`).join('');
-  ['links', 'highlights', 'blacklist', 'tracked'].forEach(renderAnimeSeasonList);
+  ['shows', 'blacklist'].forEach(renderAnimeSeasonList);
 }
 const ANIME_LISTS = {
-  links:      { key: 'links',     el: () => $.animeLinkList },
-  highlights: { key: 'hlSeasons', el: () => $.animeHlList },
-  blacklist:  { key: 'blacklist', el: () => $.animeBlList },
-  tracked:    { key: 'tracked',   el: () => $.animeTrackList },
+  shows:     { key: 'shows',     el: () => $.animeShowList },
+  blacklist: { key: 'blacklist', el: () => $.animeBlList },
 };
-// Tracked row: weekday select (or "AniList time") + time, Monday-first
+// Tracked show: weekday select (or "AniList time") + time, Monday-first
 function trackTimeControls(e) {
   const t = L();
   const opts = [`<option value="">${esc(t.animeDayAuto)}</option>`]
@@ -4480,20 +4556,20 @@ function renderAnimeSeasonList(kind) {
   const byTitle = (x, y) => x.title.localeCompare(y.title);
   const active   = match.filter(e => e.last >= cutoff).sort(byTitle);
   const finished = match.filter(e => e.last <  cutoff).sort(byTitle);
-  const row = e => kind === 'links'
+  // A show: Tracked / Highlighted chips, day + time (when tracked), and its custom link
+  const row = e => kind === 'shows'
     ? `<div class="feed-row feed-row--stacked">` +
         `<div class="feed-row-top"><span title="${esc(e.title)}">${esc(e.title || '#' + e.id)}</span>` +
-        `<button type="button" title="${esc(t.remove)}" onclick="setAnimeLink(${e.id}, '', '')">✕</button></div>` +
-        `<input class="feed-filter-input" type="text" value="${esc(e.url)}" spellcheck="false" onchange="updateAnimeLinkUrl(${e.id}, this.value)">` +
-      `</div>`
-    : kind === 'tracked'
-    ? `<div class="feed-row feed-row--stacked">` +
-        `<div class="feed-row-top"><span title="${esc(e.title)}">${esc(e.title || '#' + e.id)}</span>` +
-        `<button type="button" title="${esc(t.animeUntrack)}" onclick="removeAnimeSeason('tracked', ${e.id})">✕</button></div>` +
-        trackTimeControls(e) +
+        `<button type="button" title="${esc(t.animeRemoveShow)}" onclick="removeAnimeSeason('shows', ${e.id})">✕</button></div>` +
+        `<div class="chip-row">` +
+          `<button type="button" class="chip chip--sm${e.track ? ' on' : ''}" onclick="toggleShowFlag(${e.id}, 'track')">${esc(t.animeChipTracked)}</button>` +
+          `<button type="button" class="chip chip--sm${e.hl ? ' on' : ''}" onclick="toggleShowFlag(${e.id}, 'hl')">${esc(t.animeChipHl)}</button>` +
+        `</div>` +
+        (e.track ? trackTimeControls(e) : '') +
+        `<input class="feed-filter-input" type="text" value="${esc(e.url)}" placeholder="${esc(t.animeLinkPh)}" spellcheck="false" onchange="updateAnimeLinkUrl(${e.id}, this.value)">` +
       `</div>`
     : `<div class="feed-row"><span class="anime-bl-title" title="${esc(e.title)}">${esc(e.title || '#' + e.id)}</span>` +
-        `<button type="button" title="${esc(kind === 'blacklist' ? t.animeRestore : t.remove)}" onclick="removeAnimeSeason('${kind}', ${e.id})">✕</button></div>`;
+        `<button type="button" title="${esc(t.animeRestore)}" onclick="removeAnimeSeason('blacklist', ${e.id})">✕</button></div>`;
   const empty = msg => `<div class="feed-empty">${esc(msg)}</div>`;
   let html = `<div class="feed-list-label"><span>${esc(t.animeAiring)}</span><span style="color:var(--text-dimmer)">${active.length}</span></div>` +
     `<div class="anime-season-list">${active.length ? active.map(row).join('') : empty(list.length ? (q ? t.animeNoMatch : '—') : t.animeNoneYet)}</div>`;
@@ -4507,19 +4583,19 @@ function renderAnimeSeasonList(kind) {
   const det = el.querySelector('details');
   if (det && !q) det.addEventListener('toggle', () => { animeArchiveOpen[kind] = det.open; });
 }
+// A show's custom link, edited in the Shows list (empty = back to the Reddit search)
 function updateAnimeLinkUrl(id, value) {
-  const l = settings.anime.links.find(x => x.id === id);
-  if (!l) return;
-  if (!value.trim()) { setAnimeLink(id, '', ''); return; }   // emptied → back to the default search
-  l.url = value.trim();
+  const s = animeShow(id); if (!s) return;
+  s.url = value.trim();
   save(); renderAnime();
+  if (settings.tracker.enabled) renderTracker();
 }
-// Remove a season from the highlight, blacklist (restoring it) or tracked list
+// Remove a show (all its settings) or restore a blacklisted season
 function removeAnimeSeason(kind, id) {
   const a = settings.anime, key = ANIME_LISTS[kind].key;
   a[key] = a[key].filter(x => x.id !== id);
   save(); renderAnimeSeasonList(kind); renderAnime();
-  if (kind === 'tracked') trackedChanged();
+  if (kind === 'shows') trackedChanged();
 }
 
 // ── Tracked seasons → Weekly Tracker widget ──
@@ -4532,7 +4608,7 @@ const TRACK_REFRESH_MS = 30 * 60 * 1000;
 const ANIME_TRACK_Q = 'query($p:Int,$ids:[Int],$from:Int,$to:Int){Page(page:$p,perPage:50){pageInfo{hasNextPage} airingSchedules(mediaId_in:$ids,airingAt_greater:$from,airingAt_lesser:$to,sort:TIME){id episode airingAt mediaId}}}';
 let trackSched = null;   // { key, fetchedAt, items: [{ id, m, ep, at }] }
 let trackBusy = false, trackAgain = false;
-function trackKey() { return settings.anime.tracked.map(x => x.id).sort((a, b) => a - b).join(','); }
+function trackKey() { return trackedShows().map(x => x.id).sort((a, b) => a - b).join(','); }
 function loadTrackCache() {
   try {
     const c = JSON.parse(localStorage.getItem(TRACK_CACHE_KEY) || 'null');
@@ -4562,7 +4638,7 @@ async function fetchTracked(force) {
     try { localStorage.setItem(TRACK_CACHE_KEY, JSON.stringify(trackSched)); } catch {}
     // Aired episodes also keep a tracked season in the "airing" part of its list
     let changed = false;
-    for (const tr of settings.anime.tracked) {
+    for (const tr of trackedShows()) {
       for (const s of items) if (s.m === tr.id && s.at <= now && s.at > tr.last) { tr.last = s.at; changed = true; }
     }
     if (changed) save();
@@ -4585,7 +4661,7 @@ function trackedAnimeToday(now) {
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
   const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
   const out = [];
-  for (const tr of settings.anime.tracked) {
+  for (const tr of trackedShows()) {
     const eps = trackSched.items.filter(s => s.m === tr.id);
     if (!eps.length) continue;
     let pick, time = '';
@@ -4622,24 +4698,24 @@ function trackAniListTime(id) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 function setTrackSlot(id, day, time) {
-  const tr = settings.anime.tracked.find(x => x.id === id); if (!tr) return;
+  const tr = animeShow(id); if (!tr) return;
   tr.day  = day;
   tr.time = day === null ? '' : (TIME_RE.test(time) ? time : (tr.time || trackAniListTime(id)));
-  save(); renderAnimeSeasonList('tracked'); trackedChanged();
+  save(); renderAnimeSeasonList('shows'); trackedChanged();
 }
 function setTrackDay(id, value) {
-  const tr = settings.anime.tracked.find(x => x.id === id); if (!tr) return;
+  const tr = animeShow(id); if (!tr) return;
   setTrackSlot(id, value === '' ? null : Number(value), tr.time);
 }
 function setTrackTime(id, value) {
-  const tr = settings.anime.tracked.find(x => x.id === id); if (!tr || tr.day === null) return;
+  const tr = animeShow(id); if (!tr || tr.day === null) return;
   setTrackSlot(id, tr.day, value);
 }
 // "Edit time…" dialog (right-click on a tracked season in either widget)
 let trackTimeId = null;
 function animeCtxTime() {
   const it = animeCtxItem; closeAnimeCtx();
-  const tr = it && settings.anime.tracked.find(x => x.id === it.m); if (!tr) return;
+  const tr = it && animeShow(it.m); if (!tr) return;
   const t = L();
   trackTimeId = tr.id;
   $.trackTimeTitle.textContent = tr.title;
