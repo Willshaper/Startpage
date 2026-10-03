@@ -869,23 +869,42 @@
   .settings-tab:hover { color: var(--text); background: var(--bg3); }
   .settings-tab.active { color: var(--teal); background: color-mix(in srgb, var(--teal) 12%, transparent); }
   .settings-tab svg { flex-shrink: 0; }
+  .settings-nav-sep { height: 1px; background: var(--border); margin: 6px 6px; flex-shrink: 0; }
+  /* Anime settings sub-tabs: full-width segmented control, one panel at a time */
+  .seg--sub { display: flex; width: 100%; margin-bottom: 14px; }
+  .seg--sub button { flex: 1; padding: 7px 4px; white-space: nowrap; }
+  .anime-sub { display: none; }
+  .anime-sub.active { display: block; animation: fade 0.15s ease; }
+  .anime-season-list { display: flex; flex-direction: column; gap: 4px; }
+  .anime-archive { margin-top: 12px; }
+  .anime-archive summary {
+    cursor: pointer; list-style: none; user-select: none;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-dim); padding: 4px 0 6px;
+  }
+  .anime-archive summary::-webkit-details-marker { display: none; }
+  .anime-archive summary::before { content: '▸ '; }
+  .anime-archive[open] summary::before { content: '▾ '; }
+  .anime-archive .anime-season-list { max-height: 260px; overflow-y: auto; }
   .settings-panes { flex: 1; min-width: 0; overflow-y: auto; padding: 16px 20px 20px; }
   .settings-pane { display: none; }
   .settings-pane.active { display: block; animation: fade 0.15s ease; }
   .settings-group { margin-top: 20px; }
   .settings-group:first-child { margin-top: 0; }
-  .widget-card {
-    border: 1px solid var(--border2); border-radius: 10px;
-    background: color-mix(in srgb, var(--bg3) 35%, transparent);
-    padding: 12px 14px; margin-bottom: 12px;
-  }
-  /* Card header: show-toggle on the left, position grid on the right */
+  /* Widget page header: widget name on the left, position grid on the right */
   .wc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px; }
   .wc-head-main { flex: 1; min-width: 0; }
-  .wc-head-main .toggle-row { justify-content: flex-start; gap: 10px; padding: 3px 0; }
   .wc-head-pos { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; }
   .wc-head .settings-section-title { margin-bottom: 6px; }
-  .widget-card:last-child { margin-bottom: 0; }
+  .wc-head-main .settings-section-title { font-size: 11px; color: var(--teal); }
+  .anime-search {
+    width: 100%; box-sizing: border-box; margin-bottom: 10px; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: 8px;
+    color: var(--text); font-family: var(--sans); font-size: 13px;
+    padding: 8px 11px; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .anime-search:focus { border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 14%, transparent); }
   /* Corner position picker (2 cols × 3 rows = the six screen slots) */
   .pos-row { display: flex; align-items: center; gap: 12px; }
   .pos-grid {
@@ -1081,6 +1100,15 @@
         <button type="button" class="settings-tab" data-pane="widgets"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span data-i18n="widgets">Widgets</span></button>
         <button type="button" class="settings-tab" data-pane="tiles"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M17 14.5v6M14 17.5h6"/></svg><span data-i18n="tiles">Tiles</span></button>
         <button type="button" class="settings-tab" data-pane="backup"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5.5h16v4H4z"/><path d="M6 9.5v9h12v-9"/><path d="M10 13h4"/></svg><span data-i18n="backup">Backup</span></button>
+        <!-- One page per enabled widget (shown/hidden by syncWidgetNav) -->
+        <div class="settings-nav-sep" id="settings-nav-sep"></div>
+        <button type="button" class="settings-tab" data-pane="w-clock" data-widget="clock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span data-i18n="clock">Clock</span></button>
+        <button type="button" class="settings-tab" data-pane="w-rss" data-widget="rss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4.5a14.5 14.5 0 0 1 14.5 14.5M5 10.5a8.5 8.5 0 0 1 8.5 8.5"/><circle cx="6" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg><span data-i18n="feed">Feed</span></button>
+        <button type="button" class="settings-tab" data-pane="w-anime" data-widget="anime"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6.5" width="17" height="12" rx="2"/><path d="M9 3.5l3 3 3-3"/><path d="M10.5 10v5l4-2.5z" fill="currentColor" stroke="none"/></svg><span data-i18n="animeFeed">Anime Feed</span></button>
+        <button type="button" class="settings-tab" data-pane="w-note" data-widget="note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8.5L18 7v13.5H6z"/><path d="M9 11h6M9 15h6"/></svg><span data-i18n="note">Note</span></button>
+        <button type="button" class="settings-tab" data-pane="w-weather" data-widget="weather"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 18.5h10a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.7 1.1A3 3 0 0 0 7 18.5z"/></svg><span data-i18n="weather">Weather</span></button>
+        <button type="button" class="settings-tab" data-pane="w-countdown" data-widget="countdown"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h10M7 20.5h10"/><path d="M8 3.5c0 5 8 5 8 8.5s-8 3.5-8 8.5M16 3.5c0 5-8 5-8 8.5s8 3.5 8 8.5"/></svg><span data-i18n="countdown">Countdown</span></button>
+        <button type="button" class="settings-tab" data-pane="w-tracker" data-widget="tracker"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg><span data-i18n="weeklyTracker">Weekly Tracker</span></button>
       </nav>
       <div class="settings-panes">
         <section class="settings-pane active" data-pane="general">
@@ -1197,76 +1225,99 @@
         </section>
 
         <section class="settings-pane" data-pane="widgets">
-    <div class="widget-card">
-      <div class="wc-head">
-        <div class="wc-head-main">
-          <div class="settings-section-title" data-i18n="clock">Clock</div>
-          <div class="toggle-row" id="set-clock-row">
-            <span data-i18n="showClock">Show clock &amp; greeting</span>
-            <div class="toggle" id="set-clock"></div>
-          </div>
-          <div class="toggle-row" id="set-seconds-row">
-            <span data-i18n="showSeconds">Show seconds on clock</span>
-            <div class="toggle" id="set-seconds"></div>
-          </div>
-        </div>
-      </div>
-      <div class="field" style="margin-bottom:0">
-        <label data-i18n="verticalPosition">Vertical position</label>
-        <div class="seg" id="set-clock-valign-seg">
-          <button type="button" data-valign="top" data-i18n="valignTop">Top</button>
-          <button type="button" data-valign="middle" data-i18n="valignMiddle">Middle</button>
-          <button type="button" data-valign="bottom" data-i18n="valignBottom">Bottom</button>
-        </div>
+    <div class="settings-section-title" data-i18n="widgets">Widgets</div>
+    <div class="toggle-row" id="set-clock-row">
+      <span data-i18n="showClock">Show clock &amp; greeting</span>
+      <div class="toggle" id="set-clock"></div>
+    </div>
+    <div class="toggle-row" id="set-rss-row">
+      <span data-i18n="showFeed">Show RSS feed</span>
+      <div class="toggle" id="set-rss"></div>
+    </div>
+    <div class="toggle-row" id="set-anime-row">
+      <span data-i18n="showAnime">Show anime feed</span>
+      <div class="toggle" id="set-anime"></div>
+    </div>
+    <div class="toggle-row" id="set-note-row">
+      <span data-i18n="showNote">Show sticky note</span>
+      <div class="toggle" id="set-note"></div>
+    </div>
+    <div class="toggle-row" id="set-weather-row">
+      <span data-i18n="showWeather">Show weather</span>
+      <div class="toggle" id="set-weather"></div>
+    </div>
+    <div class="toggle-row" id="set-countdown-row">
+      <span data-i18n="showCountdown">Show countdown</span>
+      <div class="toggle" id="set-countdown"></div>
+    </div>
+    <div class="toggle-row" id="set-tracker-row">
+      <span data-i18n="showTracker">Show weekly tracker</span>
+      <div class="toggle" id="set-tracker"></div>
+    </div>
+    <div class="settings-note" data-i18n="widgetsHint">Each widget you turn on gets its own settings page in the sidebar.</div>
+        </section>
+
+        <!-- Per-widget pages (sidebar buttons appear only for enabled widgets) -->
+        <section class="settings-pane" data-pane="w-clock">
+    <div class="wc-head">
+      <div class="wc-head-main"><div class="settings-section-title" data-i18n="clock">Clock</div></div>
+    </div>
+    <div class="toggle-row" id="set-seconds-row">
+      <span data-i18n="showSeconds">Show seconds on clock</span>
+      <div class="toggle" id="set-seconds"></div>
+    </div>
+    <div class="field" style="margin-top:8px; margin-bottom:0">
+      <label data-i18n="verticalPosition">Vertical position</label>
+      <div class="seg" id="set-clock-valign-seg">
+        <button type="button" data-valign="top" data-i18n="valignTop">Top</button>
+        <button type="button" data-valign="middle" data-i18n="valignMiddle">Middle</button>
+        <button type="button" data-valign="bottom" data-i18n="valignBottom">Bottom</button>
       </div>
     </div>
+        </section>
 
-    <div class="widget-card">
-      <div class="wc-head">
-        <div class="wc-head-main">
-          <div class="settings-section-title" data-i18n="feed">Feed</div>
-          <div class="toggle-row" id="set-rss-row">
-            <span data-i18n="showFeed">Show RSS feed</span>
-            <div class="toggle" id="set-rss"></div>
-          </div>
-        </div>
-        <div class="wc-head-pos">
-          <div class="settings-section-title" data-i18n="position">Position</div>
-          <div class="pos-grid" data-widget="rss"></div>
-        </div>
-      </div>
-      <div class="feed-list-label">
-        <span data-i18n="feeds">Feeds</span><span id="feed-count"></span>
-      </div>
-      <div class="feed-list" id="feed-list"></div>
-      <div class="feed-add-row">
-        <input id="set-rss-url" type="text" placeholder="https://example.com/feed.xml" autocomplete="off">
-        <button class="btn btn-ghost" id="feed-add-btn" data-i18n="add" onclick="addFeed()">Add</button>
-      </div>
-      <div class="field" style="margin-top:12px; margin-bottom:0">
-        <label data-i18n="highlight">Highlight</label>
-        <input id="set-rss-highlight" type="text" placeholder="Exact matches to highlight (comma-separated)" data-i18n-ph="highlightPlaceholder" autocomplete="off">
-      </div>
-      <div class="field" style="margin-top:12px; margin-bottom:0">
-        <label data-i18n="blacklist">Blacklist</label>
-        <input id="set-rss-blacklist" type="text" placeholder="Hide items containing these words (comma-separated)" data-i18n-ph="blacklistPlaceholder" autocomplete="off">
+        <section class="settings-pane" data-pane="w-rss">
+    <div class="wc-head">
+      <div class="wc-head-main"><div class="settings-section-title" data-i18n="feed">Feed</div></div>
+      <div class="wc-head-pos">
+        <div class="settings-section-title" data-i18n="position">Position</div>
+        <div class="pos-grid" data-widget="rss"></div>
       </div>
     </div>
+    <div class="feed-list-label">
+      <span data-i18n="feeds">Feeds</span><span id="feed-count"></span>
+    </div>
+    <div class="feed-list" id="feed-list"></div>
+    <div class="feed-add-row">
+      <input id="set-rss-url" type="text" placeholder="https://example.com/feed.xml" autocomplete="off">
+      <button class="btn btn-ghost" id="feed-add-btn" data-i18n="add" onclick="addFeed()">Add</button>
+    </div>
+    <div class="field" style="margin-top:12px; margin-bottom:0">
+      <label data-i18n="highlight">Highlight</label>
+      <input id="set-rss-highlight" type="text" placeholder="Exact matches to highlight (comma-separated)" data-i18n-ph="highlightPlaceholder" autocomplete="off">
+    </div>
+    <div class="field" style="margin-top:12px; margin-bottom:0">
+      <label data-i18n="blacklist">Blacklist</label>
+      <input id="set-rss-blacklist" type="text" placeholder="Hide items containing these words (comma-separated)" data-i18n-ph="blacklistPlaceholder" autocomplete="off">
+    </div>
+        </section>
 
-    <div class="widget-card">
-      <div class="wc-head">
-        <div class="wc-head-main">
-          <div class="settings-section-title" data-i18n="animeFeed">Anime Feed</div>
-          <div class="toggle-row" id="set-anime-row">
-            <span data-i18n="showAnime">Show anime feed</span>
-            <div class="toggle" id="set-anime"></div>
-          </div>
-        </div>
-        <div class="wc-head-pos">
-          <div class="settings-section-title" data-i18n="position">Position</div>
-          <div class="pos-grid" data-widget="anime"></div>
-        </div>
+        <section class="settings-pane" data-pane="w-anime">
+    <div class="wc-head">
+      <div class="wc-head-main"><div class="settings-section-title" data-i18n="animeFeed">Anime Feed</div></div>
+      <div class="wc-head-pos">
+        <div class="settings-section-title" data-i18n="position">Position</div>
+        <div class="pos-grid" data-widget="anime"></div>
       </div>
+    </div>
+    <div class="seg seg--sub" id="anime-subnav">
+      <button type="button" data-sub="general" data-i18n="general">General</button>
+      <button type="button" data-sub="filters" data-i18n="animeFilters">Filters</button>
+      <button type="button" data-sub="links" data-i18n="animeLinksTab">Links</button>
+      <button type="button" data-sub="highlights" data-i18n="highlight">Highlight</button>
+      <button type="button" data-sub="blacklist" data-i18n="blacklist">Blacklist</button>
+    </div>
+    <div class="anime-sub" data-sub="general">
       <div class="field" style="margin-bottom:8px">
         <label data-i18n="bgSource">Source</label>
         <div class="seg" id="set-anime-source">
@@ -1274,124 +1325,109 @@
           <button type="button" data-src="user" data-i18n="animeUser">AniList user</button>
         </div>
       </div>
-      <div class="feed-add-row" id="anime-user-row" style="margin-bottom:12px">
+      <div class="feed-add-row" id="anime-user-row">
         <input id="set-anime-user" type="text" placeholder="AniList username" data-i18n-ph="animeUserPh" autocomplete="off" spellcheck="false">
         <button class="btn btn-ghost" data-i18n="set" onclick="setAnimeUser()">Set</button>
       </div>
-      <div class="field" style="margin-bottom:10px">
+    </div>
+    <div class="anime-sub" data-sub="filters">
+      <div class="field" style="margin-bottom:12px">
         <label data-i18n="animeFormats">Formats</label>
         <div class="chip-row" id="set-anime-formats"></div>
       </div>
-      <div class="field" style="margin-bottom:12px">
+      <div class="field" style="margin-bottom:0">
         <label data-i18n="animeCountries">Countries</label>
         <div class="chip-row" id="set-anime-countries"></div>
       </div>
-      <div class="field" style="margin-bottom:12px">
-        <label data-i18n="highlight">Highlight</label>
+    </div>
+    <div class="anime-sub" data-sub="links">
+      <div class="settings-note" style="margin:0 0 10px" data-i18n="animeLinksHint">Right-click an entry in the feed to set a link for its season.</div>
+      <input class="anime-search" type="text" data-list="links" placeholder="Search seasons…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
+      <div id="anime-link-list"></div>
+    </div>
+    <div class="anime-sub" data-sub="highlights">
+      <div class="field" style="margin-bottom:14px">
+        <label data-i18n="animeHlPhrases">Highlight phrases</label>
         <input id="set-anime-highlight" type="text" placeholder="Exact matches to highlight (comma-separated)" data-i18n-ph="highlightPlaceholder" autocomplete="off">
       </div>
-      <div class="feed-list-label">
-        <span data-i18n="animeCustomLinks">Custom links</span><span id="anime-link-count"></span>
-      </div>
-      <div class="feed-list" id="anime-link-list"></div>
-      <div class="feed-list-label">
-        <span data-i18n="blacklist">Blacklist</span><span id="anime-bl-count"></span>
-      </div>
-      <div class="feed-list" id="anime-bl-list" style="margin-bottom:0"></div>
+      <div class="settings-note" style="margin:0 0 10px" data-i18n="animeHlHint">Right-click an entry in the feed to highlight its whole season.</div>
+      <input class="anime-search" type="text" data-list="highlights" placeholder="Search seasons…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
+      <div id="anime-hl-list"></div>
     </div>
+    <div class="anime-sub" data-sub="blacklist">
+      <div class="settings-note" style="margin:0 0 10px" data-i18n="animeBlHint">Right-click an entry in the feed to hide its season.</div>
+      <input class="anime-search" type="text" data-list="blacklist" placeholder="Search seasons…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
+      <div id="anime-bl-list"></div>
+    </div>
+        </section>
 
-    <div class="widget-card">
-      <div class="wc-head">
-        <div class="wc-head-main">
-          <div class="settings-section-title" data-i18n="note">Note</div>
-          <div class="toggle-row" id="set-note-row">
-            <span data-i18n="showNote">Show sticky note</span>
-            <div class="toggle" id="set-note"></div>
-          </div>
-        </div>
-        <div class="wc-head-pos">
-          <div class="settings-section-title" data-i18n="position">Position</div>
-          <div class="pos-grid" data-widget="note"></div>
-        </div>
-      </div>
-      <div class="toggle-row" id="set-note-checklist-row">
-        <span data-i18n="checklistMode">Checklist mode</span>
-        <div class="toggle" id="set-note-checklist"></div>
+        <section class="settings-pane" data-pane="w-note">
+    <div class="wc-head">
+      <div class="wc-head-main"><div class="settings-section-title" data-i18n="note">Note</div></div>
+      <div class="wc-head-pos">
+        <div class="settings-section-title" data-i18n="position">Position</div>
+        <div class="pos-grid" data-widget="note"></div>
       </div>
     </div>
+    <div class="toggle-row" id="set-note-checklist-row">
+      <span data-i18n="checklistMode">Checklist mode</span>
+      <div class="toggle" id="set-note-checklist"></div>
+    </div>
+        </section>
 
-    <div class="widget-card">
-      <div class="wc-head">
-        <div class="wc-head-main">
-          <div class="settings-section-title" data-i18n="weather">Weather</div>
-          <div class="toggle-row" id="set-weather-row">
-            <span data-i18n="showWeather">Show weather</span>
-            <div class="toggle" id="set-weather"></div>
-          </div>
-        </div>
-        <div class="wc-head-pos">
-          <div class="settings-section-title" data-i18n="position">Position</div>
-          <div class="pos-grid" data-widget="weather"></div>
-        </div>
-      </div>
-      <div class="toggle-row" id="set-weather-units-row" style="margin-bottom:10px">
-        <span data-i18n="useFahrenheit">Use Fahrenheit (°F)</span>
-        <div class="toggle" id="set-weather-units"></div>
-      </div>
-      <div class="feed-add-row">
-        <input id="set-weather-loc" type="text" placeholder="City (e.g. Copenhagen)" data-i18n-ph="cityPlaceholder" autocomplete="off">
-        <button class="btn btn-ghost" id="weather-loc-btn" data-i18n="set" onclick="setWeatherLocationFromInput()">Set</button>
-      </div>
-      <div class="io-row" style="margin-top:6px">
-        <button class="btn btn-ghost" id="weather-geo-btn" data-i18n="useMyLocation" onclick="useMyLocation()">Use my location</button>
+        <section class="settings-pane" data-pane="w-weather">
+    <div class="wc-head">
+      <div class="wc-head-main"><div class="settings-section-title" data-i18n="weather">Weather</div></div>
+      <div class="wc-head-pos">
+        <div class="settings-section-title" data-i18n="position">Position</div>
+        <div class="pos-grid" data-widget="weather"></div>
       </div>
     </div>
+    <div class="toggle-row" id="set-weather-units-row" style="margin-bottom:10px">
+      <span data-i18n="useFahrenheit">Use Fahrenheit (°F)</span>
+      <div class="toggle" id="set-weather-units"></div>
+    </div>
+    <div class="feed-add-row">
+      <input id="set-weather-loc" type="text" placeholder="City (e.g. Copenhagen)" data-i18n-ph="cityPlaceholder" autocomplete="off">
+      <button class="btn btn-ghost" id="weather-loc-btn" data-i18n="set" onclick="setWeatherLocationFromInput()">Set</button>
+    </div>
+    <div class="io-row" style="margin-top:6px">
+      <button class="btn btn-ghost" id="weather-geo-btn" data-i18n="useMyLocation" onclick="useMyLocation()">Use my location</button>
+    </div>
+        </section>
 
-    <div class="widget-card">
-      <div class="wc-head">
-        <div class="wc-head-main">
-          <div class="settings-section-title" data-i18n="countdown">Countdown</div>
-          <div class="toggle-row" id="set-countdown-row">
-            <span data-i18n="showCountdown">Show countdown</span>
-            <div class="toggle" id="set-countdown"></div>
-          </div>
-        </div>
-        <div class="wc-head-pos">
-          <div class="settings-section-title" data-i18n="position">Position</div>
-          <div class="pos-grid" data-widget="countdown"></div>
-        </div>
-      </div>
-      <div class="feed-list-label">
-        <span data-i18n="countdowns">Countdowns</span><span id="countdown-count"></span>
-      </div>
-      <div class="feed-list" id="countdown-list"></div>
-      <div class="feed-add-row" style="margin-bottom:6px">
-        <input id="set-countdown-label" type="text" placeholder="New Year" data-i18n-ph="countdownLabelPh" autocomplete="off">
-      </div>
-      <div class="feed-add-row">
-        <input id="set-countdown-target" type="datetime-local" style="flex:1; min-width:0">
-        <button class="btn btn-ghost" id="countdown-add-btn" data-i18n="add" onclick="addCountdown()">Add</button>
+        <section class="settings-pane" data-pane="w-countdown">
+    <div class="wc-head">
+      <div class="wc-head-main"><div class="settings-section-title" data-i18n="countdown">Countdown</div></div>
+      <div class="wc-head-pos">
+        <div class="settings-section-title" data-i18n="position">Position</div>
+        <div class="pos-grid" data-widget="countdown"></div>
       </div>
     </div>
+    <div class="feed-list-label">
+      <span data-i18n="countdowns">Countdowns</span><span id="countdown-count"></span>
+    </div>
+    <div class="feed-list" id="countdown-list"></div>
+    <div class="feed-add-row" style="margin-bottom:6px">
+      <input id="set-countdown-label" type="text" placeholder="New Year" data-i18n-ph="countdownLabelPh" autocomplete="off">
+    </div>
+    <div class="feed-add-row">
+      <input id="set-countdown-target" type="datetime-local" style="flex:1; min-width:0">
+      <button class="btn btn-ghost" id="countdown-add-btn" data-i18n="add" onclick="addCountdown()">Add</button>
+    </div>
+        </section>
 
-    <div class="widget-card">
-      <div class="wc-head">
-        <div class="wc-head-main">
-          <div class="settings-section-title" data-i18n="weeklyTracker">Weekly Tracker</div>
-          <div class="toggle-row" id="set-tracker-row">
-            <span data-i18n="showTracker">Show weekly tracker</span>
-            <div class="toggle" id="set-tracker"></div>
-          </div>
-        </div>
-        <div class="wc-head-pos">
-          <div class="settings-section-title" data-i18n="position">Position</div>
-          <div class="pos-grid" data-widget="tracker"></div>
-        </div>
+        <section class="settings-pane" data-pane="w-tracker">
+    <div class="wc-head">
+      <div class="wc-head-main"><div class="settings-section-title" data-i18n="weeklyTracker">Weekly Tracker</div></div>
+      <div class="wc-head-pos">
+        <div class="settings-section-title" data-i18n="position">Position</div>
+        <div class="pos-grid" data-widget="tracker"></div>
       </div>
-      <div class="settings-note" data-i18n="trackerHint">Reads your Weekly-Tracker items from this browser. Open the tracker on this browser to add or change them.</div>
-      <div class="io-row" style="margin-top:10px">
-        <a class="btn btn-ghost" href="https://willshaper.github.io/Weekly-Tracker/" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:flex; align-items:center; justify-content:center" data-i18n="openTracker">Open Weekly Tracker</a>
-      </div>
+    </div>
+    <div class="settings-note" style="margin-top:0" data-i18n="trackerHint">Reads your Weekly-Tracker items from this browser. Open the tracker on this browser to add or change them.</div>
+    <div class="io-row" style="margin-top:10px">
+      <a class="btn btn-ghost" href="https://willshaper.github.io/Weekly-Tracker/" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:flex; align-items:center; justify-content:center" data-i18n="openTracker">Open Weekly Tracker</a>
     </div>
         </section>
 
@@ -1471,6 +1507,10 @@
   <div class="ctx-item" id="anime-ctx-reset" onclick="animeCtxReset()">
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2.5 7a4.5 4.5 0 1 0 1.3-3.2M2.5 2v2.6h2.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span data-i18n="animeResetLink">Reset link</span>
+  </div>
+  <div class="ctx-item" onclick="animeCtxHighlight()">
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1.8l1.6 3.3 3.6.5-2.6 2.5.6 3.6L7 10l-3.2 1.7.6-3.6L1.8 5.6l3.6-.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+    <span id="anime-ctx-hl" data-i18n="animeHighlightSeason">Highlight season</span>
   </div>
   <div class="ctx-divider"></div>
   <div class="ctx-item danger" onclick="animeCtxBlacklist()">
@@ -1621,12 +1661,18 @@ const I18N = {
     openTracker: 'Open Weekly Tracker',
     animeFeed: 'Anime Feed', showAnime: 'Show anime feed',
     animeAll: 'All airing', animeUser: 'AniList user', animeUserPh: 'AniList username',
-    animeFormats: 'Formats', animeCountries: 'Countries', animeCustomLinks: 'Custom links',
+    animeFormats: 'Formats', animeCountries: 'Countries',
     animeFmt: { TV: 'TV', TV_SHORT: 'TV Short', MOVIE: 'Movie', SPECIAL: 'Special', OVA: 'OVA', ONA: 'ONA', MUSIC: 'Music' },
     animeCountry: { JP: 'Japan', CN: 'China', KR: 'Korea' },
-    animeNoLinks: 'None yet — right-click an entry to set one',
-    animeNoBlacklist: 'None yet — right-click an entry to hide its season',
+    animeFilters: 'Filters', animeLinksTab: 'Links', animeHlPhrases: 'Highlight phrases',
+    animeLinksHint: 'Right-click an entry in the feed to set a link for its season.',
+    animeHlHint: 'Right-click an entry in the feed to highlight its whole season.',
+    animeBlHint: 'Right-click an entry in the feed to hide its season.',
+    animeSearchPh: 'Search seasons…', animeAiring: 'Airing', animeFinished: 'Finished',
+    animeNoneYet: 'None yet', animeNoMatch: 'No matches',
     animeEditLink: 'Edit link', animeResetLink: 'Reset link', animeBlacklistSeason: 'Blacklist season',
+    animeHighlightSeason: 'Highlight season', animeUnhighlight: 'Remove highlight',
+    widgetsHint: 'Each widget you turn on gets its own settings page in the sidebar.',
     animeRestore: 'Restore', animeOpenAniList: 'Open on AniList', animeAgo: '{t} ago',
     animeLinkHint: 'Leave empty to use the default Reddit search.',
     animeSetUser: 'Set an AniList username in settings',
@@ -1707,12 +1753,18 @@ const I18N = {
     openTracker: 'Åbn ugeplan',
     animeFeed: 'Anime-feed', showAnime: 'Vis anime-feed',
     animeAll: 'Alt der sendes', animeUser: 'AniList-bruger', animeUserPh: 'AniList-brugernavn',
-    animeFormats: 'Formater', animeCountries: 'Lande', animeCustomLinks: 'Egne links',
+    animeFormats: 'Formater', animeCountries: 'Lande',
     animeFmt: { TV: 'TV', TV_SHORT: 'TV-kort', MOVIE: 'Film', SPECIAL: 'Special', OVA: 'OVA', ONA: 'ONA', MUSIC: 'Musik' },
     animeCountry: { JP: 'Japan', CN: 'Kina', KR: 'Korea' },
-    animeNoLinks: 'Ingen endnu — højreklik på en post for at angive et',
-    animeNoBlacklist: 'Ingen endnu — højreklik på en post for at skjule dens sæson',
+    animeFilters: 'Filtre', animeLinksTab: 'Links', animeHlPhrases: 'Fremhæv-sætninger',
+    animeLinksHint: 'Højreklik på en post i feedet for at angive et link til dens sæson.',
+    animeHlHint: 'Højreklik på en post i feedet for at fremhæve hele dens sæson.',
+    animeBlHint: 'Højreklik på en post i feedet for at skjule dens sæson.',
+    animeSearchPh: 'Søg sæsoner…', animeAiring: 'Sendes', animeFinished: 'Afsluttet',
+    animeNoneYet: 'Ingen endnu', animeNoMatch: 'Ingen match',
     animeEditLink: 'Rediger link', animeResetLink: 'Nulstil link', animeBlacklistSeason: 'Sortlist sæson',
+    animeHighlightSeason: 'Fremhæv sæson', animeUnhighlight: 'Fjern fremhævning',
+    widgetsHint: 'Hver widget du slår til får sin egen indstillingsside i sidepanelet.',
     animeRestore: 'Gendan', animeOpenAniList: 'Åbn på AniList', animeAgo: '{t} siden',
     animeLinkHint: 'Lad feltet stå tomt for at bruge standard-Reddit-søgningen.',
     animeSetUser: 'Angiv et AniList-brugernavn i indstillinger',
@@ -1855,9 +1907,11 @@ const $ = {
   setAnimeCountries: document.getElementById('set-anime-countries'),
   setAnimeHighlight: document.getElementById('set-anime-highlight'),
   animeLinkList: document.getElementById('anime-link-list'),
-  animeLinkCount:document.getElementById('anime-link-count'),
   animeBlList:   document.getElementById('anime-bl-list'),
-  animeBlCount:  document.getElementById('anime-bl-count'),
+  animeHlList:   document.getElementById('anime-hl-list'),
+  animeSubnav:   document.getElementById('anime-subnav'),
+  animeCtxHl:    document.getElementById('anime-ctx-hl'),
+  settingsNavSep:document.getElementById('settings-nav-sep'),
   // Tile groups
   linkGroup: document.getElementById('link-group'),
   groupList: document.getElementById('group-list'),
@@ -1964,8 +2018,11 @@ function normalizeTracker(t) {
 }
 function normalizeAnime(a) {
   a = a || {};
-  // Per-season lists keyed by AniList media id: custom links {id,title,url} and
-  // blacklisted seasons {id,title}. The title is kept so settings can list them offline.
+  // Per-season lists keyed by AniList media id: custom links {id,title,url,last},
+  // highlighted and blacklisted seasons {id,title,last}. The title is kept so settings
+  // can list them offline; `last` (unix s) is when the season last aired an episode
+  // we've seen, which splits the settings lists into "airing" and "finished".
+  const nowSec = Math.floor(Date.now() / 1000);
   const seasons = (arr, withUrl) => {
     const seen = new Set(), out = [];
     for (const x of Array.isArray(arr) ? arr : []) {
@@ -1973,11 +2030,12 @@ function normalizeAnime(a) {
       const id = Number(x.id);
       if (!Number.isInteger(id) || id <= 0 || seen.has(id)) continue;
       const title = typeof x.title === 'string' ? x.title.slice(0, 200) : '';
+      const last  = Number.isFinite(x.last) && x.last > 0 ? Math.floor(x.last) : nowSec;
       if (withUrl) {
         const url = typeof x.url === 'string' ? x.url.trim() : '';
         if (!url) continue;
-        out.push({ id, title, url });
-      } else out.push({ id, title });
+        out.push({ id, title, url, last });
+      } else out.push({ id, title, last });
       seen.add(id);
     }
     return out;
@@ -1991,6 +2049,7 @@ function normalizeAnime(a) {
     countries: Array.isArray(a.countries) ? ANIME_COUNTRIES.filter(c => a.countries.includes(c)) : [...ANIME_COUNTRIES],
     highlight: typeof a.highlight === 'string' ? a.highlight : '',
     links:     seasons(a.links, true),
+    hlSeasons: seasons(a.hlSeasons, false),
     blacklist: seasons(a.blacklist, false),
   };
 }
@@ -2417,7 +2476,7 @@ document.getElementById('set-tile-compact-row').addEventListener('click', () => 
 document.getElementById('set-clock-row').addEventListener('click', () => {
   settings.clock.enabled = !settings.clock.enabled;
   $.setClock.classList.toggle('on', settings.clock.enabled);
-  applyClock(); save();
+  applyClock(); save(); syncWidgetNav();
 });
 $.setClockValignSeg.addEventListener('click', e => {
   const b = e.target.closest('button[data-valign]'); if (!b) return;
@@ -2596,6 +2655,7 @@ function openSettings() {
   $.setAnimeHighlight.value = settings.anime.highlight;
   renderAnimeSettings();
   syncWidgetPositions();
+  syncWidgetNav();
   $.setTileOp.value   = Math.round(clampOpacity(settings.tileOpacity)   * 100);
   $.setWidgetOp.value = Math.round(clampOpacity(settings.widgetOpacity) * 100);
   $.setSearchOp.value = Math.round(clampOpacity(settings.searchOpacity) * 100);
@@ -2627,6 +2687,19 @@ document.getElementById('settings-nav').addEventListener('click', e => {
   const b = e.target.closest('.settings-tab');
   if (b) setSettingsTab(b.dataset.pane);
 });
+// Show a sidebar page button for each enabled widget only. If the page that's open
+// belongs to a widget that was just turned off, fall back to the Widgets page.
+function syncWidgetNav() {
+  let any = false;
+  document.querySelectorAll('#settings-nav .settings-tab[data-widget]').forEach(b => {
+    const w = settings[b.dataset.widget];
+    const on = !!(w && w.enabled);
+    b.style.display = on ? '' : 'none';
+    if (on) any = true;
+    if (!on && b.classList.contains('active')) setSettingsTab('widgets');
+  });
+  $.settingsNavSep.style.display = any ? '' : 'none';
+}
 
 $.setLang.addEventListener('change', () => {
   settings.lang = $.setLang.value;
@@ -2678,6 +2751,7 @@ function onWidgetEnabledToggle(key, toggleEl) {
   toggleEl.classList.toggle('on', settings[key].enabled);
   resolveWidgetPositions(key);
   syncWidgetPositions();
+  syncWidgetNav();
   save();
 }
 function onWidgetPosChange(key, value) {
@@ -3962,12 +4036,13 @@ function renderAnime() {
   if (!shown.length) { showAnimeState(animeBusy ? 'feedLoading' : (animeErr || 'animeEmpty')); return; }
   const target  = settings.newTab ? ' target="_blank" rel="noopener"' : '';
   const phrases = highlightPhrases(a.highlight);
+  const hlSeasons = new Set(a.hlSeasons.map(h => h.id));
   const alTitle = esc(L().animeOpenAniList);
   const scroll  = $.animeList.scrollTop;
   animeShown = shown;
   $.animeList.innerHTML = shown.map(it => {
     const title = `${it.t} - Episode ${it.ep}`;
-    const hl = titleIsHighlighted(title, phrases) ? ' rss-item--hl' : '';
+    const hl = (hlSeasons.has(it.m) || titleIsHighlighted(title, phrases)) ? ' rss-item--hl' : '';
     return `<div class="rss-item anime-item${hl}" data-id="${it.id}">` +
       `<a class="anime-main" href="${esc(animeLinkFor(it))}"${target}>` +
         `<span>${esc(title)}</span><span class="anime-meta" data-at="${it.at}">${esc(animeAge(it.at))}</span></a>` +
@@ -4085,6 +4160,7 @@ async function fetchAnime() {
     animeUpdatedAt = Date.now();
     animeErr = '';
     saveAnimeCache();
+    touchAnimeSeasons();
   } catch (e) {
     if (!e.stale && animeSig() === sig) {   // a failure for a source that's since been switched away from is moot
       animeErr = e.userErr ? 'animeUserError' : 'animeError';
@@ -4109,7 +4185,7 @@ function applyAnime() {
   el.classList.toggle('show', a.enabled);
   if (animeTimer) { clearInterval(animeTimer); animeTimer = null; }
   if (a.enabled) {
-    if (animeSigLoaded !== animeSig()) { animeSigLoaded = animeSig(); loadAnimeCache(); animeErr = ''; }
+    if (animeSigLoaded !== animeSig()) { animeSigLoaded = animeSig(); loadAnimeCache(); animeErr = ''; touchAnimeSeasons(); }
     if (animeFetchedSig !== animeSig()) fetchAnime();
     renderAnime();
     animeTimer = setInterval(fetchAnime, ANIME_REFRESH_MS);
@@ -4132,6 +4208,7 @@ $.animeList.addEventListener('contextmenu', e => {
   closeCtx();
   animeCtxItem = it;
   $.animeCtxReset.style.display = settings.anime.links.some(l => l.id === it.m) ? '' : 'none';
+  $.animeCtxHl.textContent = settings.anime.hlSeasons.some(h => h.id === it.m) ? L().animeUnhighlight : L().animeHighlightSeason;
   placeMenu($.animeCtx, e);
 });
 function closeAnimeCtx() { $.animeCtx.classList.remove('open'); animeCtxItem = null; }
@@ -4152,7 +4229,7 @@ function setAnimeLink(id, title, url) {
   const a = settings.anime;
   url = url.trim();
   a.links = a.links.filter(l => l.id !== id);
-  if (url) a.links.push({ id, title, url });
+  if (url) a.links.push({ id, title, url, last: animeSeasonLast(id) });
   save(); renderAnime(); renderAnimeSettings();
 }
 function saveAnimeLink() {
@@ -4167,34 +4244,99 @@ function animeCtxReset() {
 function animeCtxBlacklist() {
   const it = animeCtxItem; closeAnimeCtx();
   if (!it) return;
-  if (!settings.anime.blacklist.some(b => b.id === it.m)) settings.anime.blacklist.push({ id: it.m, title: it.t });
+  if (!settings.anime.blacklist.some(b => b.id === it.m)) settings.anime.blacklist.push({ id: it.m, title: it.t, last: animeSeasonLast(it.m) });
   save(); renderAnimeSettings(); animeFiltersChanged();
 }
+// Toggle the whole season's highlight (every episode, now and future)
+function animeCtxHighlight() {
+  const it = animeCtxItem; closeAnimeCtx();
+  if (!it) return;
+  const a = settings.anime;
+  if (a.hlSeasons.some(h => h.id === it.m)) a.hlSeasons = a.hlSeasons.filter(h => h.id !== it.m);
+  else a.hlSeasons.push({ id: it.m, title: it.t, last: animeSeasonLast(it.m) });
+  save(); renderAnime(); renderAnimeSettings();
+}
+// Newest air time we've seen for a season (falls back to now for one not in the cache)
+function animeSeasonLast(m) {
+  const it = animeItems.find(x => x.m === m);   // items are newest-first
+  return it ? it.at : Math.floor(Date.now() / 1000);
+}
+// Advance each listed season's `last` from the cached entries (drives the airing/finished split)
+function touchAnimeSeasons() {
+  const latest = new Map();
+  for (const it of animeItems) if (!latest.has(it.m)) latest.set(it.m, it.at);
+  const a = settings.anime;
+  let changed = false;
+  for (const list of [a.links, a.hlSeasons, a.blacklist]) {
+    for (const e of list) {
+      const at = latest.get(e.id);
+      if (at && at > e.last) { e.last = at; changed = true; }
+    }
+  }
+  if (changed) save();
+}
 
-// ── Settings card: source, chips, custom-link + blacklist managers ──
+// ── Settings page: sub-tabs, source, chips, and the three per-season lists ──
+// Each list (links / highlights / blacklist) shows seasons that aired within the
+// last ANIME_ACTIVE_DAYS on top, and the rest in a collapsed "Finished" section,
+// with a search box over both — so years of entries never become one long scroll.
+const ANIME_ACTIVE_DAYS = 30;
+let animeSub = 'general';
+const animeSearch = { links: '', highlights: '', blacklist: '' };
+const animeArchiveOpen = { links: false, highlights: false, blacklist: false };
+function setAnimeSub(sub) {
+  animeSub = sub;
+  segSetActive($.animeSubnav, 'sub', sub);
+  document.querySelectorAll('#settings-modal .anime-sub').forEach(p => p.classList.toggle('active', p.dataset.sub === sub));
+}
+$.animeSubnav.addEventListener('click', e => {
+  const b = e.target.closest('button[data-sub]');
+  if (b) setAnimeSub(b.dataset.sub);
+});
+document.querySelectorAll('#settings-modal .anime-search').forEach(inp => {
+  inp.addEventListener('input', () => { animeSearch[inp.dataset.list] = inp.value; renderAnimeSeasonList(inp.dataset.list); });
+});
 function renderAnimeSettings() {
   const a = settings.anime, t = L();
+  setAnimeSub(animeSub);
   segSetActive($.setAnimeSource, 'src', a.source);
   $.animeUserRow.style.display = a.source === 'user' ? '' : 'none';
   $.setAnimeFormats.innerHTML = ANIME_FORMATS.map(f =>
     `<button type="button" class="chip${a.formats.includes(f) ? ' on' : ''}" data-fmt="${f}">${esc(t.animeFmt[f])}</button>`).join('');
   $.setAnimeCountries.innerHTML = ANIME_COUNTRIES.map(c =>
     `<button type="button" class="chip${a.countries.includes(c) ? ' on' : ''}" data-cc="${c}">${esc(t.animeCountry[c])}</button>`).join('');
-  $.animeLinkCount.textContent = a.links.length ? ` ${a.links.length}` : '';
-  $.animeLinkList.innerHTML = a.links.length
-    ? a.links.map(l =>
-        `<div class="feed-row feed-row--stacked">` +
-        `<div class="feed-row-top"><span title="${esc(l.title)}">${esc(l.title || '#' + l.id)}</span>` +
-        `<button type="button" title="${esc(t.remove)}" onclick="setAnimeLink(${l.id}, '', '')">✕</button></div>` +
-        `<input class="feed-filter-input" type="text" value="${esc(l.url)}" spellcheck="false" onchange="updateAnimeLinkUrl(${l.id}, this.value)">` +
-        `</div>`).join('')
-    : `<div class="feed-empty">${esc(t.animeNoLinks)}</div>`;
-  $.animeBlCount.textContent = a.blacklist.length ? ` ${a.blacklist.length}` : '';
-  $.animeBlList.innerHTML = a.blacklist.length
-    ? a.blacklist.map(b =>
-        `<div class="feed-row"><span class="anime-bl-title" title="${esc(b.title)}">${esc(b.title || '#' + b.id)}</span>` +
-        `<button type="button" title="${esc(t.animeRestore)}" onclick="restoreAnimeSeason(${b.id})">✕</button></div>`).join('')
-    : `<div class="feed-empty">${esc(t.animeNoBlacklist)}</div>`;
+  ['links', 'highlights', 'blacklist'].forEach(renderAnimeSeasonList);
+}
+function renderAnimeSeasonList(kind) {
+  const a = settings.anime, t = L();
+  const list = kind === 'links' ? a.links : kind === 'highlights' ? a.hlSeasons : a.blacklist;
+  const el   = kind === 'links' ? $.animeLinkList : kind === 'highlights' ? $.animeHlList : $.animeBlList;
+  const q = animeSearch[kind].trim().toLowerCase();
+  const cutoff = Math.floor(Date.now() / 1000) - ANIME_ACTIVE_DAYS * 86400;
+  const match = q ? list.filter(e => e.title.toLowerCase().includes(q)) : list;
+  const byTitle = (x, y) => x.title.localeCompare(y.title);
+  const active   = match.filter(e => e.last >= cutoff).sort(byTitle);
+  const finished = match.filter(e => e.last <  cutoff).sort(byTitle);
+  const row = e => kind === 'links'
+    ? `<div class="feed-row feed-row--stacked">` +
+        `<div class="feed-row-top"><span title="${esc(e.title)}">${esc(e.title || '#' + e.id)}</span>` +
+        `<button type="button" title="${esc(t.remove)}" onclick="setAnimeLink(${e.id}, '', '')">✕</button></div>` +
+        `<input class="feed-filter-input" type="text" value="${esc(e.url)}" spellcheck="false" onchange="updateAnimeLinkUrl(${e.id}, this.value)">` +
+      `</div>`
+    : `<div class="feed-row"><span class="anime-bl-title" title="${esc(e.title)}">${esc(e.title || '#' + e.id)}</span>` +
+        `<button type="button" title="${esc(kind === 'blacklist' ? t.animeRestore : t.remove)}" onclick="removeAnimeSeason('${kind}', ${e.id})">✕</button></div>`;
+  const empty = msg => `<div class="feed-empty">${esc(msg)}</div>`;
+  let html = `<div class="feed-list-label"><span>${esc(t.animeAiring)}</span><span style="color:var(--text-dimmer)">${active.length}</span></div>` +
+    `<div class="anime-season-list">${active.length ? active.map(row).join('') : empty(list.length ? (q ? t.animeNoMatch : '—') : t.animeNoneYet)}</div>`;
+  if (finished.length) {
+    // A search opens the archive so matches in it are visible
+    html += `<details class="anime-archive" data-kind="${kind}"${(animeArchiveOpen[kind] || q) ? ' open' : ''}>` +
+      `<summary>${esc(t.animeFinished)} (${finished.length})</summary>` +
+      `<div class="anime-season-list">${finished.map(row).join('')}</div></details>`;
+  }
+  el.innerHTML = html;
+  const det = el.querySelector('details');
+  if (det && !q) det.addEventListener('toggle', () => { animeArchiveOpen[kind] = det.open; });
 }
 function updateAnimeLinkUrl(id, value) {
   const l = settings.anime.links.find(x => x.id === id);
@@ -4203,9 +4345,12 @@ function updateAnimeLinkUrl(id, value) {
   l.url = value.trim();
   save(); renderAnime();
 }
-function restoreAnimeSeason(id) {
-  settings.anime.blacklist = settings.anime.blacklist.filter(b => b.id !== id);
-  save(); renderAnimeSettings(); renderAnime();
+// Remove a season from the highlight list or the blacklist (restoring it)
+function removeAnimeSeason(kind, id) {
+  const a = settings.anime;
+  if (kind === 'highlights') a.hlSeasons = a.hlSeasons.filter(h => h.id !== id);
+  else a.blacklist = a.blacklist.filter(b => b.id !== id);
+  save(); renderAnimeSeasonList(kind); renderAnime();
 }
 
 function applyTheme(theme) {
