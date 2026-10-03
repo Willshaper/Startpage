@@ -800,8 +800,8 @@
     border-color: color-mix(in srgb, var(--wt-today) 35%, transparent);
   }
   /* Untracked shows airing later today: dimmed until hovered */
-  .wt-entry.wt-up { opacity: 0.6; transition: opacity 0.15s; }
-  .wt-entry.wt-up:hover { opacity: 1; }
+  .wt-entry.wt-up, .wt-entry.wt-break { opacity: 0.6; transition: opacity 0.15s; }
+  .wt-entry.wt-up:hover, .wt-entry.wt-break:hover { opacity: 1; }
   .wt-up .wt-link, .wt-up .wt-add { position: relative; z-index: 1; }
   .wt-add {
     display: flex; align-items: center; justify-content: center;
@@ -1412,6 +1412,9 @@
         <input id="anime-show-add" type="text" placeholder="AniList link or ID" data-i18n-ph="animeShowAddPh" autocomplete="off" spellcheck="false">
         <button class="btn btn-ghost" id="anime-show-add-btn" data-i18n="add" onclick="addShowFromInput()">Add</button>
       </div>
+      <div class="io-row" style="margin-top:6px">
+        <button class="btn btn-ghost" type="button" id="anime-track-list-btn" data-i18n="animeTrackList" onclick="trackMyAniList()">Track my airing AniList shows</button>
+      </div>
       <div class="settings-note" id="anime-show-add-msg"></div>
       <input class="anime-search" type="text" style="margin-top:10px" data-list="shows" placeholder="Search shows…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
       <div id="anime-show-list"></div>
@@ -1783,6 +1786,12 @@ const I18N = {
     trackTimeHint: '"AniList time" uses the broadcast time from AniList.',
     showTrackedAnime: 'Show tracked anime',
     trackerUpcomingBtn: 'Show anime still airing today', trackerTrackShow: 'Track this show',
+    trackerBreak: 'No episode this week', trackerBreakNext: 'next: Ep {ep}, {date}',
+    animeTrackList: 'Track my airing AniList shows',
+    animeTrackListNeedUser: 'Set your AniList username under General (AniList user) first.',
+    animeTrackListConfirm: 'Track {n} airing show(s) from {u}\'s AniList? Shows on your Dropped list are skipped.\n\n{list}',
+    animeTrackListNone: 'Nothing new to track: every airing show on your list (except Dropped) is already tracked.',
+    animeTrackListDone: 'Now tracking {n} more show(s).',
     trackedAnimeHint: 'Seasons you track in the Anime Feed (right-click → Track) appear here on the days they air.',
     widgetsHint: 'Each widget you turn on gets its own settings page in the sidebar.',
     animeRestore: 'Restore', animeOpenAniList: 'Open on AniList', animeAgo: '{t} ago',
@@ -1886,6 +1895,12 @@ const I18N = {
     trackTimeHint: '"AniList-tid" bruger sendetiden fra AniList.',
     showTrackedAnime: 'Vis fulgte anime',
     trackerUpcomingBtn: 'Vis anime der sendes senere i dag', trackerTrackShow: 'Følg denne serie',
+    trackerBreak: 'Intet afsnit denne uge', trackerBreakNext: 'næste: afsnit {ep}, {date}',
+    animeTrackList: 'Følg mine AniList-serier der sendes',
+    animeTrackListNeedUser: 'Angiv først dit AniList-brugernavn under Generelt (AniList-bruger).',
+    animeTrackListConfirm: 'Følg {n} serie(r) der sendes fra {u}s AniList? Serier på din Dropped-liste springes over.\n\n{list}',
+    animeTrackListNone: 'Intet nyt at følge: alle serier der sendes på din liste (undtagen Dropped) følges allerede.',
+    animeTrackListDone: 'Følger nu {n} serie(r) mere.',
     trackedAnimeHint: 'Sæsoner du følger i anime-feedet (højreklik → Følg) vises her på de dage de sendes.',
     widgetsHint: 'Hver widget du slår til får sin egen indstillingsside i sidepanelet.',
     animeRestore: 'Gendan', animeOpenAniList: 'Åbn på AniList', animeAgo: '{t} siden',
@@ -2036,6 +2051,7 @@ const $ = {
   animeShowAdd:    document.getElementById('anime-show-add'),
   animeShowAddBtn: document.getElementById('anime-show-add-btn'),
   animeShowAddMsg: document.getElementById('anime-show-add-msg'),
+  animeTrackListBtn: document.getElementById('anime-track-list-btn'),
   trackTimeModal:document.getElementById('track-time-modal'),
   trackTimeTitle:document.getElementById('track-time-title'),
   trackTimeDay:  document.getElementById('track-time-day'),
@@ -4068,7 +4084,7 @@ function renderTracker() {
   // isn't the actual next thing).
   let nextId = null;
   for (const r of rows) {
-    if (r.e.upcoming) continue;
+    if (r.e.upcoming || r.e.brk) continue;
     const [h, m] = r.e.time.split(':').map(Number);
     const passed = now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m);
     if (!passed) { nextId = r.e.id; break; }
@@ -4090,6 +4106,20 @@ function renderTracker() {
           `<div class="wt-meta-right">` +
             `<span class="wt-cd ${trackerCdClass(r.ms)}">${esc(trackerCountdown(r.ms))}</span>` +
             `<button type="button" class="wt-add" title="${esc(t.trackerTrackShow)}" data-add="${e.m}">+</button>` +
+          `</div>` +
+        `</div>` +
+      `</div>`;
+    }
+    if (e.brk) {
+      // A tracked season on a break this week: dimmed note, no countdown
+      return `<div class="wt-entry wt-auto wt-break" data-m="${e.m}">` +
+        `<a class="wt-cover" href="${esc(e.al)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(e.name)}"></a>` +
+        `<div class="wt-name">${esc(e.name)}</div>` +
+        `<div class="wt-notes">${esc(e.note)}</div>` +
+        `<div class="wt-meta">` +
+          `<span class="wt-meta-left"><span class="wt-time">${esc(e.time)}</span><span class="wt-al-tag">AniList</span></span>` +
+          `<div class="wt-meta-right">` +
+            `<a class="wt-link" href="${esc(e.al)}" target="_blank" rel="noopener noreferrer" title="${esc(t.animeOpenAniList)}">${TRACKER_LINK_SVG}</a>` +
           `</div>` +
         `</div>` +
       `</div>`;
@@ -4550,6 +4580,42 @@ async function addShowFromInput() {
   }
 }
 $.animeShowAdd.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addShowFromInput(); } });
+// Track every currently airing season on the user's AniList lists, skipping any
+// whose list status is Dropped. Asks for confirmation with the count + titles.
+const ANIME_MYLIST_Q = 'query($u:String){MediaListCollection(userName:$u,type:ANIME){lists{entries{status media{id status title{english romaji}}}}}}';
+async function trackMyAniList() {
+  const t = L(), user = settings.anime.user;
+  const msg = (text, err) => { $.animeShowAddMsg.textContent = text; $.animeShowAddMsg.classList.toggle('err', !!err); };
+  if (!user) { msg(t.animeTrackListNeedUser, true); return; }
+  msg(t.animeLooking);
+  $.animeTrackListBtn.disabled = true;
+  try {
+    const d = await anilist(ANIME_MYLIST_Q, { u: user });
+    const lists = (d.MediaListCollection && d.MediaListCollection.lists) || [];
+    const dropped = new Set(), airing = new Map();
+    for (const e of lists.flatMap(l => l.entries || [])) {
+      const md = e.media;
+      if (!md || !Number.isInteger(md.id)) continue;
+      if (e.status === 'DROPPED') { dropped.add(md.id); continue; }
+      if (md.status !== 'RELEASING') continue;
+      const title = ((md.title && (md.title.english || md.title.romaji)) || '').trim() || ('#' + md.id);
+      airing.set(md.id, title);
+    }
+    const toTrack = [...airing].filter(([id]) => !dropped.has(id) && !(animeShow(id) && animeShow(id).track));
+    if (!toTrack.length) { msg(t.animeTrackListNone); return; }
+    const names = toTrack.map(([, title]) => '• ' + title);
+    const list = names.slice(0, 15).join('\n') + (names.length > 15 ? `\n… +${names.length - 15}` : '');
+    msg('');
+    if (!confirm(t.animeTrackListConfirm.replace('{n}', toTrack.length).replace('{u}', user).replace('{list}', list))) return;
+    for (const [id, title] of toTrack) ensureShow(id, title).track = true;
+    save(); renderAnimeSettings(); trackedChanged();
+    msg(t.animeTrackListDone.replace('{n}', toTrack.length));
+  } catch (e) {
+    msg(e.status === 404 || e.status === 403 ? t.animeUserError : t.animeFail, true);
+  } finally {
+    $.animeTrackListBtn.disabled = false;
+  }
+}
 // Newest air time we've seen for a season (falls back to now for one not in the cache)
 function animeSeasonLast(m) {
   const it = animeItems.find(x => x.m === m);   // items are newest-first
@@ -4675,13 +4741,15 @@ function removeAnimeSeason(kind, id) {
 const TRACK_CACHE_KEY  = 'startpage_trackcache';
 const TRACK_REFRESH_MS = 30 * 60 * 1000;
 const ANIME_TRACK_Q = 'query($p:Int,$ids:[Int],$from:Int,$to:Int){Page(page:$p,perPage:50){pageInfo{hasNextPage} airingSchedules(mediaId_in:$ids,airingAt_greater:$from,airingAt_lesser:$to,sort:TIME){id episode airingAt mediaId}}}';
-let trackSched = null;   // { key, fetchedAt, items: [{ id, m, ep, at }] }
+// Status + next episode per tracked season, to tell a break week from a finished season
+const ANIME_TRACK_MEDIA_Q = 'query($p:Int,$ids:[Int]){Page(page:$p,perPage:50){pageInfo{hasNextPage} media(id_in:$ids){id status nextAiringEpisode{airingAt episode}}}}';
+let trackSched = null;   // { key, fetchedAt, items: [{ id, m, ep, at }], media: { [id]: { st, na, ne } } }
 let trackBusy = false, trackAgain = false;
 function trackKey() { return trackedShows().map(x => x.id).sort((a, b) => a - b).join(','); }
 function loadTrackCache() {
   try {
     const c = JSON.parse(localStorage.getItem(TRACK_CACHE_KEY) || 'null');
-    if (c && typeof c.key === 'string' && Array.isArray(c.items)) trackSched = c;
+    if (c && typeof c.key === 'string' && Array.isArray(c.items) && c.media && typeof c.media === 'object') trackSched = c;
   } catch {}
 }
 async function fetchTracked(force) {
@@ -4689,7 +4757,7 @@ async function fetchTracked(force) {
   if (!tk.enabled || !tk.anime) return;
   if (trackBusy) { if (force) trackAgain = true; return; }   // a timer tick during a fetch needs no re-run
   const key = trackKey();
-  if (!key) { trackSched = { key: '', fetchedAt: Date.now(), items: [] }; return; }
+  if (!key) { trackSched = { key: '', fetchedAt: Date.now(), items: [], media: {} }; return; }
   if (!force && trackSched && trackSched.key === key && Date.now() - trackSched.fetchedAt < TRACK_REFRESH_MS) return;
   trackBusy = true; trackAgain = false;
   try {
@@ -4702,8 +4770,19 @@ async function fetchTracked(force) {
       }
       if (!(pg.pageInfo && pg.pageInfo.hasNextPage)) break;
     }
+    const media = {};
+    for (let p = 1; p <= 5; p++) {
+      const d = await anilist(ANIME_TRACK_MEDIA_Q, { p, ids });
+      const pg = d.Page || {};
+      for (const md of pg.media || []) {
+        if (!Number.isInteger(md.id)) continue;
+        const n = md.nextAiringEpisode;
+        media[md.id] = { st: md.status || '', na: n ? Number(n.airingAt) || 0 : 0, ne: n ? Number(n.episode) || 0 : 0 };
+      }
+      if (!(pg.pageInfo && pg.pageInfo.hasNextPage)) break;
+    }
     if (trackKey() !== key) { trackAgain = true; return; }   // list changed mid-flight
-    trackSched = { key, fetchedAt: Date.now(), items };
+    trackSched = { key, fetchedAt: Date.now(), items, media };
     try { localStorage.setItem(TRACK_CACHE_KEY, JSON.stringify(trackSched)); } catch {}
     // Aired episodes also keep a tracked season in the "airing" part of its list
     let changed = false;
@@ -4730,19 +4809,43 @@ function trackedAnimeToday(now) {
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
   const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
   const out = [];
+  const sameDay = (ms, day) => ms >= day && ms < day + 86400000;
+  const hhmm = ms => { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
   for (const tr of trackedShows()) {
     const eps = trackSched.items.filter(s => s.m === tr.id);
-    if (!eps.length) continue;
-    let pick, time = '';
+    const md  = (trackSched.media || {})[tr.id];
+    let pick = [], time = '', breakAt = '';
     if (tr.day !== null && tr.time) {
       if (tr.day !== now.getDay()) continue;
       const [h, m] = tr.time.split(':').map(Number);
       const slot = new Date(dayStart); slot.setHours(h, m, 0, 0);
-      const best = eps.reduce((b, s) => Math.abs(s.at * 1000 - slot) < Math.abs(b.at * 1000 - slot) ? s : b);
-      if (Math.abs(best.at * 1000 - slot) > 3.5 * 86400000) continue;   // no episode that week
-      pick = [best]; time = tr.time;
+      const best = eps.length ? eps.reduce((b, s) => Math.abs(s.at * 1000 - slot) < Math.abs(b.at * 1000 - slot) ? s : b) : null;
+      if (best && Math.abs(best.at * 1000 - slot) <= 3.5 * 86400000) { pick = [best]; time = tr.time; }
+      else breakAt = tr.time;   // its day, but no episode near it this week
     } else {
-      pick = eps.filter(s => s.at * 1000 >= dayStart && s.at * 1000 < dayEnd);
+      pick = eps.filter(s => sameDay(s.at * 1000, +dayStart));
+      if (!pick.length) {
+        // On AniList time the usual slot is inferred: an episode exactly a week ago
+        // (or a week ahead) means it normally airs on this weekday
+        const wk = 7 * 86400000;
+        const prev = eps.find(s => sameDay(s.at * 1000 + wk, +dayStart));
+        const next = eps.find(s => sameDay(s.at * 1000 - wk, +dayStart));
+        const ref = prev || next;
+        if (ref) breakAt = hhmm(ref.at * 1000);
+      }
+    }
+    // Break week: only for a season that's still airing (a finished one just stops)
+    if (breakAt && md && md.st === 'RELEASING') {
+      const nextTxt = md.na
+        ? ' · ' + L().trackerBreakNext.replace('{ep}', md.ne)
+            .replace('{date}', new Date(md.na * 1000).toLocaleDateString(settings.lang === 'da' ? 'da-DK' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))
+        : '';
+      out.push({
+        id: 'brk' + tr.id, auto: true, brk: true, m: tr.id, day: now.getDay(), time: breakAt,
+        name: tr.title, note: L().trackerBreak + nextTxt,
+        link: `https://anilist.co/anime/${tr.id}`, al: `https://anilist.co/anime/${tr.id}`,
+      });
+      continue;
     }
     for (const s of pick) {
       const d = new Date(s.at * 1000);
