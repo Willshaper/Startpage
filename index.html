@@ -442,7 +442,7 @@
     font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;
   }
-  #feed-count { color: var(--text-dimmer); }
+  #feed-count, #anime-link-count, #anime-bl-count { color: var(--text-dimmer); }
   .feed-list {
     max-height: 132px; overflow-y: auto;
     display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;
@@ -458,7 +458,7 @@
   .feed-row-top {
     display: flex; align-items: center; gap: 6px;
   }
-  .feed-row-top span {
+  .feed-row-top span, .anime-bl-title {
     flex: 1; min-width: 0; font-size: 11px; color: var(--text-dim);
     font-family: var(--mono);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -496,15 +496,15 @@
   input[type="file"] { display: none; }
   .file-label { display: inline-flex; align-items: center; justify-content: center; }
 
-  /* ── Context menu ── */
-  #ctx-menu {
+  /* ── Context menus (tiles, anime feed) ── */
+  #ctx-menu, #anime-ctx {
     position: fixed; z-index: 200;
     background: var(--bg3); border: 1px solid var(--border2);
     border-radius: 9px; padding: 4px; min-width: 140px;
     box-shadow: 0 10px 34px rgba(0,0,0,0.5);
     display: none;
   }
-  #ctx-menu.open { display: block; animation: rise 0.1s ease; }
+  #ctx-menu.open, #anime-ctx.open { display: block; animation: rise 0.1s ease; }
   .ctx-item {
     display: flex; align-items: center; gap: 9px;
     padding: 8px 12px; border-radius: 6px; cursor: pointer;
@@ -587,6 +587,40 @@
   .rss-state {
     padding: 14px 4px; font-size: 11px; color: var(--text-dimmer);
     text-align: center; font-family: var(--mono); letter-spacing: 0.05em;
+  }
+
+  /* ── Anime feed widget (reuses the RSS head/list/card styles) ── */
+  .anime-panel { padding: 14px 14px 12px; }
+  .anime-item { display: flex; align-items: center; padding: 0; }
+  /* The whole card (minus the AniList button) is the discussion link */
+  .anime-main {
+    flex: 1; min-width: 0; padding: 8px 4px 8px 10px;
+    color: inherit; text-decoration: none;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .anime-meta { font-family: var(--mono); font-size: 10px; letter-spacing: 0.03em; color: var(--text-dimmer); }
+  .anime-al {
+    display: flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; flex-shrink: 0; margin: 0 9px 0 6px;
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 4px;
+    color: var(--text-dimmer); text-decoration: none;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .anime-al:hover { border-color: var(--teal); color: var(--teal); background: color-mix(in srgb, var(--teal) 8%, transparent); }
+
+  /* On/off chips (anime formats + countries) */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    background: transparent; border: 1px solid var(--border2); border-radius: 7px; cursor: pointer;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em;
+    color: var(--text-dimmer); padding: 5px 10px;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .chip:hover { color: var(--text); }
+  .chip.on {
+    color: var(--teal);
+    background: color-mix(in srgb, var(--teal) 14%, transparent);
+    border-color: color-mix(in srgb, var(--teal) 55%, var(--border2));
   }
 
   /* ── Sticky note widget ── */
@@ -947,6 +981,18 @@
   <div class="rss-list" id="rss-list"></div>
 </aside>
 
+<!-- Anime feed panel (AniList airing schedule) -->
+<aside class="widget anime-panel" id="anime-panel">
+  <div class="rss-head">
+    <span data-i18n="animeFeed">Anime Feed</span>
+    <span class="rss-updated" id="anime-updated"></span>
+    <button class="rss-refresh" id="anime-refresh" title="Refresh">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    </button>
+  </div>
+  <div class="rss-list" id="anime-list"></div>
+</aside>
+
 <!-- Sticky note widget -->
 <aside class="widget note-panel" id="note-panel">
   <div class="note-head">
@@ -1210,6 +1256,53 @@
     <div class="widget-card">
       <div class="wc-head">
         <div class="wc-head-main">
+          <div class="settings-section-title" data-i18n="animeFeed">Anime Feed</div>
+          <div class="toggle-row" id="set-anime-row">
+            <span data-i18n="showAnime">Show anime feed</span>
+            <div class="toggle" id="set-anime"></div>
+          </div>
+        </div>
+        <div class="wc-head-pos">
+          <div class="settings-section-title" data-i18n="position">Position</div>
+          <div class="pos-grid" data-widget="anime"></div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:8px">
+        <label data-i18n="bgSource">Source</label>
+        <div class="seg" id="set-anime-source">
+          <button type="button" data-src="all" data-i18n="animeAll">All airing</button>
+          <button type="button" data-src="user" data-i18n="animeUser">AniList user</button>
+        </div>
+      </div>
+      <div class="feed-add-row" id="anime-user-row" style="margin-bottom:12px">
+        <input id="set-anime-user" type="text" placeholder="AniList username" data-i18n-ph="animeUserPh" autocomplete="off" spellcheck="false">
+        <button class="btn btn-ghost" data-i18n="set" onclick="setAnimeUser()">Set</button>
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <label data-i18n="animeFormats">Formats</label>
+        <div class="chip-row" id="set-anime-formats"></div>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label data-i18n="animeCountries">Countries</label>
+        <div class="chip-row" id="set-anime-countries"></div>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label data-i18n="highlight">Highlight</label>
+        <input id="set-anime-highlight" type="text" placeholder="Exact matches to highlight (comma-separated)" data-i18n-ph="highlightPlaceholder" autocomplete="off">
+      </div>
+      <div class="feed-list-label">
+        <span data-i18n="animeCustomLinks">Custom links</span><span id="anime-link-count"></span>
+      </div>
+      <div class="feed-list" id="anime-link-list"></div>
+      <div class="feed-list-label">
+        <span data-i18n="blacklist">Blacklist</span><span id="anime-bl-count"></span>
+      </div>
+      <div class="feed-list" id="anime-bl-list" style="margin-bottom:0"></div>
+    </div>
+
+    <div class="widget-card">
+      <div class="wc-head">
+        <div class="wc-head-main">
           <div class="settings-section-title" data-i18n="note">Note</div>
           <div class="toggle-row" id="set-note-row">
             <span data-i18n="showNote">Show sticky note</span>
@@ -1369,6 +1462,43 @@
   </div>
 </div>
 
+<!-- Anime feed context menu -->
+<div id="anime-ctx">
+  <div class="ctx-item" onclick="animeCtxEdit()">
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span data-i18n="animeEditLink">Edit link</span>
+  </div>
+  <div class="ctx-item" id="anime-ctx-reset" onclick="animeCtxReset()">
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2.5 7a4.5 4.5 0 1 0 1.3-3.2M2.5 2v2.6h2.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span data-i18n="animeResetLink">Reset link</span>
+  </div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item danger" onclick="animeCtxBlacklist()">
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 10.5l7-7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    <span data-i18n="animeBlacklistSeason">Blacklist season</span>
+  </div>
+</div>
+
+<!-- Anime feed: edit one season's link -->
+<div class="modal-overlay" id="anime-link-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="anime-link-title"></span>
+      <button class="modal-close" onclick="closeAnimeLinkModal()">✕</button>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label data-i18n="url">URL</label>
+      <input id="anime-link-url" type="text" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="settings-note" data-i18n="animeLinkHint">Leave empty to use the default Reddit search.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-i18n="default" onclick="$.animeLinkUrl.value = ''; $.animeLinkUrl.focus()">Default</button>
+      <button class="btn btn-ghost" data-i18n="cancel" onclick="closeAnimeLinkModal()">Cancel</button>
+      <button class="btn btn-primary" data-i18n="save" onclick="saveAnimeLink()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY = 'startpage_v1';
 const TRACKER_URL = 'https://willshaper.github.io/Weekly-Tracker/';   // the standalone Weekly-Tracker site
@@ -1403,12 +1533,16 @@ const DEFAULT_SETTINGS = {
   weather: { enabled: false, position: 'tr', units: 'c', location: null },
   countdown: { enabled: false, position: 'br', items: [] },
   tracker: { enabled: false, position: 'tl' },
+  anime:   { enabled: false, position: 'bl' },   // filled in by normalizeAnime
 };
 const MAX_FEEDS  = 15;
 const MAX_GROUPS = 10;
 const MAX_COUNTDOWNS = 10;
 const ALL_POSITIONS = ['tl','ml','bl','tr','mr','br'];
-const WIDGET_KEYS = ['rss','note','weather','countdown','tracker'];
+const WIDGET_KEYS = ['rss','note','weather','countdown','tracker','anime'];
+// Anime feed: AniList media formats + origin countries the user can toggle
+const ANIME_FORMATS   = ['TV','TV_SHORT','MOVIE','SPECIAL','OVA','ONA','MUSIC'];
+const ANIME_COUNTRIES = ['JP','CN','KR'];
 // Weekly-Tracker (willshaper.github.io/Weekly-Tracker) shares this origin's
 // localStorage, so the tracker widget reads its data straight from this key.
 const TRACKER_KEY = 'weekly_tracker';
@@ -1485,6 +1619,19 @@ const I18N = {
     trackerToday: 'Today', trackerEmpty: 'No weekly items yet', trackerNoneToday: 'Nothing scheduled today',
     trackerHint: 'Reads your Weekly-Tracker items from this browser. Open the tracker in this browser to add or change them.',
     openTracker: 'Open Weekly Tracker',
+    animeFeed: 'Anime Feed', showAnime: 'Show anime feed',
+    animeAll: 'All airing', animeUser: 'AniList user', animeUserPh: 'AniList username',
+    animeFormats: 'Formats', animeCountries: 'Countries', animeCustomLinks: 'Custom links',
+    animeFmt: { TV: 'TV', TV_SHORT: 'TV Short', MOVIE: 'Movie', SPECIAL: 'Special', OVA: 'OVA', ONA: 'ONA', MUSIC: 'Music' },
+    animeCountry: { JP: 'Japan', CN: 'China', KR: 'Korea' },
+    animeNoLinks: 'None yet — right-click an entry to set one',
+    animeNoBlacklist: 'None yet — right-click an entry to hide its season',
+    animeEditLink: 'Edit link', animeResetLink: 'Reset link', animeBlacklistSeason: 'Blacklist season',
+    animeRestore: 'Restore', animeOpenAniList: 'Open on AniList', animeAgo: '{t} ago',
+    animeLinkHint: 'Leave empty to use the default Reddit search.',
+    animeSetUser: 'Set an AniList username in settings',
+    animeUserError: 'AniList user not found, or the list is private',
+    animeError: 'Could not load AniList', animeEmpty: 'No episodes match your filters',
     confirmImport: 'Import will replace all your current links and settings. Continue?',
     alertImageTooLarge: 'That image is too large to save. Try a smaller one or use a URL instead.',
     alertSaveFailed: 'Could not save — the icon may be too large.',
@@ -1558,6 +1705,19 @@ const I18N = {
     trackerToday: 'I dag', trackerEmpty: 'Ingen ugentlige punkter endnu', trackerNoneToday: 'Ingenting planlagt i dag',
     trackerHint: 'Læser dine Weekly-Tracker-punkter fra denne browser. Åbn traceren i denne browser for at tilføje eller ændre dem.',
     openTracker: 'Åbn ugeplan',
+    animeFeed: 'Anime-feed', showAnime: 'Vis anime-feed',
+    animeAll: 'Alt der sendes', animeUser: 'AniList-bruger', animeUserPh: 'AniList-brugernavn',
+    animeFormats: 'Formater', animeCountries: 'Lande', animeCustomLinks: 'Egne links',
+    animeFmt: { TV: 'TV', TV_SHORT: 'TV-kort', MOVIE: 'Film', SPECIAL: 'Special', OVA: 'OVA', ONA: 'ONA', MUSIC: 'Musik' },
+    animeCountry: { JP: 'Japan', CN: 'Kina', KR: 'Korea' },
+    animeNoLinks: 'Ingen endnu — højreklik på en post for at angive et',
+    animeNoBlacklist: 'Ingen endnu — højreklik på en post for at skjule dens sæson',
+    animeEditLink: 'Rediger link', animeResetLink: 'Nulstil link', animeBlacklistSeason: 'Sortlist sæson',
+    animeRestore: 'Gendan', animeOpenAniList: 'Åbn på AniList', animeAgo: '{t} siden',
+    animeLinkHint: 'Lad feltet stå tomt for at bruge standard-Reddit-søgningen.',
+    animeSetUser: 'Angiv et AniList-brugernavn i indstillinger',
+    animeUserError: 'AniList-bruger ikke fundet, eller listen er privat',
+    animeError: 'Kunne ikke indlæse AniList', animeEmpty: 'Ingen afsnit matcher dine filtre',
     confirmImport: 'Import erstatter alle dine nuværende links og indstillinger. Fortsæt?',
     alertImageTooLarge: 'Billedet er for stort til at gemme. Prøv et mindre billede eller brug en URL.',
     alertSaveFailed: 'Kunne ikke gemme — ikonet er muligvis for stort.',
@@ -1591,6 +1751,8 @@ function applyLanguage() {
   if (typeof renderTracker       === 'function') renderTracker();
   if (typeof syncWidgetPositions === 'function') syncWidgetPositions();
   if (typeof renderFeedUpdated   === 'function') renderFeedUpdated();
+  if (typeof renderAnime         === 'function') renderAnime();
+  if (typeof renderAnimeSettings === 'function') renderAnimeSettings();
 }
 
 let links     = [];
@@ -1675,6 +1837,27 @@ const $ = {
   trackerHeader: document.getElementById('tracker-header'),
   trackerBody:   document.getElementById('tracker-body'),
   setTracker:    document.getElementById('set-tracker'),
+  // Anime feed widget
+  animePanel:    document.getElementById('anime-panel'),
+  animeList:     document.getElementById('anime-list'),
+  animeUpdated:  document.getElementById('anime-updated'),
+  animeRefresh:  document.getElementById('anime-refresh'),
+  animeCtx:      document.getElementById('anime-ctx'),
+  animeCtxReset: document.getElementById('anime-ctx-reset'),
+  animeLinkModal:document.getElementById('anime-link-modal'),
+  animeLinkTitle:document.getElementById('anime-link-title'),
+  animeLinkUrl:  document.getElementById('anime-link-url'),
+  setAnime:      document.getElementById('set-anime'),
+  setAnimeSource:document.getElementById('set-anime-source'),
+  setAnimeUser:  document.getElementById('set-anime-user'),
+  animeUserRow:  document.getElementById('anime-user-row'),
+  setAnimeFormats:   document.getElementById('set-anime-formats'),
+  setAnimeCountries: document.getElementById('set-anime-countries'),
+  setAnimeHighlight: document.getElementById('set-anime-highlight'),
+  animeLinkList: document.getElementById('anime-link-list'),
+  animeLinkCount:document.getElementById('anime-link-count'),
+  animeBlList:   document.getElementById('anime-bl-list'),
+  animeBlCount:  document.getElementById('anime-bl-count'),
   // Tile groups
   linkGroup: document.getElementById('link-group'),
   groupList: document.getElementById('group-list'),
@@ -1779,6 +1962,38 @@ function normalizeTracker(t) {
     position: ALL_POSITIONS.includes(t.position) ? t.position : 'tl',
   };
 }
+function normalizeAnime(a) {
+  a = a || {};
+  // Per-season lists keyed by AniList media id: custom links {id,title,url} and
+  // blacklisted seasons {id,title}. The title is kept so settings can list them offline.
+  const seasons = (arr, withUrl) => {
+    const seen = new Set(), out = [];
+    for (const x of Array.isArray(arr) ? arr : []) {
+      if (!x || typeof x !== 'object') continue;
+      const id = Number(x.id);
+      if (!Number.isInteger(id) || id <= 0 || seen.has(id)) continue;
+      const title = typeof x.title === 'string' ? x.title.slice(0, 200) : '';
+      if (withUrl) {
+        const url = typeof x.url === 'string' ? x.url.trim() : '';
+        if (!url) continue;
+        out.push({ id, title, url });
+      } else out.push({ id, title });
+      seen.add(id);
+    }
+    return out;
+  };
+  return {
+    enabled:   !!a.enabled,
+    position:  ALL_POSITIONS.includes(a.position) ? a.position : 'bl',
+    source:    a.source === 'user' ? 'user' : 'all',
+    user:      typeof a.user === 'string' ? a.user.trim().slice(0, 40) : '',
+    formats:   Array.isArray(a.formats)   ? ANIME_FORMATS.filter(f => a.formats.includes(f))     : ANIME_FORMATS.filter(f => f !== 'MUSIC'),
+    countries: Array.isArray(a.countries) ? ANIME_COUNTRIES.filter(c => a.countries.includes(c)) : [...ANIME_COUNTRIES],
+    highlight: typeof a.highlight === 'string' ? a.highlight : '',
+    links:     seasons(a.links, true),
+    blacklist: seasons(a.blacklist, false),
+  };
+}
 function normalizeGroups(g) {
   if (!Array.isArray(g)) return [];
   // Keep only non-empty strings, dedupe preserving order, cap at MAX_GROUPS
@@ -1841,6 +2056,7 @@ function normalizeAllSubfields() {
   settings.weather   = normalizeWeather(settings.weather);
   settings.countdown = normalizeCountdown(settings.countdown);
   settings.tracker   = normalizeTracker(settings.tracker);
+  settings.anime     = normalizeAnime(settings.anime);
   settings.groups    = normalizeGroups(settings.groups);
   resolveWidgetPositions();  // resolve any overlapping widget positions from imported/old data
 }
@@ -1860,6 +2076,7 @@ function load() {
   } else {
     links  = DEFAULT_LINKS.map((l, i) => ({ id: i + 1, name: l.name, url: l.url, icon: '', group: '' }));
     nextId = links.length + 1;
+    settings.anime = normalizeAnime(settings.anime);   // fill in the anime defaults (formats, countries, lists)
   }
 }
 function save() {
@@ -2251,8 +2468,12 @@ function attachDrag() {
 // ── Context menu ──────────────────────────────────────────────────────────────
 function openCtx(evt, id) {
   evt.preventDefault();
+  closeAnimeCtx();
   ctxId = id;
-  const m = $.ctxMenu;
+  placeMenu($.ctxMenu, evt);
+}
+// Measure a context menu off-screen, then open it at the cursor, kept inside the viewport
+function placeMenu(m, evt) {
   m.style.visibility = 'hidden';
   m.classList.add('open');
   const mw = m.offsetWidth, mh = m.offsetHeight;
@@ -2278,8 +2499,14 @@ function ctxRemove() {
   links = links.filter(x => x.id !== l.id);
   save(); renderTiles();
 }
-document.addEventListener('click',       e => { if (!$.ctxMenu.contains(e.target)) closeCtx(); });
-document.addEventListener('contextmenu', e => { if (!$.ctxMenu.contains(e.target) && !e.target.closest('.tile')) closeCtx(); });
+document.addEventListener('click', e => {
+  if (!$.ctxMenu.contains(e.target)) closeCtx();
+  if (!$.animeCtx.contains(e.target)) closeAnimeCtx();
+});
+document.addEventListener('contextmenu', e => {
+  if (!$.ctxMenu.contains(e.target) && !e.target.closest('.tile')) closeCtx();
+  if (!$.animeCtx.contains(e.target) && !e.target.closest('.anime-item')) closeAnimeCtx();
+});
 
 // ── Link modal (add / edit) ───────────────────────────────────────────────────
 function openLinkModal(link) {
@@ -2364,6 +2591,10 @@ function openSettings() {
   $.setCountdownLabel.value  = '';
   $.setCountdownTarget.value = '';
   $.setTracker.classList.toggle('on', settings.tracker.enabled);
+  $.setAnime.classList.toggle('on', settings.anime.enabled);
+  $.setAnimeUser.value = settings.anime.user;
+  $.setAnimeHighlight.value = settings.anime.highlight;
+  renderAnimeSettings();
   syncWidgetPositions();
   $.setTileOp.value   = Math.round(clampOpacity(settings.tileOpacity)   * 100);
   $.setWidgetOp.value = Math.round(clampOpacity(settings.widgetOpacity) * 100);
@@ -2385,7 +2616,7 @@ function openSettings() {
 }
 // Re-apply every widget at once (used after a position auto-move so the bumped
 // widget actually relocates on screen)
-function applyAllWidgets() { applyRss(); applyNote(); applyWeather(); applyCountdown(); applyTracker(); }
+function applyAllWidgets() { applyRss(); applyNote(); applyWeather(); applyCountdown(); applyTracker(); applyAnime(); }
 function closeSettings() { $.setModal.classList.remove('open'); }
 // Settings hub tabs: show one pane at a time
 function setSettingsTab(pane) {
@@ -2511,6 +2742,42 @@ document.getElementById('set-tracker-row').addEventListener('click', () => {
   onWidgetEnabledToggle('tracker', $.setTracker);
   applyAllWidgets();
 });
+
+document.getElementById('set-anime-row').addEventListener('click', () => {
+  onWidgetEnabledToggle('anime', $.setAnime);
+  applyAllWidgets();
+});
+$.setAnimeSource.addEventListener('click', e => {
+  const b = e.target.closest('button[data-src]'); if (!b) return;
+  settings.anime.source = b.dataset.src;
+  save(); renderAnimeSettings(); applyAnime();
+});
+function setAnimeUser() {
+  const u = $.setAnimeUser.value.trim().slice(0, 40);
+  $.setAnimeUser.value = u;
+  if (u === settings.anime.user) return;
+  settings.anime.user = u;
+  save(); applyAnime();
+}
+$.setAnimeUser.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); setAnimeUser(); } });
+$.setAnimeUser.addEventListener('change', setAnimeUser);   // also commit on blur, so closing settings doesn't drop a typed name
+// Format / country chips: toggle membership, re-filter the cached entries
+[[$.setAnimeFormats, 'formats', 'fmt', ANIME_FORMATS], [$.setAnimeCountries, 'countries', 'cc', ANIME_COUNTRIES]].forEach(([el, key, attr, order]) => {
+  el.addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    const v = b.dataset[attr], cur = settings.anime[key];
+    settings.anime[key] = order.filter(x => x === v ? !cur.includes(x) : cur.includes(x));
+    b.classList.toggle('on', settings.anime[key].includes(v));
+    save(); animeFiltersChanged();
+  });
+});
+let animeHighlightDebounce = null;
+$.setAnimeHighlight.addEventListener('input', () => {
+  settings.anime.highlight = $.setAnimeHighlight.value;   // store as-typed; trim/lowercase at match time
+  save();
+  clearTimeout(animeHighlightDebounce);
+  animeHighlightDebounce = setTimeout(renderAnime, 150);
+});
 // Position grids (all widgets): click a corner cell to place that widget on screen
 document.getElementById('settings-modal').addEventListener('click', e => {
   const cell = e.target.closest('.pos-cell');
@@ -2607,6 +2874,7 @@ function importData(input) {
       applyWeather();
       applyCountdown();
       applyTracker();
+      applyAnime();
       buildEngineSelect($.searchEng, settings.engine);
       renderTiles(); applyHint(); tick(); updateGreeting();
       closeSettings();
@@ -2660,17 +2928,20 @@ function saveFeedCache(items) {
 function renderFeedUpdated() {
   if (!$.rssUpdated) return;
   if (!feedUpdatedAt || !settings.rss.enabled || !settings.rss.urls.length) { $.rssUpdated.textContent = ''; $.rssUpdated.title = ''; return; }
-  const s = Math.max(0, Math.floor((Date.now() - feedUpdatedAt) / 1000));
-  const rel = s < 60 ? L().feedJustNow
-            : s < 3600 ? Math.floor(s / 60) + 'm'
-            : s < 86400 ? Math.floor(s / 3600) + 'h'
-            : Math.floor(s / 86400) + 'd';
-  $.rssUpdated.textContent = rel;
+  $.rssUpdated.textContent = relShort(Date.now() - feedUpdatedAt);
   $.rssUpdated.title = L().feedUpdatedTitle + ' ' + new Date(feedUpdatedAt).toLocaleString();
+}
+// Compact elapsed time: "now" / "5m" / "3h" / "2d"
+function relShort(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return s < 60 ? L().feedJustNow
+       : s < 3600 ? Math.floor(s / 60) + 'm'
+       : s < 86400 ? Math.floor(s / 3600) + 'h'
+       : Math.floor(s / 86400) + 'd';
 }
 
 // ── Widget position constraint ────────────────────────────────────────────────
-// There are 6 fixed slots (3 per side) and up to 4 widgets. No two enabled
+// There are 6 fixed slots (3 per side) and up to 6 widgets. No two enabled
 // widgets may share a slot. When one is moved/enabled (`touched`), it keeps its
 // chosen slot and any colliding widgets are bumped to the first free slot.
 // Corner-picker grid order: 2 columns (left, right) × 3 rows (top, middle, bottom)
@@ -2715,7 +2986,7 @@ function syncWidgetPositions() {
 // tall. This stacks same-side widgets top-down and caps each one's height so the
 // column fits the viewport — tall content (like a 50-item feed) then scrolls
 // internally instead of covering its neighbour.
-const WIDGET_PANEL_REF = { rss: 'rssPanel', note: 'notePanel', weather: 'weatherPanel', countdown: 'countdownPanel', tracker: 'trackerPanel' };
+const WIDGET_PANEL_REF = { rss: 'rssPanel', note: 'notePanel', weather: 'weatherPanel', countdown: 'countdownPanel', tracker: 'trackerPanel', anime: 'animePanel' };
 const WIDGET_SLOT_ORDER = { tl: 0, ml: 1, bl: 2, tr: 0, mr: 1, br: 2 };
 let layoutRaf = null;
 function scheduleLayout() {           // coalesce bursts of calls into one reflow
@@ -2725,6 +2996,7 @@ function scheduleLayout() {           // coalesce bursts of calls into one reflo
 // The scrollable region inside each widget (so measurement can let it expand)
 function widgetScrollChild(key) {
   if (key === 'rss')       return $.rssList;
+  if (key === 'anime')     return $.animeList;
   if (key === 'note')      return settings.note.checklist ? $.noteList : $.noteText;
   if (key === 'countdown') return $.countdownBody;
   if (key === 'tracker')   return $.trackerBody;
@@ -3069,8 +3341,8 @@ function parseFeedXml(xmlText) {
 // Global "highlight" filter: a title is flagged when one of the comma-separated
 // phrases occurs as a whole token (not flanked by letters/digits) — so "Episode 1"
 // matches "…Episode 1" but not "…Episode 10" or "…Episode 19". Case-insensitive.
-function highlightPhrases() {
-  return settings.rss.highlight.split(',').map(p => p.trim().toLowerCase()).filter(Boolean);
+function highlightPhrases(src = settings.rss.highlight) {
+  return src.split(',').map(p => p.trim().toLowerCase()).filter(Boolean);
 }
 function titleIsHighlighted(title, phrases) {
   if (!phrases.length) return false;
@@ -3590,6 +3862,352 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden && settings.tracker.enabled) renderTracker();
 });
 
+// ── Anime feed (AniList airing schedule) ─────────────────────────────────────
+// Episodes that have aired, newest first: either everything on AniList ("all") or
+// only seasons on one user's AniList lists ("user"). Clicking a row opens that
+// season's link — a custom one set via right-click, else an r/anime search for its
+// discussion thread; the small button opens the AniList entry. AniList keeps the
+// full airing history, so the local cache only gives an instant first paint and
+// lets filter changes refill without a fetch; it can always be rebuilt.
+const ANILIST_API      = 'https://graphql.anilist.co';
+const ANIME_CACHE_KEY  = 'startpage_animecache';
+const ANIME_REFRESH_MS = 15 * 60 * 1000;
+const ANIME_SHOW       = 100;    // rows shown (after filters + blacklist)
+const ANIME_CACHE_MIN  = 300;    // raw entries kept so filter changes can refill from cache
+const ANIME_CACHE_MAX  = 1500;   // hard cap, for very narrow filters that need deep history
+const ANIME_MAX_PAGES  = 10;     // requests per refresh (50 entries each), well under AniList's rate limit
+const ANIME_LIST_Q     = 'query($u:String){MediaListCollection(userName:$u,type:ANIME){lists{entries{mediaId}}}}';
+const ANIME_FIELDS     = 'pageInfo{hasNextPage} airingSchedules(airingAt_lesser:$to,%IDS%sort:[TIME_DESC,ID_DESC]){id episode airingAt media{id format countryOfOrigin siteUrl title{english romaji}}}';
+// AniList errors on a null mediaId_in, so "all airing" uses a variant without it
+const ANIME_SCHED_ALL  = 'query($p:Int,$to:Int){Page(page:$p,perPage:50){' + ANIME_FIELDS.replace('%IDS%', '') + '}}';
+const ANIME_SCHED_USER = 'query($p:Int,$to:Int,$ids:[Int]){Page(page:$p,perPage:50){' + ANIME_FIELDS.replace('%IDS%', 'mediaId_in:$ids,') + '}}';
+
+let animeItems = [];         // cached entries, newest first: { id, m (media id), ep, at (unix s), t (title), f, c, u }
+let animeShown = [];         // rows currently rendered (context-menu lookup)
+let animeSigLoaded = null;   // source signature the in-memory items belong to
+let animeFetchedSig = '';    // signature fetched this page load (applyAnime runs often; fetch once + timer)
+let animeUpdatedAt = 0;      // last successful fetch
+let animeExhausted = false;  // AniList has no entries older than our oldest
+let animeListKey = '';       // user mode: fingerprint of the list's media ids (a change → rebuild)
+let animeBusy = false, animeAgain = false, animeErr = '';
+let animeTimer = null, animeFillDebounce = null, animeCtxItem = null, animeEditItem = null;
+
+function animeSig() {
+  const a = settings.anime;
+  return a.source === 'user' ? 'user:' + a.user.toLowerCase() : 'all';
+}
+function loadAnimeCache() {
+  animeItems = []; animeUpdatedAt = 0; animeExhausted = false; animeListKey = '';
+  try {
+    const c = JSON.parse(localStorage.getItem(ANIME_CACHE_KEY) || 'null');
+    if (c && c.sig === animeSig() && Array.isArray(c.items)) {
+      animeItems = c.items.filter(it => it && Number.isInteger(it.id) && Number.isInteger(it.m) && typeof it.t === 'string');
+      animeUpdatedAt = typeof c.fetchedAt === 'number' ? c.fetchedAt : 0;
+      animeExhausted = !!c.exhausted;
+      animeListKey   = typeof c.listKey === 'string' ? c.listKey : '';
+    }
+  } catch {}
+}
+function saveAnimeCache() {
+  try {
+    localStorage.setItem(ANIME_CACHE_KEY, JSON.stringify({
+      sig: animeSig(), fetchedAt: animeUpdatedAt, exhausted: animeExhausted, listKey: animeListKey, items: animeItems,
+    }));
+  } catch {}
+}
+function hashIds(ids) {
+  let h = 5381;
+  for (const n of [...ids].sort((a, b) => a - b)) h = ((h << 5) + h + n) | 0;
+  return ids.length + ':' + (h >>> 0).toString(36);
+}
+
+// Filters: format + country toggles (unknown values pass) and the season blacklist
+function animeVisible(items) {
+  const a = settings.anime, bl = new Set(a.blacklist.map(b => b.id));
+  return items.filter(it =>
+    (!ANIME_FORMATS.includes(it.f)   || a.formats.includes(it.f)) &&
+    (!ANIME_COUNTRIES.includes(it.c) || a.countries.includes(it.c)) &&
+    !bl.has(it.m));
+}
+// Default link: r/anime search for the season's discussion threads (symbols like ☆ ★ ♪ → spaces)
+function animeSearchUrl(title) {
+  const q = title.replace(/\p{So}/gu, ' ').replace(/\s+/g, ' ').trim() + ' episode discussion';
+  return 'https://www.reddit.com/r/anime/search/?' + new URLSearchParams({ q, include_over_18: 'on', restrict_sr: 'on', t: 'week', sort: 'new' });
+}
+function animeLinkFor(it) {
+  const c = settings.anime.links.find(l => l.id === it.m);
+  return c ? withProtocol(c.url) : animeSearchUrl(it.t);
+}
+function animeAge(at) {
+  const ms = Date.now() - at * 1000;
+  return ms < 60000 ? L().feedJustNow : L().animeAgo.replace('{t}', relShort(ms));
+}
+
+function showAnimeState(key) {
+  animeShown = [];
+  $.animeList.innerHTML = `<div class="rss-state">${esc(L()[key] || '')}</div>`;
+  scheduleLayout();
+}
+function renderAnimeUpdated() {
+  const on = settings.anime.enabled && animeUpdatedAt;
+  $.animeUpdated.textContent = on ? relShort(Date.now() - animeUpdatedAt) : '';
+  $.animeUpdated.title = on ? L().feedUpdatedTitle + ' ' + new Date(animeUpdatedAt).toLocaleString() : '';
+}
+function renderAnime() {
+  const a = settings.anime;
+  if (!a.enabled) return;
+  renderAnimeUpdated();
+  if (a.source === 'user' && !a.user) { showAnimeState('animeSetUser'); return; }
+  const shown = animeVisible(animeItems).slice(0, ANIME_SHOW);
+  if (!shown.length) { showAnimeState(animeBusy ? 'feedLoading' : (animeErr || 'animeEmpty')); return; }
+  const target  = settings.newTab ? ' target="_blank" rel="noopener"' : '';
+  const phrases = highlightPhrases(a.highlight);
+  const alTitle = esc(L().animeOpenAniList);
+  const scroll  = $.animeList.scrollTop;
+  animeShown = shown;
+  $.animeList.innerHTML = shown.map(it => {
+    const title = `${it.t} - Episode ${it.ep}`;
+    const hl = titleIsHighlighted(title, phrases) ? ' rss-item--hl' : '';
+    return `<div class="rss-item anime-item${hl}" data-id="${it.id}">` +
+      `<a class="anime-main" href="${esc(animeLinkFor(it))}"${target}>` +
+        `<span>${esc(title)}</span><span class="anime-meta" data-at="${it.at}">${esc(animeAge(it.at))}</span></a>` +
+      `<a class="anime-al" href="${esc(it.u)}"${target} title="${alTitle}">${TRACKER_LINK_SVG}</a>` +
+    `</div>`;
+  }).join('');
+  $.animeList.scrollTop = scroll;
+  scheduleLayout();
+}
+// Keep the "3h ago" figures current without rebuilding the list
+setInterval(() => {
+  if (!settings.anime.enabled) return;
+  $.animeList.querySelectorAll('.anime-meta[data-at]').forEach(el => { el.textContent = animeAge(Number(el.dataset.at)); });
+  renderAnimeUpdated();
+}, 30000);
+
+// ── Fetching ──
+async function anilist(query, variables) {
+  const res = await fetch(ANILIST_API, {
+    method: 'POST', cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ query, variables }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data || data.errors || !data.data) throw Object.assign(new Error('AniList request failed'), { status: res.status });
+  return data.data;
+}
+function toAnimeItem(s) {
+  const md = s && s.media;
+  if (!md || !Number.isInteger(s.id) || !Number.isInteger(md.id)) return null;
+  const t = ((md.title && (md.title.english || md.title.romaji)) || '').trim();   // English first, romaji fallback
+  if (!t) return null;
+  return {
+    id: s.id, m: md.id, ep: Number(s.episode) || 0, at: Number(s.airingAt) || 0, t,
+    f: md.format || '', c: md.countryOfOrigin || '',
+    u: safeHttpLink(md.siteUrl) || `https://anilist.co/anime/${md.id}`,
+  };
+}
+function mergeAnime(items) {
+  const byId = new Map(animeItems.map(it => [it.id, it]));
+  for (const it of items) byId.set(it.id, it);   // fresh data wins (e.g. a corrected air time)
+  animeItems = [...byId.values()].sort((a, b) => b.at - a.at || b.id - a.id);
+}
+// Keep ≥ ANIME_CACHE_MIN entries and everything down to the oldest shown row
+function trimAnime() {
+  const vis = animeVisible(animeItems);
+  const keep = Math.min(ANIME_CACHE_MAX, Math.max(ANIME_CACHE_MIN,
+    vis.length >= ANIME_SHOW ? animeItems.indexOf(vis[ANIME_SHOW - 1]) + 1 : animeItems.length));
+  if (animeItems.length > keep) { animeItems = animeItems.slice(0, keep); animeExhausted = false; }
+}
+async function fetchAnime() {
+  const a = settings.anime;
+  if (!a.enabled || (a.source === 'user' && !a.user)) return;
+  if (animeBusy) { animeAgain = true; return; }
+  animeBusy = true; animeAgain = false;
+  const sig = animeSig();
+  animeFetchedSig = sig;
+  if (!animeVisible(animeItems).length) renderAnime();   // "Loading…" while nothing is on screen
+  const stale = () => { if (animeSig() !== sig) throw Object.assign(new Error('stale'), { stale: true }); };
+  try {
+    let ids = null;
+    if (a.source === 'user') {
+      let d;
+      try { d = await anilist(ANIME_LIST_Q, { u: a.user }); }
+      catch (e) { e.userErr = e.status === 404 || e.status === 403; throw e; }
+      stale();
+      const lists = (d.MediaListCollection && d.MediaListCollection.lists) || [];
+      ids = [...new Set(lists.flatMap(l => (l.entries || []).map(e => e.mediaId)).filter(Number.isInteger))];
+      const key = hashIds(ids);
+      if (key !== animeListKey) { animeItems = []; animeExhausted = false; animeListKey = key; }   // list changed → rebuild
+    }
+    if (ids && !ids.length) {
+      animeItems = []; animeExhausted = true;
+    } else {
+      const q = ids ? ANIME_SCHED_USER : ANIME_SCHED_ALL;
+      const getPage = async (p, to) => {
+        const d = await anilist(q, ids ? { p, to, ids } : { p, to });
+        stale();
+        const pg = d.Page || {};
+        return { items: (pg.airingSchedules || []).map(toAnimeItem).filter(Boolean), more: !!(pg.pageInfo && pg.pageInfo.hasNextPage) };
+      };
+      let pages = 0;
+      // 1) Newest first, until we reach entries we already have. On a fresh start
+      //    (empty cache) rows appear page by page until the cache holds ANIME_CACHE_MIN.
+      const known = new Set(animeItems.map(it => it.id));
+      const now = Math.floor(Date.now() / 1000) + 1;
+      const fresh = [];
+      let hit = false, more = true;
+      for (let p = 1; pages < ANIME_MAX_PAGES; p++) {
+        const r = await getPage(p, now); pages++;
+        hit = r.items.some(it => known.has(it.id));
+        more = r.more;
+        if (known.size) fresh.push(...r.items);
+        else { mergeAnime(r.items); renderAnime(); }
+        if (hit || !more) break;
+        if (!known.size && animeItems.length >= ANIME_CACHE_MIN && animeVisible(animeItems).length >= ANIME_SHOW) break;
+      }
+      if (known.size) {
+        // Never reached the cached entries → there's a gap, so the old cache can't be stitched on
+        if (!hit && more) { animeItems = []; animeExhausted = false; }
+        mergeAnime(fresh);
+      }
+      if (!more) animeExhausted = true;
+      // 2) Older entries until 100 rows pass the filters (or AniList runs out)
+      while (animeItems.length && !animeExhausted && pages < ANIME_MAX_PAGES && animeItems.length < ANIME_CACHE_MAX &&
+             animeVisible(animeItems).length < ANIME_SHOW) {
+        const oldest = animeItems[animeItems.length - 1];
+        const r = await getPage(1, oldest.at + 1); pages++;
+        mergeAnime(r.items);
+        if (!r.more) animeExhausted = true;
+        if (animeItems[animeItems.length - 1] === oldest) break;   // no progress (shared timestamps) — stop
+      }
+    }
+    trimAnime();
+    animeUpdatedAt = Date.now();
+    animeErr = '';
+    saveAnimeCache();
+  } catch (e) {
+    if (!e.stale && animeSig() === sig) {   // a failure for a source that's since been switched away from is moot
+      animeErr = e.userErr ? 'animeUserError' : 'animeError';
+      if (animeItems.length) saveAnimeCache();   // keep whatever was fetched before the failure
+    }
+  } finally {
+    animeBusy = false;
+    renderAnime();
+    if (animeAgain) fetchAnime();
+  }
+}
+// A filter/blacklist change: re-render from cache, and fetch older entries if fewer than 100 rows remain
+function animeFiltersChanged() {
+  renderAnime();
+  clearTimeout(animeFillDebounce);
+  if (animeVisible(animeItems).length < ANIME_SHOW && !animeExhausted) animeFillDebounce = setTimeout(fetchAnime, 600);
+}
+function applyAnime() {
+  const a = settings.anime, el = $.animePanel;
+  ALL_POSITIONS.forEach(p => el.classList.remove('pos-' + p));
+  el.classList.add('pos-' + a.position);
+  el.classList.toggle('show', a.enabled);
+  if (animeTimer) { clearInterval(animeTimer); animeTimer = null; }
+  if (a.enabled) {
+    if (animeSigLoaded !== animeSig()) { animeSigLoaded = animeSig(); loadAnimeCache(); animeErr = ''; }
+    if (animeFetchedSig !== animeSig()) fetchAnime();
+    renderAnime();
+    animeTimer = setInterval(fetchAnime, ANIME_REFRESH_MS);
+  }
+  renderAnimeUpdated();
+  scheduleLayout();
+}
+$.animeRefresh.addEventListener('click', () => {
+  $.animeRefresh.classList.remove('spin');
+  void $.animeRefresh.offsetWidth;  // restart the transition
+  $.animeRefresh.classList.add('spin');
+  fetchAnime();
+});
+
+// ── Right-click menu + per-season link editor ──
+$.animeList.addEventListener('contextmenu', e => {
+  const row = e.target.closest('.anime-item'); if (!row) return;
+  const it = animeShown.find(x => x.id === Number(row.dataset.id)); if (!it) return;
+  e.preventDefault();
+  closeCtx();
+  animeCtxItem = it;
+  $.animeCtxReset.style.display = settings.anime.links.some(l => l.id === it.m) ? '' : 'none';
+  placeMenu($.animeCtx, e);
+});
+function closeAnimeCtx() { $.animeCtx.classList.remove('open'); animeCtxItem = null; }
+function animeCtxEdit() {
+  const it = animeCtxItem; closeAnimeCtx();
+  if (!it) return;
+  animeEditItem = it;
+  const c = settings.anime.links.find(l => l.id === it.m);
+  $.animeLinkTitle.textContent = it.t;
+  $.animeLinkUrl.value = c ? c.url : '';
+  $.animeLinkUrl.placeholder = animeSearchUrl(it.t);   // shows what "default" means
+  $.animeLinkModal.classList.add('open');
+  setTimeout(() => $.animeLinkUrl.focus(), 30);
+}
+function closeAnimeLinkModal() { $.animeLinkModal.classList.remove('open'); animeEditItem = null; }
+// Set (or, with an empty url, clear) one season's custom link
+function setAnimeLink(id, title, url) {
+  const a = settings.anime;
+  url = url.trim();
+  a.links = a.links.filter(l => l.id !== id);
+  if (url) a.links.push({ id, title, url });
+  save(); renderAnime(); renderAnimeSettings();
+}
+function saveAnimeLink() {
+  if (!animeEditItem) return;
+  setAnimeLink(animeEditItem.m, animeEditItem.t, $.animeLinkUrl.value);
+  closeAnimeLinkModal();
+}
+function animeCtxReset() {
+  const it = animeCtxItem; closeAnimeCtx();
+  if (it) setAnimeLink(it.m, it.t, '');
+}
+function animeCtxBlacklist() {
+  const it = animeCtxItem; closeAnimeCtx();
+  if (!it) return;
+  if (!settings.anime.blacklist.some(b => b.id === it.m)) settings.anime.blacklist.push({ id: it.m, title: it.t });
+  save(); renderAnimeSettings(); animeFiltersChanged();
+}
+
+// ── Settings card: source, chips, custom-link + blacklist managers ──
+function renderAnimeSettings() {
+  const a = settings.anime, t = L();
+  segSetActive($.setAnimeSource, 'src', a.source);
+  $.animeUserRow.style.display = a.source === 'user' ? '' : 'none';
+  $.setAnimeFormats.innerHTML = ANIME_FORMATS.map(f =>
+    `<button type="button" class="chip${a.formats.includes(f) ? ' on' : ''}" data-fmt="${f}">${esc(t.animeFmt[f])}</button>`).join('');
+  $.setAnimeCountries.innerHTML = ANIME_COUNTRIES.map(c =>
+    `<button type="button" class="chip${a.countries.includes(c) ? ' on' : ''}" data-cc="${c}">${esc(t.animeCountry[c])}</button>`).join('');
+  $.animeLinkCount.textContent = a.links.length ? ` ${a.links.length}` : '';
+  $.animeLinkList.innerHTML = a.links.length
+    ? a.links.map(l =>
+        `<div class="feed-row feed-row--stacked">` +
+        `<div class="feed-row-top"><span title="${esc(l.title)}">${esc(l.title || '#' + l.id)}</span>` +
+        `<button type="button" title="${esc(t.remove)}" onclick="setAnimeLink(${l.id}, '', '')">✕</button></div>` +
+        `<input class="feed-filter-input" type="text" value="${esc(l.url)}" spellcheck="false" onchange="updateAnimeLinkUrl(${l.id}, this.value)">` +
+        `</div>`).join('')
+    : `<div class="feed-empty">${esc(t.animeNoLinks)}</div>`;
+  $.animeBlCount.textContent = a.blacklist.length ? ` ${a.blacklist.length}` : '';
+  $.animeBlList.innerHTML = a.blacklist.length
+    ? a.blacklist.map(b =>
+        `<div class="feed-row"><span class="anime-bl-title" title="${esc(b.title)}">${esc(b.title || '#' + b.id)}</span>` +
+        `<button type="button" title="${esc(t.animeRestore)}" onclick="restoreAnimeSeason(${b.id})">✕</button></div>`).join('')
+    : `<div class="feed-empty">${esc(t.animeNoBlacklist)}</div>`;
+}
+function updateAnimeLinkUrl(id, value) {
+  const l = settings.anime.links.find(x => x.id === id);
+  if (!l) return;
+  if (!value.trim()) { setAnimeLink(id, '', ''); return; }   // emptied → back to the default search
+  l.url = value.trim();
+  save(); renderAnime();
+}
+function restoreAnimeSeason(id) {
+  settings.anime.blacklist = settings.anime.blacklist.filter(b => b.id !== id);
+  save(); renderAnimeSettings(); renderAnime();
+}
+
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   segSetActive($.setThemeSeg, 'themeVal', theme);
@@ -3628,13 +4246,14 @@ function tick() {
 
 // ── Global listeners ──────────────────────────────────────────────────────────
 document.getElementById('btn-settings').addEventListener('click', openSettings);
-[$.linkModal, $.setModal].forEach(m => {
+[$.linkModal, $.setModal, $.animeLinkModal].forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
 });
 $.linkName.addEventListener('keydown', e => { if (e.key === 'Enter') saveLink(); });
 $.linkUrl .addEventListener('keydown', e => { if (e.key === 'Enter') saveLink(); });
+$.animeLinkUrl.addEventListener('keydown', e => { if (e.key === 'Enter') saveAnimeLink(); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeCtx(); closeLinkModal(); closeSettings(); }
+  if (e.key === 'Escape') { closeCtx(); closeAnimeCtx(); closeLinkModal(); closeAnimeLinkModal(); closeSettings(); }
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -3653,6 +4272,7 @@ applyNote();
 applyWeather();
 applyCountdown();
 applyTracker();
+applyAnime();
 buildPosGrids();
 buildEngineSelect($.searchEng, settings.engine);
 renderTiles();
