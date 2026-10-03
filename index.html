@@ -4003,10 +4003,15 @@ function animeVisible(items) {
     (!ANIME_COUNTRIES.includes(it.c) || a.countries.includes(it.c)) &&
     !bl.has(it.m));
 }
-// Default link: r/anime search for the season's discussion threads (symbols like ☆ ★ ♪ → spaces)
+// Default link: r/anime search for the season's discussion threads. The name is an
+// exact-phrase match (quoted), which r/anime's "English • Romaji - Episode N
+// discussion" thread titles hit cleanly. Symbols like ☆ ★ ♪ and any quotes in the
+// title become spaces so they can't break the phrase.
 function animeSearchUrl(title) {
-  const q = title.replace(/\p{So}/gu, ' ').replace(/\s+/g, ' ').trim() + ' episode discussion';
-  return 'https://www.reddit.com/r/anime/search/?' + new URLSearchParams({ q, include_over_18: 'on', restrict_sr: 'on', t: 'week', sort: 'new' });
+  const name = title.replace(/\p{So}/gu, ' ').replace(/"/g, ' ').replace(/\s+/g, ' ').trim();
+  return 'https://www.reddit.com/r/anime/search?' + new URLSearchParams({
+    q: `"${name}" episode discussion`, restrict_sr: 'on', include_over_18: 'on', sort: 'new', t: 'week',
+  });
 }
 function animeLinkFor(it) {
   const c = settings.anime.links.find(l => l.id === it.m);
