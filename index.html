@@ -4442,6 +4442,8 @@ async function fetchAnime() {
 // A filter/blacklist change: re-render from cache, and fetch older entries if fewer than 100 rows remain
 function animeFiltersChanged() {
   renderAnime();
+  exportAnimeWeek();   // the Weekly-Tracker site follows the blacklist too
+  if (settings.tracker.enabled) renderTracker();
   clearTimeout(animeFillDebounce);
   if (animeVisible(animeItems).length < ANIME_SHOW && !animeExhausted) animeFillDebounce = setTimeout(fetchAnime, 600);
 }
@@ -4741,6 +4743,7 @@ function removeAnimeSeason(kind, id) {
   a[key] = a[key].filter(x => x.id !== id);
   save(); renderAnimeSeasonList(kind); renderAnime();
   if (kind === 'shows') trackedChanged();
+  else animeFiltersChanged();   // restoring a blacklisted season shows it again everywhere
 }
 
 // ── Tracked seasons → Weekly Tracker widget ──
@@ -4833,9 +4836,14 @@ function exportAnimeWeek() {
   const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   const nowMs = Date.now(), nowS = Math.floor(nowMs / 1000);
   const shows = [];
+  const blocked = new Set(settings.anime.blacklist.map(b => b.id));
   for (const tr of trackedShows()) {
+    if (blocked.has(tr.id)) continue;   // blacklisted shows stay off the tracker even if tracked
     const md = (trackSched.media || {})[tr.id];
-    if (!md || md.st !== 'RELEASING' || !isShowActive(tr)) continue;   // only airing, non-archived
+    // Only airing, non-archived shows — "airing" includes an upcoming premiere
+    // (AniList calls it NOT_YET_RELEASED until episode 1 airs, but it has a date)
+    const airing = md && (md.st === 'RELEASING' || (md.st === 'NOT_YET_RELEASED' && md.na));
+    if (!airing || !isShowActive(tr)) continue;
     const eps = trackSched.items.filter(s => s.m === tr.id).sort((a, b) => a.at - b.at);
     const known = md.na ? eps.concat({ at: md.na, ep: md.ne }) : eps;
     // AniList's weekly slot: from the next upcoming episode, else the latest aired one
@@ -4864,24 +4872,42 @@ function exportAnimeWeek() {
       al: `https://anilist.co/anime/${tr.id}`,
     });
   }
-  const body = JSON.stringify(shows);
+  // Also share, for the tracker's "All airing" view: highlight/link of shows that
+  // aren't tracked, and the blacklist (hidden there too)
+  const others = settings.anime.shows.filter(s => !s.track && (s.hl || s.url)).map(s => ({ id: s.id, title: s.title, hl: !!s.hl, url: s.url }));
+  const blacklist = [...blocked];
+  const body = JSON.stringify([shows, others, blacklist]);
   if (animeWeekLast === null) {   // first run: compare with what's already stored
-    try { const c = JSON.parse(localStorage.getItem(ANIME_WEEK_KEY) || 'null'); animeWeekLast = c ? JSON.stringify(c.shows) : ''; } catch { animeWeekLast = ''; }
+    try { const c = JSON.parse(localStorage.getItem(ANIME_WEEK_KEY) || 'null'); animeWeekLast = c ? JSON.stringify([c.shows, c.others, c.blacklist]) : ''; } catch { animeWeekLast = ''; }
   }
   if (body === animeWeekLast) return;
   animeWeekLast = body;
-  try { localStorage.setItem(ANIME_WEEK_KEY, JSON.stringify({ v: 1, updatedAt: nowMs, shows })); } catch {}
+  try { localStorage.setItem(ANIME_WEEK_KEY, JSON.stringify({ v: 1, updatedAt: nowMs, shows, others, blacklist })); } catch {}
 }
 // Apply changes made on the Weekly-Tracker site. The note is { [id]: fields } where
-// each field is optional: day + time (day null = AniList time), hl, track, url.
+// each field is optional: day + time (day null = AniList time), hl, track, url,
+// blacklist (true = hide the season, false = restore), plus the show's title so a
+// show first touched on the tracker ("All airing") can be added here.
 function applyTrackerTimeEdits() {
   let raw = null, edits = null;
   try { raw = localStorage.getItem(ANIME_TIME_EDITS_KEY); edits = JSON.parse(raw || 'null'); } catch {}
   if (!edits || typeof edits !== 'object') return;
   let changed = false;
   for (const [k, ed] of Object.entries(edits)) {
-    const s = animeShow(Number(k));
-    if (!s || !ed || typeof ed !== 'object') continue;
+    const id = Number(k);
+    if (!Number.isInteger(id) || id <= 0 || !ed || typeof ed !== 'object') continue;
+    const title = typeof ed.title === 'string' ? ed.title.trim().slice(0, 200) : '';
+    if (typeof ed.blacklist === 'boolean') {
+      const a = settings.anime, on = a.blacklist.some(b => b.id === id);
+      if (ed.blacklist && !on) a.blacklist.push({ id, title: title || (animeShow(id) || {}).title || '#' + id, last: animeSeasonLast(id) });
+      if (!ed.blacklist && on) a.blacklist = a.blacklist.filter(b => b.id !== id);
+      changed = true;
+    }
+    let s = animeShow(id);
+    const touchesShow = 'day' in ed || typeof ed.hl === 'boolean' || typeof ed.track === 'boolean' || typeof ed.url === 'string';
+    if (!s && touchesShow && (ed.track === true || ed.hl === true || (typeof ed.url === 'string' && ed.url.trim())))
+      s = ensureShow(id, title || '#' + id);   // new show added from the tracker's "All airing" view
+    if (!s) continue;
     if ('day' in ed) {
       const day  = Number.isInteger(ed.day) && ed.day >= 0 && ed.day <= 6 ? ed.day : null;
       const time = typeof ed.time === 'string' && TIME_RE.test(ed.time) ? ed.time : '';
@@ -4896,7 +4922,7 @@ function applyTrackerTimeEdits() {
   // Clear the note — unless the tracker wrote a newer one meanwhile (that one fires
   // its own storage event; re-applying is harmless since every field is absolute)
   try { if (localStorage.getItem(ANIME_TIME_EDITS_KEY) === raw) localStorage.removeItem(ANIME_TIME_EDITS_KEY); } catch {}
-  if (changed) { save(); renderAnime(); renderAnimeSettings(); trackedChanged(); }
+  if (changed) { save(); renderAnimeSettings(); animeFiltersChanged(); trackedChanged(); }
 }
 window.addEventListener('storage', e => { if (e.key === ANIME_TIME_EDITS_KEY && e.newValue) applyTrackerTimeEdits(); });
 // Startup: cached schedule → apply pending edits → export → fetch; then refresh every 10 min
@@ -4915,8 +4941,9 @@ function trackedAnimeToday(now) {
   const out = [];
   const sameDay = (ms, day) => ms >= day && ms < day + 86400000;
   const hhmm = ms => { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const blocked = new Set(settings.anime.blacklist.map(b => b.id));
   for (const tr of trackedShows()) {
-    if (!isShowActive(tr)) continue;   // archived ("Finished") shows stay out of the tracker
+    if (!isShowActive(tr) || blocked.has(tr.id)) continue;   // archived or blacklisted shows stay out
     const eps = trackSched.items.filter(s => s.m === tr.id);
     const md  = (trackSched.media || {})[tr.id];
     let pick = [], time = '', breakAt = '';
