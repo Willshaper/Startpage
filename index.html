@@ -442,7 +442,7 @@
     font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;
   }
-  #feed-count, #anime-link-count, #anime-bl-count { color: var(--text-dimmer); }
+  #feed-count { color: var(--text-dimmer); }
   .feed-list {
     max-height: 132px; overflow-y: auto;
     display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;
@@ -458,7 +458,7 @@
   .feed-row-top {
     display: flex; align-items: center; gap: 6px;
   }
-  .feed-row-top span, .anime-bl-title {
+  .feed-row-top span {
     flex: 1; min-width: 0; font-size: 11px; color: var(--text-dim);
     font-family: var(--mono);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -881,23 +881,9 @@
     border: 1px solid color-mix(in srgb, var(--teal) 24%, transparent);
     border-radius: 3px; padding: 1px 5px;
   }
-  #anime-show-add-msg { margin-top: 6px; }
   #anime-show-add-msg:empty { display: none; }
   #anime-show-add-msg.err { color: var(--accent); }
-  /* Small chips inside a list row (Shows): restate the chip look over the generic `.feed-row button` reset */
-  .feed-row .chip--sm {
-    background: transparent; border: 1px solid var(--border2); border-radius: 7px;
-    font-family: var(--mono); font-size: 10px; line-height: 1.3; letter-spacing: 0.04em;
-    color: var(--text-dimmer); padding: 3px 9px;
-  }
-  .feed-row .chip--sm:hover { color: var(--text); }
-  .feed-row .chip--sm.on {
-    color: var(--teal);
-    background: color-mix(in srgb, var(--teal) 14%, transparent);
-    border-color: color-mix(in srgb, var(--teal) 55%, var(--border2));
-  }
   .track-time-row { display: flex; gap: 6px; }
-  .track-time-row .feed-filter-input { flex: 1; min-width: 0; width: auto; }
   .track-time-row input[type="time"] { flex: 0 0 92px; }
   .tracker-state {
     font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
@@ -933,22 +919,6 @@
   .settings-tab.active { color: var(--teal); background: color-mix(in srgb, var(--teal) 12%, transparent); }
   .settings-tab svg { flex-shrink: 0; }
   .settings-nav-sep { height: 1px; background: var(--border); margin: 6px 6px; flex-shrink: 0; }
-  /* Anime settings sub-tabs: full-width segmented control, one panel at a time */
-  .seg--sub { display: flex; width: 100%; margin-bottom: 14px; }
-  .seg--sub button { flex: 1; padding: 7px 2px; white-space: nowrap; font-size: 10.5px; letter-spacing: 0.02em; }
-  .anime-sub { display: none; }
-  .anime-sub.active { display: block; animation: fade 0.15s ease; }
-  .anime-season-list { display: flex; flex-direction: column; gap: 4px; }
-  .anime-archive { margin-top: 12px; }
-  .anime-archive summary {
-    cursor: pointer; list-style: none; user-select: none;
-    font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--text-dim); padding: 4px 0 6px;
-  }
-  .anime-archive summary::-webkit-details-marker { display: none; }
-  .anime-archive summary::before { content: '▸ '; }
-  .anime-archive[open] summary::before { content: '▾ '; }
-  .anime-archive .anime-season-list { max-height: 260px; overflow-y: auto; }
   .settings-panes { flex: 1; min-width: 0; overflow-y: auto; padding: 16px 20px 20px; }
   .settings-pane { display: none; }
   .settings-pane.active { display: block; animation: fade 0.15s ease; }
@@ -968,6 +938,109 @@
     transition: border-color 0.15s, box-shadow 0.15s;
   }
   .anime-search:focus { border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 14%, transparent); }
+
+  /* ── Anime Manager: every Anime Feed setting in one big window ── */
+  .modal-am {
+    width: min(1200px, 95vw); max-width: none; height: min(860px, 92vh); max-height: none;
+    padding: 0; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .modal-am .modal-head {
+    gap: 12px 16px; flex-wrap: wrap; flex-shrink: 0;
+    padding: 15px 20px 13px; margin-bottom: 0; border-bottom: 1px solid var(--border);
+  }
+  .am-tabs { margin-left: auto; }
+  .am-tabs button { padding: 6px 14px; }
+  .modal-am .modal-actions { padding: 12px 20px; margin-top: 0; border-top: 1px solid var(--border); flex-shrink: 0; }
+  .am-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 20px 0; }
+  .anime-sub { display: none; }
+  .anime-sub.active { display: flex; flex-direction: column; flex: 1; min-height: 0; animation: fade 0.15s ease; }
+  .am-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 10px; flex-shrink: 0; }
+  .am-toolbar .anime-search { flex: 1 1 260px; width: auto; margin-bottom: 0; }
+  .am-toolbar .am-add { flex: 1 1 320px; }
+  .am-toolbar .btn { flex-shrink: 0; }
+  .am-toolbar + .settings-note { margin: -4px 0 10px; flex-shrink: 0; }
+  .chip-count { opacity: 0.65; margin-left: 4px; }
+  /* The table: a scrolling list of one-line rows with a sticky column header */
+  .am-table { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 0 6px 16px; }
+  .am-row {
+    display: grid; align-items: center; gap: 12px;
+    grid-template-columns: minmax(0, 1.4fr) 54px 70px 132px minmax(0, 1fr) 24px;
+    padding: 5px 10px; min-height: 38px;
+    border: 1px solid var(--border); border-radius: 7px; background: var(--bg3);
+  }
+  .am-row + .am-row { margin-top: 4px; }
+  .am-row:hover { border-color: var(--border2); }
+  .am-table--bl .am-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .am-row.am-hd {
+    position: sticky; top: 0; z-index: 1; min-height: 0; padding: 7px 10px; margin-bottom: 4px;
+    background: var(--bg2); border-color: transparent; border-bottom-color: var(--border); border-radius: 0;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dimmer);
+  }
+  .am-row.am-hd + .am-row { margin-top: 0; }
+  .am-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .am-title a { color: var(--text); text-decoration: none; }
+  .am-title a:hover { color: var(--teal); text-decoration: underline; }
+  .am-row .toggle { border: none; padding: 0; cursor: pointer; display: block; }
+  .am-time {
+    width: 100%; text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 5px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim); padding: 4px 7px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .am-time:hover { border-color: var(--teal); color: var(--text); }
+  .am-time.custom { color: var(--teal); border-color: color-mix(in srgb, var(--teal) 45%, var(--border2)); }
+  .am-time small { font-size: 9px; color: var(--text-dimmer); margin-left: 4px; letter-spacing: 0.04em; }
+  .am-dim { font-family: var(--mono); font-size: 11px; color: var(--text-dimmer); }
+  .am-x {
+    background: none; border: none; cursor: pointer; padding: 0;
+    color: var(--text-dimmer); font-size: 14px; line-height: 1; transition: color 0.12s;
+  }
+  .am-x:hover { color: var(--accent); }
+  .am-row .btn { padding: 5px 12px; font-size: 10.5px; }
+  .am-section {
+    display: flex; gap: 8px; align-items: baseline; margin: 2px 0 6px;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .am-section span { color: var(--text-dimmer); }
+  .am-empty { font-family: var(--mono); font-size: 11px; color: var(--text-dimmer); padding: 14px 4px; line-height: 1.6; }
+  .anime-archive { margin-top: 16px; }
+  .anime-archive summary {
+    cursor: pointer; list-style: none; user-select: none; margin-bottom: 6px;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-dim); padding: 4px 0;
+  }
+  .anime-archive summary::-webkit-details-marker { display: none; }
+  .anime-archive summary::before { content: '▸ '; }
+  .anime-archive[open] summary::before { content: '▾ '; }
+  /* Feed settings: two columns of ordinary fields */
+  .am-feed { overflow-y: auto; padding-bottom: 20px; }
+  .am-feed-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px 40px; align-content: start; }
+  .am-feed .field { margin-bottom: 18px; }
+  .am-feed .settings-note { margin: 0 0 14px; }
+  #anime-widget-off:empty { display: none; }
+  /* Narrow screens: each row wraps to two lines (title + ✕, then the controls) */
+  @media (max-width: 760px) {
+    .am-tabs { margin-left: 0; order: 3; width: 100%; display: flex; }
+    .am-tabs button { flex: 1; padding: 6px 4px; white-space: nowrap; }
+    .am-body { padding: 12px 12px 0; }
+    .am-row.am-hd { display: none; }
+    .am-table:not(.am-table--bl) .am-row {
+      grid-template-columns: auto auto 112px minmax(0, 1fr);
+      grid-template-areas: "title title title x" "track hl time link";
+      gap: 6px 10px; padding: 7px 10px;
+    }
+    .am-table:not(.am-table--bl) .am-row > :nth-child(1) { grid-area: title; }
+    .am-table:not(.am-table--bl) .am-row > :nth-child(2) { grid-area: track; }
+    .am-table:not(.am-table--bl) .am-row > :nth-child(3) { grid-area: hl; }
+    .am-table:not(.am-table--bl) .am-row > :nth-child(4) { grid-area: time; }
+    .am-table:not(.am-table--bl) .am-row > :nth-child(5) { grid-area: link; }
+    .am-table:not(.am-table--bl) .am-row > :nth-child(6) { grid-area: x; justify-self: end; }
+    .am-cell[data-label] { display: flex; align-items: center; gap: 5px; }
+    .am-cell[data-label]::before {
+      content: attr(data-label); font-family: var(--mono); font-size: 8.5px;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dimmer);
+    }
+  }
   /* Corner position picker (2 cols × 3 rows = the six screen slots) */
   .pos-row { display: flex; align-items: center; gap: 12px; }
   .pos-grid {
@@ -1164,10 +1237,10 @@
         <button type="button" class="settings-tab" data-pane="tiles"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M17 14.5v6M14 17.5h6"/></svg><span data-i18n="tiles">Tiles</span></button>
         <button type="button" class="settings-tab" data-pane="backup"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5.5h16v4H4z"/><path d="M6 9.5v9h12v-9"/><path d="M10 13h4"/></svg><span data-i18n="backup">Backup</span></button>
         <!-- One page per enabled widget (shown/hidden by syncWidgetNav) -->
-        <div class="settings-nav-sep" id="settings-nav-sep"></div>
+        <div class="settings-nav-sep"></div>
         <button type="button" class="settings-tab" data-pane="w-clock" data-widget="clock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span data-i18n="clock">Clock</span></button>
         <button type="button" class="settings-tab" data-pane="w-rss" data-widget="rss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4.5a14.5 14.5 0 0 1 14.5 14.5M5 10.5a8.5 8.5 0 0 1 8.5 8.5"/><circle cx="6" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg><span data-i18n="feed">Feed</span></button>
-        <button type="button" class="settings-tab" data-pane="w-anime" data-widget="anime"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6.5" width="17" height="12" rx="2"/><path d="M9 3.5l3 3 3-3"/><path d="M10.5 10v5l4-2.5z" fill="currentColor" stroke="none"/></svg><span data-i18n="animeFeed">Anime Feed</span></button>
+        <button type="button" class="settings-tab" data-open="anime-manager"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6.5" width="17" height="12" rx="2"/><path d="M9 3.5l3 3 3-3"/><path d="M10.5 10v5l4-2.5z" fill="currentColor" stroke="none"/></svg><span data-i18n="animeManager">Anime Manager</span></button>
         <button type="button" class="settings-tab" data-pane="w-note" data-widget="note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8.5L18 7v13.5H6z"/><path d="M9 11h6M9 15h6"/></svg><span data-i18n="note">Note</span></button>
         <button type="button" class="settings-tab" data-pane="w-weather" data-widget="weather"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 18.5h10a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.7 1.1A3 3 0 0 0 7 18.5z"/></svg><span data-i18n="weather">Weather</span></button>
         <button type="button" class="settings-tab" data-pane="w-countdown" data-widget="countdown"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h10M7 20.5h10"/><path d="M8 3.5c0 5 8 5 8 8.5s-8 3.5-8 8.5M16 3.5c0 5-8 5-8 8.5s8 3.5 8 8.5"/></svg><span data-i18n="countdown">Countdown</span></button>
@@ -1365,67 +1438,6 @@
     </div>
         </section>
 
-        <section class="settings-pane" data-pane="w-anime">
-    <div class="wc-head">
-      <div class="wc-head-main"><div class="settings-section-title" data-i18n="animeFeed">Anime Feed</div></div>
-      <div class="wc-head-pos">
-        <div class="settings-section-title" data-i18n="position">Position</div>
-        <div class="pos-grid" data-widget="anime"></div>
-      </div>
-    </div>
-    <div class="seg seg--sub" id="anime-subnav">
-      <button type="button" data-sub="general" data-i18n="general">General</button>
-      <button type="button" data-sub="filters" data-i18n="animeFilters">Filters</button>
-      <button type="button" data-sub="shows" data-i18n="animeShowsTab">Shows</button>
-      <button type="button" data-sub="blacklist" data-i18n="blacklist">Blacklist</button>
-    </div>
-    <div class="anime-sub" data-sub="general">
-      <div class="field" style="margin-bottom:8px">
-        <label data-i18n="bgSource">Source</label>
-        <div class="seg" id="set-anime-source">
-          <button type="button" data-src="all" data-i18n="animeAll">All airing</button>
-          <button type="button" data-src="user" data-i18n="animeUser">AniList user</button>
-        </div>
-      </div>
-      <div class="feed-add-row" id="anime-user-row">
-        <input id="set-anime-user" type="text" placeholder="AniList username" data-i18n-ph="animeUserPh" autocomplete="off" spellcheck="false">
-        <button class="btn btn-ghost" data-i18n="set" onclick="setAnimeUser()">Set</button>
-      </div>
-    </div>
-    <div class="anime-sub" data-sub="filters">
-      <div class="field" style="margin-bottom:12px">
-        <label data-i18n="animeFormats">Formats</label>
-        <div class="chip-row" id="set-anime-formats"></div>
-      </div>
-      <div class="field" style="margin-bottom:12px">
-        <label data-i18n="animeCountries">Countries</label>
-        <div class="chip-row" id="set-anime-countries"></div>
-      </div>
-      <div class="field" style="margin-bottom:0">
-        <label data-i18n="animeHlPhrases">Highlight phrases</label>
-        <input id="set-anime-highlight" type="text" placeholder="Exact matches to highlight (comma-separated)" data-i18n-ph="highlightPlaceholder" autocomplete="off">
-      </div>
-    </div>
-    <div class="anime-sub" data-sub="shows">
-      <div class="settings-note" style="margin:0 0 10px" data-i18n="animeShowsHint">Add a show by right-clicking it in the feed, or by pasting its AniList link or ID below. Each show can be tracked (shows in the Weekly Tracker on the days it airs, optionally at your own day and time), highlighted, and given its own link.</div>
-      <div class="feed-add-row">
-        <input id="anime-show-add" type="text" placeholder="AniList link or ID" data-i18n-ph="animeShowAddPh" autocomplete="off" spellcheck="false">
-        <button class="btn btn-ghost" id="anime-show-add-btn" data-i18n="add" onclick="addShowFromInput()">Add</button>
-      </div>
-      <div class="io-row" style="margin-top:6px">
-        <button class="btn btn-ghost" type="button" id="anime-track-list-btn" data-i18n="animeTrackList" onclick="trackMyAniList()">Track my airing AniList shows</button>
-      </div>
-      <div class="settings-note" id="anime-show-add-msg"></div>
-      <input class="anime-search" type="text" style="margin-top:10px" data-list="shows" placeholder="Search shows…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
-      <div id="anime-show-list"></div>
-    </div>
-    <div class="anime-sub" data-sub="blacklist">
-      <div class="settings-note" style="margin:0 0 10px" data-i18n="animeBlHint">Right-click an entry in the feed to hide its season.</div>
-      <input class="anime-search" type="text" data-list="blacklist" placeholder="Search shows…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
-      <div id="anime-bl-list"></div>
-    </div>
-        </section>
-
         <section class="settings-pane" data-pane="w-note">
     <div class="wc-head">
       <div class="wc-head-main"><div class="settings-section-title" data-i18n="note">Note</div></div>
@@ -1498,10 +1510,7 @@
       <span data-i18n="showTrackedAnime">Show tracked anime</span>
       <div class="toggle" id="set-tracker-anime"></div>
     </div>
-    <div class="settings-note" style="margin-top:0" data-i18n="trackedAnimeHint">Seasons you track in the Anime Feed (right-click → Track) appear here on the days they air.</div>
-    <div class="io-row" style="margin-top:10px">
-      <button class="btn btn-ghost" type="button" data-i18n="animeManageShows" onclick="setSettingsTab('w-anime'); setAnimeSub('shows')">Manage tracked shows</button>
-    </div>
+    <div class="settings-note" style="margin-top:0" data-i18n="trackedAnimeHint">Seasons you track (right-click → Track in the Anime Feed, or in the Anime Manager) appear here on the days they air.</div>
         </section>
 
         <section class="settings-pane" data-pane="tiles">
@@ -1554,6 +1563,85 @@
 
     <div class="modal-actions">
       <button class="btn btn-primary" data-i18n="done" onclick="closeSettings()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Anime Manager: every Anime Feed setting in one big window (opened from Settings, closes back to it).
+     It sits before the time/link dialogs so those open on top of it. -->
+<div class="modal-overlay" id="anime-manager">
+  <div class="modal modal-am">
+    <div class="modal-head">
+      <span class="modal-title" data-i18n="animeManager">Anime Manager</span>
+      <div class="seg am-tabs" id="anime-subnav">
+        <button type="button" data-sub="shows" data-i18n="animeShowsTab">Shows</button>
+        <button type="button" data-sub="blacklist" data-i18n="blacklist">Blacklist</button>
+        <button type="button" data-sub="feed" data-i18n="animeFeedSettings">Feed settings</button>
+      </div>
+      <button class="modal-close" onclick="closeAnimeManager()">✕</button>
+    </div>
+    <div class="am-body">
+      <section class="anime-sub" data-sub="shows">
+        <div class="am-toolbar">
+          <input class="anime-search" type="text" data-list="shows" placeholder="Search shows…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
+          <div class="chip-row" id="anime-show-filter"></div>
+        </div>
+        <div class="am-toolbar">
+          <div class="feed-add-row am-add">
+            <input id="anime-show-add" type="text" placeholder="AniList link or ID" data-i18n-ph="animeShowAddPh" autocomplete="off" spellcheck="false">
+            <button class="btn btn-ghost" id="anime-show-add-btn" data-i18n="animeAddShow" onclick="addShowFromInput()">Add show</button>
+          </div>
+          <button class="btn btn-ghost" type="button" id="anime-track-list-btn" data-i18n="animeTrackList" onclick="trackMyAniList()">Track my airing AniList shows</button>
+        </div>
+        <div class="settings-note" id="anime-show-add-msg"></div>
+        <div class="am-table" id="anime-show-list"></div>
+      </section>
+      <section class="anime-sub" data-sub="blacklist">
+        <div class="am-toolbar">
+          <input class="anime-search" type="text" data-list="blacklist" placeholder="Search shows…" data-i18n-ph="animeSearchPh" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="settings-note" data-i18n="animeBlHint">Right-click an entry in the feed to hide its season.</div>
+        <div class="am-table am-table--bl" id="anime-bl-list"></div>
+      </section>
+      <section class="anime-sub am-feed" data-sub="feed">
+        <div class="settings-note" id="anime-widget-off"></div>
+        <div class="am-feed-grid">
+          <div>
+            <div class="field">
+              <label data-i18n="position">Position</label>
+              <div class="pos-row"><div class="pos-grid" data-widget="anime"></div><span class="pos-name" id="anime-pos-name"></span></div>
+            </div>
+            <div class="field" style="margin-bottom:8px">
+              <label data-i18n="bgSource">Source</label>
+              <div class="seg" id="set-anime-source">
+                <button type="button" data-src="all" data-i18n="animeAll">All airing</button>
+                <button type="button" data-src="user" data-i18n="animeUser">AniList user</button>
+              </div>
+            </div>
+            <div class="feed-add-row" id="anime-user-row" style="margin-bottom:18px">
+              <input id="set-anime-user" type="text" placeholder="AniList username" data-i18n-ph="animeUserPh" autocomplete="off" spellcheck="false">
+              <button class="btn btn-ghost" data-i18n="set" onclick="setAnimeUser()">Set</button>
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label data-i18n="animeFormats">Formats</label>
+              <div class="chip-row" id="set-anime-formats"></div>
+            </div>
+            <div class="field">
+              <label data-i18n="animeCountries">Countries</label>
+              <div class="chip-row" id="set-anime-countries"></div>
+            </div>
+            <div class="field">
+              <label data-i18n="animeHlPhrases">Highlight phrases</label>
+              <input id="set-anime-highlight" type="text" placeholder="Exact matches to highlight (comma-separated)" data-i18n-ph="highlightPlaceholder" autocomplete="off">
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" data-i18n="done" onclick="closeAnimeManager()">Done</button>
     </div>
   </div>
 </div>
@@ -1768,10 +1856,15 @@ const I18N = {
     animeFormats: 'Formats', animeCountries: 'Countries',
     animeFmt: { TV: 'TV', TV_SHORT: 'TV Short', MOVIE: 'Movie', SPECIAL: 'Special', OVA: 'OVA', ONA: 'ONA', MUSIC: 'Music' },
     animeCountry: { JP: 'Japan', CN: 'China', KR: 'Korea' },
-    animeFilters: 'Filters', animeHlPhrases: 'Highlight phrases', animeShowsTab: 'Shows',
-    animeShowsHint: 'Add a show by right-clicking it in the feed, or by pasting its AniList link or ID below. Each show can be tracked (shows in the Weekly Tracker on the days it airs, optionally at your own day and time), highlighted, and given its own link.',
+    animeHlPhrases: 'Highlight phrases', animeShowsTab: 'Shows',
+    animeManager: 'Anime Manager', animeFeedSettings: 'Feed settings', animeAddShow: 'Add show',
+    amColShow: 'Show', amColTrack: 'Track', amColHl: 'Highlight', amColTime: 'Air time', amColLink: 'Link',
+    amFilterAll: 'All', amFilterLink: 'Custom link', amFilterTime: 'Custom time',
+    animeShowsEmpty: 'No shows yet. Right-click a show in the feed, or paste its AniList link above.',
+    animeRemoveConfirm: 'Remove "{t}" from your shows? Its tracking, highlight, link and time are cleared.',
+    animeWidgetOff: 'The Anime Feed widget is off. Turn it on under Settings → Widgets.',
     animeChipTracked: 'Tracked', animeChipHl: 'Highlighted', animeRemoveShow: 'Remove show',
-    animeLinkPh: 'Custom link (empty = Reddit search)', animeManageShows: 'Manage tracked shows',
+    animeLinkPh: 'Default: Reddit search',
     animeBlHint: 'Right-click an entry in the feed to hide its season.',
     animeSearchPh: 'Search shows…', animeAiring: 'Airing', animeFinished: 'Finished',
     animeNoneYet: 'None yet', animeNoMatch: 'No matches',
@@ -1788,15 +1881,15 @@ const I18N = {
     trackerUpcomingBtn: 'Show anime still airing today', trackerTrackShow: 'Track this show',
     trackerBreak: 'No episode this week', trackerBreakNext: 'next: Ep {ep}, {date}',
     animeTrackList: 'Track my airing AniList shows',
-    animeTrackListNeedUser: 'Set your AniList username under General (AniList user) first.',
+    animeTrackListNeedUser: 'Set your AniList username under Feed settings first.',
     animeTrackListConfirm: 'Track {n} airing show(s) from {u}\'s AniList? Shows on your Dropped list are skipped.\n\n{list}',
     animeTrackListNone: 'Nothing new to track: every airing show on your list (except Dropped) is already tracked.',
     animeTrackListDone: 'Now tracking {n} more show(s).',
-    trackedAnimeHint: 'Seasons you track in the Anime Feed (right-click → Track) appear here on the days they air.',
+    trackedAnimeHint: 'Seasons you track (right-click → Track in the Anime Feed, or in the Anime Manager) appear here on the days they air.',
     widgetsHint: 'Each widget you turn on gets its own settings page in the sidebar.',
     animeRestore: 'Restore', animeOpenAniList: 'Open on AniList', animeAgo: '{t} ago',
     animeLinkHint: 'Leave empty to use the default Reddit search.',
-    animeSetUser: 'Set an AniList username in settings',
+    animeSetUser: 'Set an AniList username in the Anime Manager',
     animeUserError: 'AniList user not found, or the list is private',
     animeError: 'Could not load AniList', animeEmpty: 'No episodes match your filters',
     confirmImport: 'Import will replace all your current links and settings. Continue?',
@@ -1877,10 +1970,15 @@ const I18N = {
     animeFormats: 'Formater', animeCountries: 'Lande',
     animeFmt: { TV: 'TV', TV_SHORT: 'TV-kort', MOVIE: 'Film', SPECIAL: 'Special', OVA: 'OVA', ONA: 'ONA', MUSIC: 'Musik' },
     animeCountry: { JP: 'Japan', CN: 'Kina', KR: 'Korea' },
-    animeFilters: 'Filtre', animeHlPhrases: 'Fremhæv-sætninger', animeShowsTab: 'Serier',
-    animeShowsHint: 'Tilføj en serie ved at højreklikke på den i feedet, eller ved at indsætte dens AniList-link eller ID herunder. Hver serie kan følges (vises i ugeplanen på de dage den sendes, evt. på din egen dag og tid), fremhæves og få sit eget link.',
+    animeHlPhrases: 'Fremhæv-sætninger', animeShowsTab: 'Serier',
+    animeManager: 'Anime-manager', animeFeedSettings: 'Feed-indstillinger', animeAddShow: 'Tilføj serie',
+    amColShow: 'Serie', amColTrack: 'Følg', amColHl: 'Fremhæv', amColTime: 'Sendetid', amColLink: 'Link',
+    amFilterAll: 'Alle', amFilterLink: 'Eget link', amFilterTime: 'Egen tid',
+    animeShowsEmpty: 'Ingen serier endnu. Højreklik på en serie i feedet, eller indsæt dens AniList-link ovenfor.',
+    animeRemoveConfirm: 'Fjern "{t}" fra dine serier? Følg, fremhævning, link og tidspunkt nulstilles.',
+    animeWidgetOff: 'Anime-feed-widgetten er slået fra. Slå den til under Indstillinger → Widgets.',
     animeChipTracked: 'Fulgt', animeChipHl: 'Fremhævet', animeRemoveShow: 'Fjern serie',
-    animeLinkPh: 'Eget link (tomt = Reddit-søgning)', animeManageShows: 'Administrer fulgte serier',
+    animeLinkPh: 'Standard: Reddit-søgning',
     animeBlHint: 'Højreklik på en post i feedet for at skjule dens sæson.',
     animeSearchPh: 'Søg serier…', animeAiring: 'Sendes', animeFinished: 'Afsluttet',
     animeNoneYet: 'Ingen endnu', animeNoMatch: 'Ingen match',
@@ -1897,15 +1995,15 @@ const I18N = {
     trackerUpcomingBtn: 'Vis anime der sendes senere i dag', trackerTrackShow: 'Følg denne serie',
     trackerBreak: 'Intet afsnit denne uge', trackerBreakNext: 'næste: afsnit {ep}, {date}',
     animeTrackList: 'Følg mine AniList-serier der sendes',
-    animeTrackListNeedUser: 'Angiv først dit AniList-brugernavn under Generelt (AniList-bruger).',
+    animeTrackListNeedUser: 'Angiv først dit AniList-brugernavn under Feed-indstillinger.',
     animeTrackListConfirm: 'Følg {n} serie(r) der sendes fra {u}s AniList? Serier på din Dropped-liste springes over.\n\n{list}',
     animeTrackListNone: 'Intet nyt at følge: alle serier der sendes på din liste (undtagen Dropped) følges allerede.',
     animeTrackListDone: 'Følger nu {n} serie(r) mere.',
-    trackedAnimeHint: 'Sæsoner du følger i anime-feedet (højreklik → Følg) vises her på de dage de sendes.',
+    trackedAnimeHint: 'Sæsoner du følger (højreklik → Følg i anime-feedet, eller i Anime-manageren) vises her på de dage de sendes.',
     widgetsHint: 'Hver widget du slår til får sin egen indstillingsside i sidepanelet.',
     animeRestore: 'Gendan', animeOpenAniList: 'Åbn på AniList', animeAgo: '{t} siden',
     animeLinkHint: 'Lad feltet stå tomt for at bruge standard-Reddit-søgningen.',
-    animeSetUser: 'Angiv et AniList-brugernavn i indstillinger',
+    animeSetUser: 'Angiv et AniList-brugernavn i Anime-manageren',
     animeUserError: 'AniList-bruger ikke fundet, eller listen er privat',
     animeError: 'Kunne ikke indlæse AniList', animeEmpty: 'Ingen afsnit matcher dine filtre',
     confirmImport: 'Import erstatter alle dine nuværende links og indstillinger. Fortsæt?',
@@ -2014,7 +2112,6 @@ const $ = {
   setWeatherLoc: document.getElementById('set-weather-loc'),
   // Countdown widget
   countdownPanel: document.getElementById('countdown-panel'),
-  countdownTitle: document.getElementById('countdown-title'),
   countdownBody:  document.getElementById('countdown-body'),
   setCountdown:    document.getElementById('set-countdown'),
   setCountdownLabel: document.getElementById('set-countdown-label'),
@@ -2059,7 +2156,9 @@ const $ = {
   setTrackerAnime: document.getElementById('set-tracker-anime'),
   animeSubnav:   document.getElementById('anime-subnav'),
   animeCtxHl:    document.getElementById('anime-ctx-hl'),
-  settingsNavSep:document.getElementById('settings-nav-sep'),
+  animeManager:  document.getElementById('anime-manager'),
+  animeShowFilter: document.getElementById('anime-show-filter'),
+  animeWidgetOff:  document.getElementById('anime-widget-off'),
   // Tile groups
   linkGroup: document.getElementById('link-group'),
   groupList: document.getElementById('group-list'),
@@ -2823,9 +2922,6 @@ function openSettings() {
   $.setTracker.classList.toggle('on', settings.tracker.enabled);
   $.setAnime.classList.toggle('on', settings.anime.enabled);
   $.setTrackerAnime.classList.toggle('on', settings.tracker.anime);
-  $.setAnimeUser.value = settings.anime.user;
-  $.setAnimeHighlight.value = settings.anime.highlight;
-  renderAnimeSettings();
   syncWidgetPositions();
   syncWidgetNav();
   $.setTileOp.value   = Math.round(clampOpacity(settings.tileOpacity)   * 100);
@@ -2856,21 +2952,20 @@ function setSettingsTab(pane) {
   document.querySelectorAll('#settings-modal .settings-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === pane));
 }
 document.getElementById('settings-nav').addEventListener('click', e => {
-  const b = e.target.closest('.settings-tab');
-  if (b) setSettingsTab(b.dataset.pane);
+  const b = e.target.closest('.settings-tab'); if (!b) return;
+  if (b.dataset.open === 'anime-manager') openAnimeManager();   // its own window, not a page
+  else setSettingsTab(b.dataset.pane);
 });
-// Show a sidebar page button for each enabled widget only. If the page that's open
-// belongs to a widget that was just turned off, fall back to the Widgets page.
+// Show a sidebar page button for each enabled widget only (the Anime Manager button
+// is always there). If the page that's open belongs to a widget that was just
+// turned off, fall back to the Widgets page.
 function syncWidgetNav() {
-  let any = false;
   document.querySelectorAll('#settings-nav .settings-tab[data-widget]').forEach(b => {
     const w = settings[b.dataset.widget];
     const on = !!(w && w.enabled);
     b.style.display = on ? '' : 'none';
-    if (on) any = true;
     if (!on && b.classList.contains('active')) setSettingsTab('widgets');
   });
-  $.settingsNavSep.style.display = any ? '' : 'none';
 }
 
 $.setLang.addEventListener('change', () => {
@@ -3029,13 +3124,13 @@ $.setAnimeHighlight.addEventListener('input', () => {
   clearTimeout(animeHighlightDebounce);
   animeHighlightDebounce = setTimeout(renderAnime, 150);
 });
-// Position grids (all widgets): click a corner cell to place that widget on screen
-document.getElementById('settings-modal').addEventListener('click', e => {
+// Position grids (all widgets, plus the Anime Manager's): click a corner cell to place that widget on screen
+[$.setModal, $.animeManager].forEach(m => m.addEventListener('click', e => {
   const cell = e.target.closest('.pos-cell');
   if (!cell) return;
   onWidgetPosChange(cell.closest('.pos-grid').dataset.widget, cell.dataset.pos);
   applyAllWidgets();
-});
+}));
 
 $.groupInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addGroup(); } });
 // Background source selector — switching never wipes the other source's data.
@@ -3211,7 +3306,7 @@ function resolveWidgetPositions(touched) {
 }
 // Fill each widget's position grid with its six corner cells (built once at init)
 function buildPosGrids() {
-  document.querySelectorAll('#settings-modal .pos-grid').forEach(grid => {
+  document.querySelectorAll('.pos-grid').forEach(grid => {
     grid.innerHTML = POS_GRID_ORDER
       .map(p => `<button type="button" class="pos-cell" data-pos="${p}"></button>`).join('');
   });
@@ -3219,7 +3314,7 @@ function buildPosGrids() {
 // Reflect each widget's position (incl. any collision auto-move) in its grid + label
 function syncWidgetPositions() {
   for (const key of WIDGET_KEYS) {
-    const grid = document.querySelector(`#settings-modal .pos-grid[data-widget="${key}"]`);
+    const grid = document.querySelector(`.pos-grid[data-widget="${key}"]`);
     if (!grid) continue;
     const pos = settings[key].position;
     grid.querySelectorAll('.pos-cell').forEach(c => {
@@ -4574,6 +4669,7 @@ async function addShowFromInput() {
     if (!md || md.type !== 'ANIME') { msg(t.animeNotAnime, true); return; }
     const title = ((md.title && (md.title.english || md.title.romaji)) || '').trim() || ('#' + md.id);
     ensureShow(md.id, title);   // no-op if it was added meanwhile
+    animeFilterSel = 'all';      // it has nothing switched on yet, so make sure it's listed
     save(); renderAnimeSeasonList('shows');
     $.animeShowAdd.value = '';
     msg(t.animeShowAdded.replace('{t}', title));
@@ -4640,8 +4736,8 @@ function touchAnimeSeasons() {
   if (changed) save();
 }
 
-// ── Settings page: sub-tabs, source, chips, and the Shows / Blacklist lists ──
-// Each list shows seasons that aired within the last ANIME_ACTIVE_DAYS on top and
+// ── Anime Manager: its own big window with Shows / Blacklist / Feed settings ──
+// Each table shows seasons that aired within the last ANIME_ACTIVE_DAYS on top and
 // the rest in a collapsed "Finished" section, with a search box over both — so
 // years of entries never become one long scroll.
 const ANIME_ACTIVE_DAYS = 30;
@@ -4654,92 +4750,150 @@ function isShowActive(s) {
   const md = trackSched && trackSched.media && trackSched.media[s.id];
   return !!(md && md.na && md.na - nowS <= 7 * 86400);
 }
-let animeSub = 'general';
+let animeSub = 'shows';
 const animeSearch = { shows: '', blacklist: '' };
 const animeArchiveOpen = { shows: false, blacklist: false };
+// Shows-table filter chips: which shows each one keeps
+let animeFilterSel = 'all';
+const ANIME_SHOW_FILTERS = {
+  all:   () => true,
+  track: s => s.track,
+  hl:    s => s.hl,
+  link:  s => !!s.url,
+  time:  s => s.track && s.day !== null,   // a kept slot on an untracked show isn't in use
+};
+// Opened from the Settings sidebar; always starts on Shows
+function openAnimeManager() {
+  closeSettings();
+  $.setAnimeUser.value = settings.anime.user;
+  $.setAnimeHighlight.value = settings.anime.highlight;
+  $.animeShowAddMsg.textContent = '';
+  animeSub = 'shows';
+  renderAnimeSettings();
+  syncWidgetPositions();
+  $.animeManager.classList.add('open');
+}
+function isAnimeManagerOpen() { return $.animeManager.classList.contains('open'); }
+// Closing goes back to Settings. A field still being edited is committed first
+// (blurring it fires its change event).
+function closeAnimeManager() {
+  if (!isAnimeManagerOpen()) return;
+  const f = document.activeElement;
+  if (f && $.animeManager.contains(f)) f.blur();
+  $.animeManager.classList.remove('open');
+  openSettings();
+}
 function setAnimeSub(sub) {
   animeSub = sub;
   segSetActive($.animeSubnav, 'sub', sub);
-  document.querySelectorAll('#settings-modal .anime-sub').forEach(p => p.classList.toggle('active', p.dataset.sub === sub));
+  $.animeManager.querySelectorAll('.anime-sub').forEach(p => p.classList.toggle('active', p.dataset.sub === sub));
 }
 $.animeSubnav.addEventListener('click', e => {
   const b = e.target.closest('button[data-sub]');
   if (b) setAnimeSub(b.dataset.sub);
 });
-document.querySelectorAll('#settings-modal .anime-search').forEach(inp => {
+$.animeManager.querySelectorAll('.anime-search').forEach(inp => {
   inp.addEventListener('input', () => { animeSearch[inp.dataset.list] = inp.value; renderAnimeSeasonList(inp.dataset.list); });
 });
+$.animeShowFilter.addEventListener('click', e => {
+  const b = e.target.closest('.chip[data-f]'); if (!b) return;
+  animeFilterSel = b.dataset.f;
+  renderAnimeSeasonList('shows');
+});
+// A link being typed into a table row shouldn't be wiped by a background re-render
+const animeTyping = el => { const f = document.activeElement; return !!(f && f.tagName === 'INPUT' && el.contains(f)); };
 function renderAnimeSettings() {
   const a = settings.anime, t = L();
   setAnimeSub(animeSub);
   segSetActive($.setAnimeSource, 'src', a.source);
   $.animeUserRow.style.display = a.source === 'user' ? '' : 'none';
+  $.animeWidgetOff.textContent = a.enabled ? '' : t.animeWidgetOff;
   $.setAnimeFormats.innerHTML = ANIME_FORMATS.map(f =>
     `<button type="button" class="chip${a.formats.includes(f) ? ' on' : ''}" data-fmt="${f}">${esc(t.animeFmt[f])}</button>`).join('');
   $.setAnimeCountries.innerHTML = ANIME_COUNTRIES.map(c =>
     `<button type="button" class="chip${a.countries.includes(c) ? ' on' : ''}" data-cc="${c}">${esc(t.animeCountry[c])}</button>`).join('');
-  ['shows', 'blacklist'].forEach(renderAnimeSeasonList);
+  ['shows', 'blacklist'].forEach(k => { if (!animeTyping(ANIME_LISTS[k].el())) renderAnimeSeasonList(k); });
+}
+// Refresh the Shows table if the manager is open (e.g. a schedule arrived, so air times are known)
+function refreshAnimeManagerShows() {
+  if (isAnimeManagerOpen() && !animeTyping($.animeShowList)) renderAnimeSeasonList('shows');
 }
 const ANIME_LISTS = {
   shows:     { key: 'shows',     el: () => $.animeShowList },
   blacklist: { key: 'blacklist', el: () => $.animeBlList },
 };
-// Tracked show: weekday select (or "AniList time") + time, Monday-first
-function trackTimeControls(e) {
+function renderAnimeShowFilter() {
+  const t = L(), shows = settings.anime.shows;
+  const names = { all: t.amFilterAll, track: t.animeChipTracked, hl: t.animeChipHl, link: t.amFilterLink, time: t.amFilterTime };
+  $.animeShowFilter.innerHTML = Object.keys(ANIME_SHOW_FILTERS).map(f =>
+    `<button type="button" class="chip${animeFilterSel === f ? ' on' : ''}" data-f="${f}">${esc(names[f])}<span class="chip-count">${shows.filter(ANIME_SHOW_FILTERS[f]).length}</span></button>`).join('');
+}
+// Air-time button (tracked shows only): a custom slot in the accent colour, else
+// AniList's slot tagged "AniList". Opens the day + time dialog.
+function animeTimeCell(e) {
   const t = L();
-  const opts = [`<option value="">${esc(t.animeDayAuto)}</option>`]
-    .concat([1, 2, 3, 4, 5, 6, 0].map(d => `<option value="${d}"${e.day === d ? ' selected' : ''}>${esc(t.days[d])}</option>`));
-  return `<div class="track-time-row">` +
-    `<select class="feed-filter-input" onchange="setTrackDay(${e.id}, this.value)">${opts.join('')}</select>` +
-    `<input class="feed-filter-input" type="time" value="${esc(e.time)}"${e.day === null ? ' disabled' : ''} onchange="setTrackTime(${e.id}, this.value)">` +
-  `</div>`;
+  if (!e.track) return `<span class="am-dim">—</span>`;
+  const custom = e.day !== null && !!e.time;
+  const slot = custom ? { day: e.day, time: e.time } : aniListSlot(e.id);
+  const label = slot ? `${esc(t.days[slot.day].slice(0, 3))} ${esc(slot.time)}` : esc(t.animeDayAuto);
+  return `<button type="button" class="am-time${custom ? ' custom' : ''}" title="${esc(t.animeEditTime)}" onclick="openTrackTime(${e.id})">` +
+    label + (custom || !slot ? '' : '<small>AniList</small>') + `</button>`;
 }
 function renderAnimeSeasonList(kind) {
-  const a = settings.anime, t = L();
+  const a = settings.anime, t = L(), isShows = kind === 'shows';
+  if (isShows) renderAnimeShowFilter();
   const list = a[ANIME_LISTS[kind].key];
   const el   = ANIME_LISTS[kind].el();
   const q = animeSearch[kind].trim().toLowerCase();
-  const match = q ? list.filter(e => e.title.toLowerCase().includes(q)) : list;
-  const byTitle = (x, y) => x.title.localeCompare(y.title);
+  const keep = isShows ? ANIME_SHOW_FILTERS[animeFilterSel] : () => true;
+  const match = list.filter(e => keep(e) && (!q || e.title.toLowerCase().includes(q)));
+  const byTitle = (x, y) => x.title.localeCompare(y.title, undefined, { sensitivity: 'base' });
   const active   = match.filter(e =>  isShowActive(e)).sort(byTitle);
   const finished = match.filter(e => !isShowActive(e)).sort(byTitle);
-  // A show: Tracked / Highlighted chips, day + time (when tracked), and its custom link
-  const row = e => kind === 'shows'
-    ? `<div class="feed-row feed-row--stacked">` +
-        `<div class="feed-row-top"><span title="${esc(e.title)}">${esc(e.title || '#' + e.id)}</span>` +
-        `<button type="button" title="${esc(t.animeRemoveShow)}" onclick="removeAnimeSeason('shows', ${e.id})">✕</button></div>` +
-        `<div class="chip-row">` +
-          `<button type="button" class="chip chip--sm${e.track ? ' on' : ''}" onclick="toggleShowFlag(${e.id}, 'track')">${esc(t.animeChipTracked)}</button>` +
-          `<button type="button" class="chip chip--sm${e.hl ? ' on' : ''}" onclick="toggleShowFlag(${e.id}, 'hl')">${esc(t.animeChipHl)}</button>` +
-        `</div>` +
-        (e.track ? trackTimeControls(e) : '') +
-        `<input class="feed-filter-input" type="text" value="${esc(e.url)}" placeholder="${esc(t.animeLinkPh)}" spellcheck="false" onchange="updateAnimeLinkUrl(${e.id}, this.value)">` +
+  const title = e => `<div class="am-title"><a href="https://anilist.co/anime/${e.id}" target="_blank" rel="noopener noreferrer" title="${esc(t.animeOpenAniList)}: ${esc(e.title)}">${esc(e.title || '#' + e.id)}</a></div>`;
+  const toggle = (e, flag, label) => `<div class="am-cell" data-label="${esc(label)}">` +
+    `<button type="button" class="toggle${e[flag] ? ' on' : ''}" title="${esc(label)}" aria-pressed="${!!e[flag]}" onclick="toggleShowFlag(${e.id}, '${flag}')"></button></div>`;
+  // Shows: title · Track · Highlight · Air time · Link · ✕ — Blacklist: title · Restore
+  const row = e => isShows
+    ? `<div class="am-row">` + title(e) +
+        toggle(e, 'track', t.amColTrack) + toggle(e, 'hl', t.amColHl) +
+        `<div class="am-cell">${animeTimeCell(e)}</div>` +
+        `<div class="am-cell"><input class="feed-filter-input" type="text" value="${esc(e.url)}" placeholder="${esc(t.animeLinkPh)}" spellcheck="false" onchange="updateAnimeLinkUrl(${e.id}, this.value)"></div>` +
+        `<button type="button" class="am-x" title="${esc(t.animeRemoveShow)}" onclick="removeAnimeSeason('shows', ${e.id})">✕</button>` +
       `</div>`
-    : `<div class="feed-row"><span class="anime-bl-title" title="${esc(e.title)}">${esc(e.title || '#' + e.id)}</span>` +
-        `<button type="button" title="${esc(t.animeRestore)}" onclick="removeAnimeSeason('blacklist', ${e.id})">✕</button></div>`;
-  const empty = msg => `<div class="feed-empty">${esc(msg)}</div>`;
-  let html = `<div class="feed-list-label"><span>${esc(t.animeAiring)}</span><span style="color:var(--text-dimmer)">${active.length}</span></div>` +
-    `<div class="anime-season-list">${active.length ? active.map(row).join('') : empty(list.length ? (q ? t.animeNoMatch : '—') : t.animeNoneYet)}</div>`;
+    : `<div class="am-row">` + title(e) +
+        `<button type="button" class="btn btn-ghost" onclick="removeAnimeSeason('blacklist', ${e.id})">${esc(t.animeRestore)}</button>` +
+      `</div>`;
+  const head = isShows && match.length
+    ? `<div class="am-row am-hd"><span>${esc(t.amColShow)}</span><span>${esc(t.amColTrack)}</span><span>${esc(t.amColHl)}</span>` +
+      `<span>${esc(t.amColTime)}</span><span>${esc(t.amColLink)}</span><span></span></div>`
+    : '';
+  const empty = msg => `<div class="am-empty">${esc(msg)}</div>`;
+  let html = head + `<div class="am-section">${esc(t.animeAiring)} <span>${active.length}</span></div>`;
+  html += active.length ? active.map(row).join('')
+    : empty(!list.length ? (isShows ? t.animeShowsEmpty : t.animeNoneYet) : (match.length ? '—' : t.animeNoMatch));
   if (finished.length) {
     // A search opens the archive so matches in it are visible
-    html += `<details class="anime-archive" data-kind="${kind}"${(animeArchiveOpen[kind] || q) ? ' open' : ''}>` +
-      `<summary>${esc(t.animeFinished)} (${finished.length})</summary>` +
-      `<div class="anime-season-list">${finished.map(row).join('')}</div></details>`;
+    html += `<details class="anime-archive"${(animeArchiveOpen[kind] || q) ? ' open' : ''}>` +
+      `<summary>${esc(t.animeFinished)} (${finished.length})</summary>${finished.map(row).join('')}</details>`;
   }
   el.innerHTML = html;
   const det = el.querySelector('details');
   if (det && !q) det.addEventListener('toggle', () => { animeArchiveOpen[kind] = det.open; });
 }
-// A show's custom link, edited in the Shows list (empty = back to the Reddit search)
+// A show's custom link, edited in the Shows table (empty = back to the Reddit search)
 function updateAnimeLinkUrl(id, value) {
   const s = animeShow(id); if (!s) return;
   s.url = value.trim();
   save(); renderAnime();
+  renderAnimeShowFilter();   // "Custom link" count (the table itself stays, so focus isn't lost)
   trackedChanged();
 }
-// Remove a show (all its settings) or restore a blacklisted season
+// Remove a show (all its settings, after asking) or restore a blacklisted season
 function removeAnimeSeason(kind, id) {
   const a = settings.anime, key = ANIME_LISTS[kind].key;
+  const e = a[key].find(x => x.id === id); if (!e) return;
+  if (kind === 'shows' && !confirm(L().animeRemoveConfirm.replace('{t}', e.title || '#' + id))) return;
   a[key] = a[key].filter(x => x.id !== id);
   save(); renderAnimeSeasonList(kind); renderAnime();
   if (kind === 'shows') trackedChanged();
@@ -4809,6 +4963,7 @@ async function fetchTracked(force) {
   finally {
     trackBusy = false;
     if (settings.tracker.enabled) renderTracker();
+    refreshAnimeManagerShows();   // air times / airing-vs-finished may have changed
     if (trackAgain) fetchTracked(true);
   }
 }
@@ -5067,12 +5222,22 @@ function upcomingAnimeToday(now) {
 }
 // ── Custom day/time for a tracked season (both needed; day null = AniList time) ──
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+// AniList's weekly slot for a tracked season: the local weekday + time of its next
+// upcoming episode, else of the latest aired one (null = schedule not known yet)
+function aniListSlot(id) {
+  if (!trackSched) return null;
+  const nowS = Math.floor(Date.now() / 1000), md = (trackSched.media || {})[id];
+  const eps = trackSched.items.filter(s => s.m === id).sort((a, b) => a.at - b.at);
+  const known = md && md.na ? eps.concat({ at: md.na, ep: md.ne }) : eps;
+  const ref = known.find(s => s.at > nowS) || eps[eps.length - 1];
+  if (!ref) return null;
+  const d = new Date(ref.at * 1000);
+  return { day: d.getDay(), time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` };
+}
 // AniList's local time of day for a season, used to prefill when a day is picked
 function trackAniListTime(id) {
-  const s = trackSched && trackSched.items.find(x => x.m === id);
-  if (!s) return '12:00';
-  const d = new Date(s.at * 1000);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const s = aniListSlot(id);
+  return s ? s.time : '12:00';
 }
 function setTrackSlot(id, day, time) {
   const tr = animeShow(id); if (!tr) return;
@@ -5080,19 +5245,15 @@ function setTrackSlot(id, day, time) {
   tr.time = day === null ? '' : (TIME_RE.test(time) ? time : (tr.time || trackAniListTime(id)));
   save(); renderAnimeSeasonList('shows'); trackedChanged();
 }
-function setTrackDay(id, value) {
-  const tr = animeShow(id); if (!tr) return;
-  setTrackSlot(id, value === '' ? null : Number(value), tr.time);
-}
-function setTrackTime(id, value) {
-  const tr = animeShow(id); if (!tr || tr.day === null) return;
-  setTrackSlot(id, tr.day, value);
-}
-// "Edit time…" dialog (right-click on a tracked season in either widget)
+// "Edit time…" dialog (right-click on a tracked season in either widget, or the
+// Air time button in the Anime Manager)
 let trackTimeId = null;
 function animeCtxTime() {
   const it = animeCtxItem; closeAnimeCtx();
-  const tr = it && animeShow(it.m); if (!tr) return;
+  if (it) openTrackTime(it.m);
+}
+function openTrackTime(id) {
+  const tr = animeShow(id); if (!tr) return;
   const t = L();
   trackTimeId = tr.id;
   $.trackTimeTitle.textContent = tr.title;
@@ -5162,11 +5323,21 @@ document.getElementById('btn-settings').addEventListener('click', openSettings);
 [$.linkModal, $.setModal, $.animeLinkModal, $.trackTimeModal].forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
 });
+// Anime Manager: a click outside closes it (back to Settings) — only when the press
+// also started outside, so drag-selecting text in a field never closes it
+let amPressOutside = false;
+$.animeManager.addEventListener('mousedown', e => { amPressOutside = e.target === $.animeManager; });
+$.animeManager.addEventListener('click', e => { if (e.target === $.animeManager && amPressOutside) closeAnimeManager(); });
 $.linkName.addEventListener('keydown', e => { if (e.key === 'Enter') saveLink(); });
 $.linkUrl .addEventListener('keydown', e => { if (e.key === 'Enter') saveLink(); });
 $.animeLinkUrl.addEventListener('keydown', e => { if (e.key === 'Enter') saveAnimeLink(); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeCtx(); closeAnimeCtx(); closeLinkModal(); closeAnimeLinkModal(); closeTrackTimeModal(); closeSettings(); }
+  if (e.key !== 'Escape') return;
+  // A dialog over the Anime Manager closes alone; otherwise Escape leaves the manager for Settings
+  const dialog = $.animeLinkModal.classList.contains('open') || $.trackTimeModal.classList.contains('open');
+  closeCtx(); closeAnimeCtx(); closeLinkModal(); closeAnimeLinkModal(); closeTrackTimeModal();
+  if (!dialog && isAnimeManagerOpen()) closeAnimeManager();
+  else closeSettings();
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
