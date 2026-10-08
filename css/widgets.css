@@ -1,0 +1,352 @@
+/* Startpage: Side widgets: feed, anime feed, note, weather, countdown, Weekly Tracker */
+
+/* ── Side widgets — shared positioning ── */
+.widget {
+  position: fixed; width: 290px; max-height: 70vh; z-index: 30;
+  background: color-mix(in srgb, var(--bg2) calc(var(--widget-bg-opacity) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--border) calc(var(--widget-bg-opacity) * 100%), transparent);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, calc(0.35 * var(--widget-bg-opacity)));
+  display: none; flex-direction: column;
+  overflow: hidden;   /* clip to the panel so a widget that can't scroll can't overlap a neighbor */
+}
+.widget.show { display: flex; }
+.widget.pos-tl { top: 16px;    left: 16px;  }
+.widget.pos-ml { top: 50%;     left: 16px;  transform: translateY(-50%); }
+.widget.pos-bl { bottom: 16px; left: 16px;  }
+.widget.pos-tr { top: 16px;    right: 16px; }
+.widget.pos-mr { top: 50%;     right: 16px; transform: translateY(-50%); }
+.widget.pos-br { bottom: 16px; right: 16px; }
+/* Hide widgets when there isn't room beside the centred column */
+@media (max-width: 1280px) { .widget.show { display: none; } }
+
+/* RSS panel specifics */
+.rss-panel { padding: 14px 14px 12px; }
+
+.rss-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--teal);
+  margin-bottom: 10px; flex-shrink: 0;
+}
+/* Last-updated stamp: small, in the header cyan, just left of the refresh button */
+.rss-updated {
+  margin-left: auto; margin-right: 7px;
+  font-size: 9px; font-weight: 400; letter-spacing: 0.02em;
+  text-transform: none; color: var(--teal);
+  white-space: nowrap; cursor: default;
+}
+.rss-updated:empty { display: none; }
+.rss-refresh {
+  background: none; border: none; cursor: pointer;
+  color: var(--teal); padding: 2px; line-height: 0;
+  transition: filter 0.15s, transform 0.6s;
+}
+.rss-refresh:hover { filter: brightness(1.25); }
+.rss-refresh.spin { transform: rotate(360deg); }
+.rss-list { overflow-y: auto; flex: 1; min-height: 0; margin: -4px; padding: 4px; }
+/* Shared item card: solid fill + 1px border + rounded (matches the tracker) */
+.rss-item {
+  display: block; padding: 8px 10px; border-radius: 7px;
+  background: var(--bg3); border: 1px solid var(--border);
+  text-decoration: none; color: var(--text-dim);
+  font-size: 12.5px; line-height: 1.4;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  word-break: break-word;
+}
+.rss-item:hover { border-color: var(--border2); color: var(--text); }
+.rss-item + .rss-item { margin-top: 4px; }
+/* Global "highlight" filter — exact token matches get a cyan backdrop */
+.rss-item--hl {
+  background: color-mix(in srgb, var(--teal) 14%, var(--bg3));
+  border-color: color-mix(in srgb, var(--teal) 40%, var(--border));
+  box-shadow: inset 2px 0 0 var(--teal);
+  color: var(--text);
+}
+.rss-item--hl:hover { border-color: color-mix(in srgb, var(--teal) 55%, var(--border)); }
+.rss-state {
+  padding: 14px 4px; font-size: 11px; color: var(--text-dimmer);
+  text-align: center; font-family: var(--mono); letter-spacing: 0.05em;
+}
+
+/* ── Anime feed widget (reuses the RSS head/list/card styles) ── */
+.anime-panel { padding: 14px 14px 12px; }
+.anime-item { display: flex; align-items: center; padding: 0; }
+/* The whole card (minus the AniList button) is the discussion link */
+.anime-main {
+  flex: 1; min-width: 0; padding: 8px 4px 8px 10px;
+  color: inherit; text-decoration: none;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.anime-meta { font-family: var(--mono); font-size: 10px; letter-spacing: 0.03em; color: var(--text-dimmer); }
+.anime-al {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; flex-shrink: 0; margin: 0 9px 0 6px;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 4px;
+  color: var(--text-dimmer); text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.anime-al:hover { border-color: var(--teal); color: var(--teal); background: color-mix(in srgb, var(--teal) 8%, transparent); }
+
+/* ── Sticky note widget ── */
+.note-panel { padding: 14px; }
+.note-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--teal);
+  margin-bottom: 10px; flex-shrink: 0;
+}
+.note-mode-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--teal); padding: 2px; line-height: 0;
+  transition: filter 0.15s;
+}
+.note-mode-btn:hover { filter: brightness(1.25); }
+.note-text {
+  flex: 1; width: 100%; min-height: 0;
+  background: transparent; border: none; outline: none; resize: none;
+  color: var(--text); font-family: var(--sans); font-size: 13px;
+  line-height: 1.55; padding: 0;
+}
+.note-text::placeholder { color: var(--text-dimmer); }
+
+/* Checklist mode for the note */
+.note-list {
+  flex: 1; min-height: 0; max-height: 56vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 2px; margin: 0 -4px;
+}
+.note-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 5px 4px; border-radius: 6px; cursor: pointer;
+  transition: background 0.12s; flex-shrink: 0;   /* scroll the list instead of squashing rows */
+}
+.note-item:hover { background: var(--bg3); }
+.note-item input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px;
+  border: 1.5px solid var(--border2); border-radius: 4px;
+  background: var(--bg3); cursor: pointer; position: relative;
+  transition: background 0.12s, border-color 0.12s;
+}
+.note-item input[type="checkbox"]:checked { background: var(--teal); border-color: var(--teal); }
+.note-item input[type="checkbox"]:checked::after {
+  content: ''; position: absolute; left: 4px; top: 1px;
+  width: 4px; height: 8px; border: solid #07080d;
+  border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.note-item span {
+  flex: 1; min-width: 0; font-size: 13px; color: var(--text);
+  line-height: 1.4; word-break: break-word;
+}
+.note-item.done span { color: var(--text-dimmer); text-decoration: line-through; }
+.note-item button {
+  background: none; border: none; cursor: pointer; flex-shrink: 0;
+  color: var(--text-dimmer); font-size: 13px; line-height: 1; padding: 0 2px;
+  opacity: 0; transition: color 0.12s, opacity 0.12s;
+}
+.note-item:hover button { opacity: 1; }
+.note-item button:hover { color: var(--accent); }
+.note-empty {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
+  padding: 8px 4px; text-align: center;
+}
+.note-add-row { display: flex; margin-top: 8px; }
+.note-add-row input {
+  flex: 1; min-width: 0; background: var(--bg3);
+  border: 1px solid var(--border2); border-radius: 8px;
+  color: var(--text); font-family: var(--sans); font-size: 13px;
+  padding: 8px 10px; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.note-add-row input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 14%, transparent); }
+
+/* ── Weather widget ── */
+.weather-panel { padding: 16px; }
+.weather-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--teal);
+  margin-bottom: 12px; flex-shrink: 0;
+}
+.weather-refresh {
+  background: none; border: none; cursor: pointer;
+  color: var(--teal); padding: 2px; line-height: 0;
+  transition: filter 0.15s, transform 0.6s;
+}
+.weather-refresh:hover { filter: brightness(1.25); }
+.weather-refresh.spin { transform: rotate(360deg); }
+.weather-main { display: flex; align-items: center; gap: 12px; }
+.weather-icon { font-size: 40px; line-height: 1; flex-shrink: 0; }
+.weather-temp {
+  font-family: var(--mono); font-weight: 500; font-size: 32px;
+  color: var(--text); line-height: 1; font-variant-numeric: tabular-nums;
+}
+.weather-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.weather-cond { font-size: 13px; color: var(--text); line-height: 1.2; }
+.weather-loc {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+  color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.weather-hilo {
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);
+  display: flex; gap: 14px; font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+}
+.weather-hilo b { color: var(--text); font-weight: 500; }
+.weather-state {
+  padding: 8px 4px; font-size: 11px; color: var(--text-dimmer);
+  text-align: center; font-family: var(--mono); letter-spacing: 0.05em; line-height: 1.5;
+}
+
+/* ── Countdown widget ── */
+.countdown-panel { padding: 14px 14px 12px; }
+.countdown-head {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--teal);
+  margin-bottom: 10px; flex-shrink: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.countdown-body {
+  flex: 1; min-height: 0; max-height: 56vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 4px; margin: -3px; padding: 3px;
+}
+/* Each countdown is a card matching the feed/tracker */
+.countdown-item {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 7px;
+  padding: 8px 10px; flex-shrink: 0;   /* keep full height so the body scrolls, not compresses */
+}
+.countdown-item-label {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-dim); margin-bottom: 3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Prominent D/H/M/S readout, spread across the card so there's no dead space.
+   Numbers pop, the d/h/m/s letters sit dimmer. */
+.countdown-time {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--mono); font-weight: 500; font-size: 22px; letter-spacing: 0.01em;
+  line-height: 1; font-variant-numeric: tabular-nums; color: var(--text);
+}
+.countdown-time .cd-seg { white-space: nowrap; }
+.countdown-time .u { font-size: 13px; color: var(--text-dim); margin-left: 1px; }
+.countdown-time.cd-near { color: var(--cd-near); }
+.countdown-time.cd-mid  { color: var(--cd-mid); }
+.countdown-time.cd-far  { color: var(--cd-far); }
+.countdown-done {
+  font-family: var(--display); font-size: 16px; font-weight: 600;
+  color: var(--cd-far); line-height: 1; padding: 1px 0;
+}
+.countdown-state {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dimmer); padding: 1px 0;
+}
+
+/* ── Weekly-Tracker widget (mirrors the Weekly-Tracker card style) ── */
+.tracker-panel { padding: 14px 14px 12px; }
+.tracker-head {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--wt-today);   /* fixed cyan — never the accent */
+  margin-bottom: 10px; flex-shrink: 0;
+}
+.tracker-head-link {
+  flex: 1; min-width: 0; color: inherit; text-decoration: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tracker-head-link:hover { text-decoration: underline; }
+/* Header toggle: also list today's not-yet-aired anime (dimmed, with a + to track) */
+.tracker-today-btn {
+  flex-shrink: 0; background: none; border: 1px solid transparent; border-radius: 4px;
+  cursor: pointer; color: var(--text-dimmer); padding: 2px 3px; line-height: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.tracker-today-btn:hover { color: var(--wt-today); }
+.tracker-today-btn.on {
+  color: var(--wt-today);
+  background: color-mix(in srgb, var(--wt-today) 14%, transparent);
+  border-color: color-mix(in srgb, var(--wt-today) 35%, transparent);
+}
+/* Untracked shows airing later today: dimmed until hovered */
+.wt-entry.wt-up, .wt-entry.wt-break { opacity: 0.6; transition: opacity 0.15s; }
+.wt-entry.wt-up:hover, .wt-entry.wt-break:hover { opacity: 1; }
+.wt-up .wt-link, .wt-up .wt-add { position: relative; z-index: 1; }
+.wt-add {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; flex-shrink: 0; padding: 0; cursor: pointer;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 4px;
+  color: var(--text-dimmer); font-size: 14px; line-height: 1;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.wt-add:hover { border-color: var(--wt-today); color: var(--wt-today); background: color-mix(in srgb, var(--wt-today) 8%, transparent); }
+
+.tracker-body {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 4px; margin: -3px; padding: 3px;
+}
+.wt-entry {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 7px;
+  padding: 5px 9px; display: flex; flex-direction: column; gap: 0;
+  position: relative; overflow: hidden;
+  flex-shrink: 0;   /* keep full height so the body scrolls instead of clipping entries */
+}
+.wt-entry:hover { border-color: var(--border2); }
+/* Colour tag — left bar driven by the inline --ec var. Uses an inset box-shadow
+   (not an ::after strip) so the bar follows the rounded corners, like the feed. */
+.wt-entry[data-ec] {
+  border-color: color-mix(in srgb, var(--ec) 30%, var(--border));
+  background: color-mix(in srgb, var(--ec) 8%, var(--bg3));
+  box-shadow: inset 3px 0 0 var(--ec);
+}
+/* Next-up badge */
+.wt-entry.wt-next::before {
+  content: '▶ next'; position: absolute; top: 5px; right: 8px;
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--accent2);
+  background: color-mix(in srgb, var(--accent2) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent2) 24%, transparent);
+  border-radius: 3px; padding: 1px 5px; pointer-events: none;
+}
+.wt-entry.wt-next .wt-name { padding-right: 44px; }
+.wt-name { font-size: 12.5px; color: var(--text); line-height: 1.2; word-break: break-word; padding-left: 6px; }
+.wt-notes {
+  font-size: 10.5px; color: var(--text-dim); font-style: italic;
+  line-height: 1.2; padding-left: 6px; word-break: break-word;
+}
+.wt-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-left: 6px; margin-top: 1px; line-height: 1.2;
+}
+.wt-time, .wt-cd { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; }
+.wt-time { color: var(--accent2); }
+.wt-cd-near { color: var(--cd-near); }
+.wt-cd-mid  { color: var(--cd-mid); }
+.wt-cd-far  { color: var(--cd-far); }
+.wt-meta-right { display: flex; align-items: center; gap: 7px; }
+.wt-link {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; flex-shrink: 0;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 4px;
+  color: var(--text-dimmer); text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.wt-link:hover { border-color: var(--wt-today); color: var(--wt-today); background: color-mix(in srgb, var(--wt-today) 8%, transparent); }
+/* Auto-tracked anime entries (from the Anime Feed): accent bar + "AniList" tag.
+   A cover link makes the whole card open the discussion; the button sits above it. */
+.wt-entry.wt-auto {
+  border-color: color-mix(in srgb, var(--teal) 30%, var(--border));
+  background: color-mix(in srgb, var(--teal) 6%, var(--bg3));
+  box-shadow: inset 3px 0 0 var(--teal);
+}
+.wt-entry.wt-auto:hover { border-color: color-mix(in srgb, var(--teal) 50%, var(--border)); }
+.wt-cover { position: absolute; inset: 0; z-index: 0; }
+.wt-auto .wt-link { position: relative; z-index: 1; }
+.wt-meta-left { display: flex; align-items: center; gap: 6px; }
+.wt-al-tag {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--teal) 24%, transparent);
+  border-radius: 3px; padding: 1px 5px;
+}
+.tracker-state {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
+  text-align: center; padding: 12px 6px; line-height: 1.5;
+}

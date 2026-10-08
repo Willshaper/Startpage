@@ -1,0 +1,510 @@
+/* Startpage: Theme tokens, page layout, search, tiles, dialogs, form controls, menus */
+
+:root {
+  --bg:         #07080d;
+  --bg2:        #0e1018;
+  --bg3:        #161822;
+  --border:     #1f2230;
+  --border2:    #2a2d42;
+  --accent:     #e8615a;
+  --accent2:    #f0a04b;
+  --teal:       #4fc4a8;
+  --text:       #d4d6e8;
+  --text-dim:   #8088a8;
+  --text-dimmer:#4a4f6a;
+  /* Weekly-Tracker widget: "today" identity cyan (kept fixed — the tracker never
+     follows the chosen accent, it matches the standalone Weekly-Tracker). */
+  --wt-today:   #3ab8d8;
+  /* Fixed time-nearness colours for the tracker + countdown readouts (red→orange→
+     green by how long is left), matching the standalone exactly; never the accent. */
+  --cd-near:    #e8615a;
+  --cd-mid:     #d4860f;
+  --cd-far:     #4fc4a8;
+  --mono:   'DM Mono', monospace;
+  --sans:   'Noto Sans JP', sans-serif;
+  --display:'Syne', sans-serif;
+  /* Background opacity for tiles and widgets (0–1). Set via JS from settings.
+     Only fades the panel background/border/shadow — icons and text stay 100%. */
+  --tile-bg-opacity:   1;
+  --widget-bg-opacity: 1;
+  --search-bg-opacity: 1;
+  --clock-bg-opacity:  0;
+  /* Tile grid: column count (set via JS) and the widest the tile block may get.
+     --tile-safe reserves ~320px on each side for the fixed edge widgets so tiles
+     never slide under them; it is viewport-relative, so it holds from 1080p to 4K. */
+  --tile-cols: 8;
+  /* --tile-fit is the effective column count = the widest group's tile count,
+     capped at --tile-cols. It sizes the (centered) tile block, so a group with
+     fewer tiles than the setting no longer reserves empty space. Set via JS. */
+  --tile-fit: 8;
+  --tile-safe: calc(100vw - 640px);
+}
+/* Below 1280px the edge widgets are hidden, so the tiles may use the full width. */
+@media (max-width: 1280px) { :root { --tile-safe: calc(100vw - 48px); } }
+
+[data-theme="light"] {
+  --bg:         #dde0ec;
+  --bg2:        #e3e6f1;
+  --bg3:        #d4d8ea;
+  --border:     #b8bcd4;
+  --border2:    #9aa0be;
+  --accent:     #c43c36;
+  --accent2:    #9e5e08;
+  --teal:       #1e9070;
+  --text:       #20243a;
+  --text-dim:   #4a5070;
+  --text-dimmer:#8088a8;
+  --wt-today:   #1480a8;
+  --cd-near:    #c43c36;
+  --cd-mid:     #9e5e08;
+  --cd-far:     #1e9070;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); }
+html, body { transition: background-color 0.25s; }
+
+/* Atmospheric glow */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(79,196,168,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 100%, rgba(232,97,90,0.05) 0%, transparent 55%);
+  pointer-events: none; z-index: 0;
+}
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(30,144,112,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 100%, rgba(196,60,54,0.04) 0%, transparent 55%);
+}
+
+.page {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  padding: 28px 24px;
+}
+
+/* ── Top controls ── */
+.top-controls {
+  position: fixed; top: 16px; right: 16px;
+  display: flex; gap: 8px; z-index: 50;
+}
+.icon-btn {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 8px; color: var(--teal); cursor: pointer;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s, filter 0.15s, background 0.15s;
+}
+.icon-btn:hover { filter: brightness(1.25); border-color: var(--text-dimmer); }
+
+/* ── Vertical slots ──
+   The clock block and the content block (search + tiles) are each placed into the
+   top / middle / bottom slot by JS. When both land in the same slot, the clock sits
+   above the content. greeting/clock/date hug their content and search caps at 560px,
+   so only the tile block widens; it sizes itself (below). */
+.slot { width: 100%; display: flex; flex-direction: column; align-items: center; }
+#slot-top    { flex: 0 0 auto; }
+#slot-middle { flex: 1 1 auto; justify-content: center; }
+#slot-bottom { flex: 0 0 auto; }
+.clock-block, .content-block { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+/* Each of greeting, clock, and date gets its own pill that hugs its content.
+   All three share --clock-bg-opacity (set by the slider) — at 0 the pills are
+   fully transparent, at 1 they're solid like tiles. Padding is always present
+   so the layout doesn't shift when the slider moves. */
+.greeting, .clock, .date {
+  align-self: center;            /* shrink-to-content in the flex column */
+  background: color-mix(in srgb, var(--bg2) calc(var(--clock-bg-opacity) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--border) calc(var(--clock-bg-opacity) * 100%), transparent);
+}
+
+.greeting {
+  font-family: var(--display); font-weight: 600;
+  font-size: 20px; line-height: 1; letter-spacing: 0.01em;
+  color: var(--text-dim);
+  padding: 5px 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.greeting b { color: var(--accent2); font-weight: 700; }
+
+.clock {
+  font-family: var(--mono); font-weight: 500;
+  font-size: clamp(52px, 10.5vw, 92px);
+  line-height: 1; letter-spacing: 0.01em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  padding: 2px 16px 6px;
+  border-radius: 16px;
+}
+.clock .sec { color: var(--teal); font-size: 0.38em; vertical-align: super; margin-left: 5px; font-weight: 400; }
+
+.date {
+  font-family: var(--mono); font-size: 14px; line-height: 1;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 4px 10px;
+  border-radius: 9px;
+  margin-top: 8px;
+}
+
+/* ── Search ── */
+.search {
+  display: flex; align-items: center;
+  width: 100%; max-width: 560px;
+  margin-top: 34px;
+  background: color-mix(in srgb, var(--bg2) calc(var(--search-bg-opacity) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--border2) calc(var(--search-bg-opacity) * 100%), transparent);
+  border-radius: 12px;
+  padding: 4px 4px 4px 6px;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.search:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 18%, transparent); }
+
+.search-engine {
+  background: transparent; border: none; outline: none;
+  color: var(--text-dim); font-family: var(--mono); font-size: 11px;
+  padding: 8px 6px; cursor: pointer; border-radius: 8px;
+}
+.search-engine option { background: var(--bg3); color: var(--text); }
+
+.search-input {
+  flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+  color: var(--text); font-family: var(--sans); font-size: 15px;
+  padding: 10px 8px;
+}
+.search-input::placeholder { color: var(--text-dimmer); }
+
+.search-go {
+  background: var(--teal); border: none; border-radius: 8px;
+  width: 38px; height: 38px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #07080d; transition: filter 0.15s;
+}
+.search-go:hover { filter: brightness(1.1); }
+
+/* ── Tiles ── */
+.tiles {
+  margin-top: 40px;
+  /* --tile-w is one tile's width; --tile-pitch is that plus its gap. The block
+     sizes to the widest group (--tile-fit tiles: fit*pitch minus the trailing
+     gap) up to --tile-safe. It's centered, so the widest group centers and the
+     rest left-align to it. */
+  --tile-w: 98px;
+  --tile-gap: 14px;
+  --tile-pitch: 112px;
+  width: min(calc(var(--tile-fit) * var(--tile-pitch) - var(--tile-gap)), var(--tile-safe));
+  display: flex; flex-direction: column;
+  gap: 22px;
+}
+.tile-section { display: flex; flex-direction: column; gap: 10px; }
+.tile-section-title {
+  align-self: flex-start;   /* box hugs the text width, not the full row */
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-dim);
+  /* Fade the box with the tile opacity slider, like the tiles themselves */
+  background: color-mix(in srgb, var(--bg3) calc(var(--tile-bg-opacity) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--border) calc(var(--tile-bg-opacity) * 100%), transparent);
+  border-radius: 7px; padding: 5px 10px;
+}
+/* Flex-wrap (not grid) so rows don't reserve empty grid tracks. Tiles left-align
+   inside the block; the block itself is sized to the widest group and centered,
+   so the widest group centers on screen and shorter groups align to its left. */
+.tile-grid {
+  display: flex; flex-wrap: wrap; justify-content: flex-start;
+  gap: var(--tile-gap);
+}
+
+.tile {
+  width: var(--tile-w);
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  padding: 16px 8px 13px;
+  background: color-mix(in srgb, var(--bg2) calc(var(--tile-bg-opacity) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--border) calc(var(--tile-bg-opacity) * 100%), transparent);
+  border-radius: 14px;
+  text-decoration: none; color: var(--text);
+  cursor: pointer;
+  transition: transform 0.14s, border-color 0.14s, background 0.14s;
+  position: relative;
+  animation: pop 0.2s ease backwards;
+}
+.tile:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--border2) calc(var(--tile-bg-opacity) * 100%), transparent);
+  background: color-mix(in srgb, var(--bg3) calc(var(--tile-bg-opacity) * 100%), transparent);
+}
+
+.tile-icon {
+  width: 44px; height: 44px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  font-family: var(--display); font-weight: 800; font-size: 20px; color: #fff;
+  flex-shrink: 0;
+}
+.tile-icon img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; background: #fff;
+}
+.tile-name {
+  font-size: 12px; color: var(--text-dim);
+  text-align: center; line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  width: 100%;
+}
+.tile:hover .tile-name { color: var(--text); }
+
+.tile-add {
+  border-style: dashed;
+  color: var(--text-dimmer);
+  justify-content: center;
+}
+.tile-add:hover { border-color: var(--teal); color: var(--teal); background: color-mix(in srgb, var(--bg2) calc(var(--tile-bg-opacity) * 100%), transparent); }
+.tile-add .plus {
+  width: 44px; height: 44px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 300;
+}
+
+/* Compact tiles: smaller icon box + tighter padding + smaller pitch so more fit */
+.tiles.compact { --tile-w: 70px; --tile-gap: 10px; --tile-pitch: 80px; }
+.tiles.compact .tile { padding: 9px 5px 8px; gap: 6px; border-radius: 11px; }
+.tiles.compact .tile-icon { width: 34px; height: 34px; border-radius: 9px; font-size: 16px; }
+.tiles.compact .tile-add .plus { width: 34px; height: 34px; border-radius: 9px; font-size: 22px; }
+.tiles.compact .tile-name { font-size: 11px; }
+
+@keyframes pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; animation: fade 0.15s ease; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  width: 100%; max-width: 380px;
+  max-height: calc(100vh - 40px); overflow-y: auto;
+  padding: 22px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  animation: rise 0.18s ease;
+}
+@keyframes rise { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.modal-title { font-family: var(--display); font-size: 16px; font-weight: 700; color: var(--text); }
+.modal-close {
+  background: none; border: none; cursor: pointer; color: var(--text-dimmer);
+  font-size: 18px; line-height: 1; padding: 2px 4px; transition: color 0.15s;
+}
+.modal-close:hover { color: var(--accent); }
+
+.field { margin-bottom: 13px; }
+.field label {
+  display: block; font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim);
+  margin-bottom: 5px;
+}
+.field input, .field select, .field textarea {
+  width: 100%; background: var(--bg3);
+  border: 1px solid var(--border2); border-radius: 8px;
+  color: var(--text); font-family: var(--sans); font-size: 14px;
+  padding: 9px 11px; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 14%, transparent);
+}
+.field select option { background: var(--bg3); }
+/* Background URL list: monospace so long links read cleanly, resizable */
+#set-bg-urls { font-family: var(--mono); font-size: 12px; line-height: 1.5; resize: vertical; min-height: 66px; }
+
+/* Icon editor */
+.icon-edit { display: flex; gap: 11px; align-items: center; }
+.icon-preview {
+  width: 46px; height: 46px; border-radius: 11px; flex-shrink: 0;
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--display); font-weight: 800; font-size: 20px; color: #fff;
+}
+.icon-preview img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; background: #fff;
+}
+.icon-edit-controls { display: flex; gap: 6px; flex: 1; }
+.icon-edit-controls .btn { flex: 1; text-align: center; padding: 9px 4px; }
+
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 0; cursor: pointer;
+}
+.toggle-row span { font-size: 13px; color: var(--text); }
+.toggle {
+  width: 38px; height: 22px; border-radius: 11px; flex-shrink: 0;
+  background: var(--border2); position: relative; transition: background 0.18s;
+}
+.toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%; background: #fff;
+  transition: transform 0.18s;
+}
+.toggle.on { background: var(--teal); }
+.toggle.on::after { transform: translateX(16px); }
+
+/* Range slider for opacity controls */
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider-row input[type="range"] { flex: 1; }
+.slider-val {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  min-width: 38px; text-align: right;
+}
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  height: 6px; background: var(--bg3);
+  border: 1px solid var(--border2); border-radius: 4px;
+  outline: none; cursor: pointer; padding: 0; margin: 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--teal); border: none; cursor: pointer;
+  transition: transform 0.12s;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--teal); border: none; cursor: pointer;
+  transition: transform 0.12s;
+}
+input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.15); }
+input[type="range"]:hover::-moz-range-thumb     { transform: scale(1.15); }
+
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.btn {
+  border-radius: 8px; cursor: pointer; font-family: var(--mono);
+  font-size: 11px; letter-spacing: 0.06em; padding: 9px 16px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, filter 0.15s;
+}
+.btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text-dim); }
+.btn-ghost:hover { color: var(--text); border-color: var(--text-dimmer); }
+.btn-primary { background: var(--teal); border: 1px solid var(--teal); color: #07080d; font-weight: 500; }
+.btn-primary:hover { filter: brightness(1.1); }
+
+/* Segmented control (theme, tile vertical position) */
+.seg { display: inline-flex; border: 1px solid var(--border2); border-radius: 8px; overflow: hidden; }
+.seg button {
+  background: transparent; border: none; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+  color: var(--text-dim); padding: 7px 15px;
+  transition: background 0.12s, color 0.12s;
+}
+.seg button + button { border-left: 1px solid var(--border2); }
+.seg button:hover { color: var(--text); }
+.seg button.active { background: var(--teal); color: #07080d; }
+
+.settings-section-title {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-dimmer); margin-bottom: 8px;
+}
+.io-row { display: flex; gap: 8px; }
+.io-row .btn { flex: 1; text-align: center; }
+
+/* Feed list manager */
+.feed-list-label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;
+}
+#feed-count { color: var(--text-dimmer); }
+.feed-list {
+  max-height: 132px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;
+}
+.feed-row {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 7px; padding: 6px 8px;
+}
+.feed-row--stacked {
+  flex-direction: column; align-items: stretch; gap: 4px; padding: 7px 8px 8px;
+}
+.feed-row-top {
+  display: flex; align-items: center; gap: 6px;
+}
+.feed-row-top span {
+  flex: 1; min-width: 0; font-size: 11px; color: var(--text-dim);
+  font-family: var(--mono);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.feed-filter-input {
+  width: 100%; box-sizing: border-box;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 5px;
+  color: var(--text-dim); font-family: var(--sans); font-size: 11px;
+  padding: 4px 7px; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.feed-filter-input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 12%, transparent); color: var(--text); }
+.feed-row button {
+  background: none; border: none; cursor: pointer; flex-shrink: 0;
+  color: var(--text-dimmer); font-size: 14px; line-height: 1; padding: 0 2px;
+  transition: color 0.12s;
+}
+.feed-row button:hover { color: var(--accent); }
+.feed-empty {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
+  padding: 6px 2px;
+}
+.feed-add-row { display: flex; gap: 6px; }
+.feed-add-row input {
+  flex: 1; min-width: 0; background: var(--bg3);
+  border: 1px solid var(--border2); border-radius: 8px;
+  color: var(--text); font-family: var(--sans); font-size: 13px;
+  padding: 9px 11px; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.feed-add-row input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 14%, transparent); }
+.feed-add-row .btn { flex-shrink: 0; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.feed-add-row input:disabled { opacity: 0.45; cursor: not-allowed; }
+input[type="file"] { display: none; }
+.file-label { display: inline-flex; align-items: center; justify-content: center; }
+
+/* ── Context menus (tiles, anime feed, Anime Manager blacklist) ── */
+#ctx-menu, #anime-ctx, #anime-bl-ctx {
+  position: fixed; z-index: 200;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 9px; padding: 4px; min-width: 140px;
+  box-shadow: 0 10px 34px rgba(0,0,0,0.5);
+  display: none;
+}
+#ctx-menu.open, #anime-ctx.open, #anime-bl-ctx.open { display: block; animation: rise 0.1s ease; }
+.ctx-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 12px; border-radius: 6px; cursor: pointer;
+  font-size: 13px; color: var(--text); transition: background 0.1s;
+}
+.ctx-item:hover { background: var(--bg2); }
+.ctx-item.danger { color: var(--accent); }
+.ctx-item.danger:hover { background: rgba(232,97,90,0.1); }
+.ctx-divider { height: 1px; background: var(--border); margin: 3px 4px; }
+
+.hint {
+  margin-top: 30px; font-family: var(--mono); font-size: 10px;
+  color: var(--text-dimmer); letter-spacing: 0.05em; text-align: center;
+}
