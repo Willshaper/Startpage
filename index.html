@@ -4169,10 +4169,11 @@ function applyTracker() {
     if (!trackSched) loadTrackCache();
     renderTracker();
     trackerTimer = setInterval(renderTracker, 60000);  // keep the "in Xd Yh" figures current
-    if (tk.anime) fetchTracked();
     if (tk.upcoming) fetchUpcoming();
-    // Both refetch only once their 30-min cache goes stale (or the source/day changed)
-    trackFetchTimer = setInterval(() => { fetchTracked(); fetchUpcoming(); }, 10 * 60 * 1000);
+    // Refetches only once its 30-min cache goes stale (or the source/day changed).
+    // Tracked shows have their own always-on refresh (initAnimeSync), since they
+    // also feed the Weekly-Tracker site even with this widget off.
+    trackFetchTimer = setInterval(fetchUpcoming, 10 * 60 * 1000);
   }
   scheduleLayout();
 }
@@ -4511,7 +4512,7 @@ function setAnimeLink(id, title, url) {
   const s = url ? ensureShow(id, title) : animeShow(id);   // clearing never creates a show
   if (s) s.url = url;
   save(); renderAnime(); renderAnimeSettings();
-  if (settings.tracker.enabled) renderTracker();   // tracked entries open the same link
+  trackedChanged();   // tracked entries (widget + Weekly-Tracker site) open the same link
 }
 function saveAnimeLink() {
   if (!animeEditItem) return;
@@ -4544,6 +4545,7 @@ function toggleShowFlag(id, flag) {
   s[flag] = !s[flag];
   save(); renderAnime(); renderAnimeSettings();
   if (flag === 'track') trackedChanged();
+  else exportAnimeWeek();   // the Weekly-Tracker site shows highlights too
 }
 // Add a show by pasting an AniList link (anilist.co/anime/12345/…) or a bare ID.
 // The entry is looked up first, for its title and to confirm it's an anime; it's
@@ -4641,6 +4643,15 @@ function touchAnimeSeasons() {
 // the rest in a collapsed "Finished" section, with a search box over both — so
 // years of entries never become one long scroll.
 const ANIME_ACTIVE_DAYS = 30;
+// "Airing" vs "Finished": an episode seen in the last ANIME_ACTIVE_DAYS, or (for a
+// tracked show, whose schedule we know) its next episode due within a week — so a
+// show returning from a long break counts as airing again before it airs.
+function isShowActive(s) {
+  const nowS = Math.floor(Date.now() / 1000);
+  if (s.last >= nowS - ANIME_ACTIVE_DAYS * 86400) return true;
+  const md = trackSched && trackSched.media && trackSched.media[s.id];
+  return !!(md && md.na && md.na - nowS <= 7 * 86400);
+}
 let animeSub = 'general';
 const animeSearch = { shows: '', blacklist: '' };
 const animeArchiveOpen = { shows: false, blacklist: false };
@@ -4686,11 +4697,10 @@ function renderAnimeSeasonList(kind) {
   const list = a[ANIME_LISTS[kind].key];
   const el   = ANIME_LISTS[kind].el();
   const q = animeSearch[kind].trim().toLowerCase();
-  const cutoff = Math.floor(Date.now() / 1000) - ANIME_ACTIVE_DAYS * 86400;
   const match = q ? list.filter(e => e.title.toLowerCase().includes(q)) : list;
   const byTitle = (x, y) => x.title.localeCompare(y.title);
-  const active   = match.filter(e => e.last >= cutoff).sort(byTitle);
-  const finished = match.filter(e => e.last <  cutoff).sort(byTitle);
+  const active   = match.filter(e =>  isShowActive(e)).sort(byTitle);
+  const finished = match.filter(e => !isShowActive(e)).sort(byTitle);
   // A show: Tracked / Highlighted chips, day + time (when tracked), and its custom link
   const row = e => kind === 'shows'
     ? `<div class="feed-row feed-row--stacked">` +
@@ -4723,7 +4733,7 @@ function updateAnimeLinkUrl(id, value) {
   const s = animeShow(id); if (!s) return;
   s.url = value.trim();
   save(); renderAnime();
-  if (settings.tracker.enabled) renderTracker();
+  trackedChanged();
 }
 // Remove a show (all its settings) or restore a blacklisted season
 function removeAnimeSeason(kind, id) {
@@ -4752,18 +4762,19 @@ function loadTrackCache() {
     if (c && typeof c.key === 'string' && Array.isArray(c.items) && c.media && typeof c.media === 'object') trackSched = c;
   } catch {}
 }
+// Runs whenever there are tracked shows (even with the tracker widget off): the
+// schedule also feeds the Weekly-Tracker site through exportAnimeWeek().
 async function fetchTracked(force) {
-  const tk = settings.tracker;
-  if (!tk.enabled || !tk.anime) return;
   if (trackBusy) { if (force) trackAgain = true; return; }   // a timer tick during a fetch needs no re-run
   const key = trackKey();
-  if (!key) { trackSched = { key: '', fetchedAt: Date.now(), items: [], media: {} }; return; }
+  if (!key) { trackSched = { key: '', fetchedAt: Date.now(), items: [], media: {} }; exportAnimeWeek(); return; }
   if (!force && trackSched && trackSched.key === key && Date.now() - trackSched.fetchedAt < TRACK_REFRESH_MS) return;
   trackBusy = true; trackAgain = false;
   try {
     const ids = key.split(',').map(Number), now = Math.floor(Date.now() / 1000), items = [];
     for (let p = 1; p <= 5; p++) {
-      const d = await anilist(ANIME_TRACK_Q, { p, ids, from: now - 8 * 86400, to: now + 8 * 86400 });
+      // +11 days: enough to find the episode nearest a weekly slot up to 7 days out (± 3.5)
+      const d = await anilist(ANIME_TRACK_Q, { p, ids, from: now - 8 * 86400, to: now + 11 * 86400 });
       const pg = d.Page || {};
       for (const s of pg.airingSchedules || []) {
         if (Number.isInteger(s.id) && Number.isInteger(s.mediaId)) items.push({ id: s.id, m: s.mediaId, ep: Number(s.episode) || 0, at: Number(s.airingAt) || 0 });
@@ -4790,6 +4801,7 @@ async function fetchTracked(force) {
       for (const s of items) if (s.m === tr.id && s.at <= now && s.at > tr.last) { tr.last = s.at; changed = true; }
     }
     if (changed) save();
+    exportAnimeWeek();
   } catch {}   // offline / rate-limited: keep the cached schedule
   finally {
     trackBusy = false;
@@ -4797,11 +4809,103 @@ async function fetchTracked(force) {
     if (trackAgain) fetchTracked(true);
   }
 }
-// The tracked list or a custom time changed: refresh the tracker (refetch if seasons changed)
+// The tracked list, a custom time or a link changed: update the Weekly-Tracker site's
+// copy, refresh the widget, and refetch if the set of tracked seasons changed
 function trackedChanged() {
-  if (!settings.tracker.enabled) return;
-  renderTracker();
-  if (settings.tracker.anime && (!trackSched || trackSched.key !== trackKey())) fetchTracked(true);
+  exportAnimeWeek();
+  if (!trackSched || trackSched.key !== trackKey()) fetchTracked(true);
+  if (settings.tracker.enabled) renderTracker();
+}
+
+// ── Weekly-Tracker site sync ──
+// The standalone Weekly Tracker (same origin, so the same localStorage) shows
+// tracked anime in its week view. It only reads ANIME_WEEK_KEY, a small summary
+// written here — one entry per tracked, still-airing, non-archived season with its
+// weekly slot, the episode at that slot's next occurrence (or break-week info) and
+// links. It never touches the Startpage's settings: an "Edit time" there leaves a
+// note in ANIME_TIME_EDITS_KEY, which applyTrackerTimeEdits() picks up and clears.
+const ANIME_WEEK_KEY       = 'startpage_anime_week';
+const ANIME_TIME_EDITS_KEY = 'startpage_anime_time_edits';
+let animeWeekLast = null;   // last exported shows JSON (skip identical rewrites)
+function exportAnimeWeek() {
+  if (!trackSched) return;   // schedule not known yet
+  const pad = n => String(n).padStart(2, '0');
+  const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const nowMs = Date.now(), nowS = Math.floor(nowMs / 1000);
+  const shows = [];
+  for (const tr of trackedShows()) {
+    const md = (trackSched.media || {})[tr.id];
+    if (!md || md.st !== 'RELEASING' || !isShowActive(tr)) continue;   // only airing, non-archived
+    const eps = trackSched.items.filter(s => s.m === tr.id).sort((a, b) => a.at - b.at);
+    const known = md.na ? eps.concat({ at: md.na, ep: md.ne }) : eps;
+    // AniList's weekly slot: from the next upcoming episode, else the latest aired one
+    const ref = known.find(s => s.at > nowS) || eps[eps.length - 1];
+    if (!ref) continue;
+    const rd = new Date(ref.at * 1000);
+    const custom = tr.day !== null && !!tr.time;
+    const day  = custom ? tr.day  : rd.getDay();
+    const time = custom ? tr.time : hhmm(rd);
+    // The episode nearest the slot's next occurrence (± 3.5 days); none = a break week
+    const slotMs = nowMs + trackerMsUntilNext(day, time, new Date(nowMs));
+    let best = null, bestDiff = Infinity;
+    for (const s of known) {
+      const diff = Math.abs(s.at * 1000 - slotMs);
+      if (diff <= 3.5 * 86400000 && diff < bestDiff) { best = s; bestDiff = diff; }
+    }
+    shows.push({
+      id: tr.id, title: tr.title, day, time, custom,
+      aniDay: rd.getDay(), aniTime: hhmm(rd),
+      ep: best ? best.ep : null,
+      brk: best ? null : { ep: md.na ? md.ne : null, at: md.na || 0 },
+      hl: !!tr.hl,
+      url: tr.url,                          // the custom link ('' = default search)
+      defLink: animeSearchUrl(tr.title),    // what an empty custom link falls back to
+      link: animeLinkFor({ m: tr.id, t: tr.title }),
+      al: `https://anilist.co/anime/${tr.id}`,
+    });
+  }
+  const body = JSON.stringify(shows);
+  if (animeWeekLast === null) {   // first run: compare with what's already stored
+    try { const c = JSON.parse(localStorage.getItem(ANIME_WEEK_KEY) || 'null'); animeWeekLast = c ? JSON.stringify(c.shows) : ''; } catch { animeWeekLast = ''; }
+  }
+  if (body === animeWeekLast) return;
+  animeWeekLast = body;
+  try { localStorage.setItem(ANIME_WEEK_KEY, JSON.stringify({ v: 1, updatedAt: nowMs, shows })); } catch {}
+}
+// Apply changes made on the Weekly-Tracker site. The note is { [id]: fields } where
+// each field is optional: day + time (day null = AniList time), hl, track, url.
+function applyTrackerTimeEdits() {
+  let raw = null, edits = null;
+  try { raw = localStorage.getItem(ANIME_TIME_EDITS_KEY); edits = JSON.parse(raw || 'null'); } catch {}
+  if (!edits || typeof edits !== 'object') return;
+  let changed = false;
+  for (const [k, ed] of Object.entries(edits)) {
+    const s = animeShow(Number(k));
+    if (!s || !ed || typeof ed !== 'object') continue;
+    if ('day' in ed) {
+      const day  = Number.isInteger(ed.day) && ed.day >= 0 && ed.day <= 6 ? ed.day : null;
+      const time = typeof ed.time === 'string' && TIME_RE.test(ed.time) ? ed.time : '';
+      s.day  = day !== null && time ? day : null;
+      s.time = s.day === null ? '' : time;
+    }
+    if (typeof ed.hl === 'boolean')    s.hl = ed.hl;
+    if (typeof ed.track === 'boolean') s.track = ed.track;
+    if (typeof ed.url === 'string')    s.url = ed.url.trim();
+    changed = true;
+  }
+  // Clear the note — unless the tracker wrote a newer one meanwhile (that one fires
+  // its own storage event; re-applying is harmless since every field is absolute)
+  try { if (localStorage.getItem(ANIME_TIME_EDITS_KEY) === raw) localStorage.removeItem(ANIME_TIME_EDITS_KEY); } catch {}
+  if (changed) { save(); renderAnime(); renderAnimeSettings(); trackedChanged(); }
+}
+window.addEventListener('storage', e => { if (e.key === ANIME_TIME_EDITS_KEY && e.newValue) applyTrackerTimeEdits(); });
+// Startup: cached schedule → apply pending edits → export → fetch; then refresh every 10 min
+function initAnimeSync() {
+  if (!trackSched) loadTrackCache();
+  applyTrackerTimeEdits();
+  exportAnimeWeek();
+  fetchTracked();
+  setInterval(() => fetchTracked(), 10 * 60 * 1000);   // refetches once the 30-min cache is stale
 }
 function trackedAnimeToday(now) {
   if (!settings.tracker.anime || !trackSched) return [];
@@ -4812,6 +4916,7 @@ function trackedAnimeToday(now) {
   const sameDay = (ms, day) => ms >= day && ms < day + 86400000;
   const hhmm = ms => { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
   for (const tr of trackedShows()) {
+    if (!isShowActive(tr)) continue;   // archived ("Finished") shows stay out of the tracker
     const eps = trackSched.items.filter(s => s.m === tr.id);
     const md  = (trackSched.media || {})[tr.id];
     let pick = [], time = '', breakAt = '';
@@ -5054,6 +5159,7 @@ applyWeather();
 applyCountdown();
 applyTracker();
 applyAnime();
+initAnimeSync();
 buildPosGrids();
 buildEngineSelect($.searchEng, settings.engine);
 renderTiles();
