@@ -428,7 +428,6 @@
   .seg button:hover { color: var(--text); }
   .seg button.active { background: var(--teal); color: #07080d; }
 
-  .settings-section { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 14px; }
   .settings-section-title {
     font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--text-dimmer); margin-bottom: 8px;
@@ -496,7 +495,7 @@
   input[type="file"] { display: none; }
   .file-label { display: inline-flex; align-items: center; justify-content: center; }
 
-  /* ── Context menus (tiles, anime feed) ── */
+  /* ── Context menus (tiles, anime feed, Anime Manager blacklist) ── */
   #ctx-menu, #anime-ctx, #anime-bl-ctx {
     position: fixed; z-index: 200;
     background: var(--bg3); border: 1px solid var(--border2);
@@ -520,7 +519,7 @@
     color: var(--text-dimmer); letter-spacing: 0.05em; text-align: center;
   }
 
-  /* ── Side widgets (RSS, Note) — shared positioning ── */
+  /* ── Side widgets — shared positioning ── */
   .widget {
     position: fixed; width: 290px; max-height: 70vh; z-index: 30;
     background: color-mix(in srgb, var(--bg2) calc(var(--widget-bg-opacity) * 100%), transparent);
@@ -1854,11 +1853,10 @@ const I18N = {
     weatherHigh: 'High', weatherLow: 'Low',
     countdown: 'Countdown', showCountdown: 'Show countdown',
     countdowns: 'Countdowns', noCountdowns: 'No countdowns added yet',
-    countdownLabelField: 'Label', countdownLabelPh: 'Label (e.g. New Year)', countdownTarget: 'Target date & time',
+    countdownLabelPh: 'Label (e.g. New Year)',
     countdownSet: 'Add a countdown in settings', countdownReached: 'Time\'s up!',
-    cdDays: 'days', cdHours: 'hrs', cdMins: 'min', cdSecs: 'sec',
     weeklyTracker: 'Weekly Tracker', showTracker: 'Show weekly tracker',
-    trackerToday: 'Today', trackerEmpty: 'No weekly items yet', trackerNoneToday: 'Nothing scheduled today',
+    trackerEmpty: 'No weekly items yet', trackerNoneToday: 'Nothing scheduled today',
     trackerHint: 'Reads your Weekly-Tracker items from this browser. Open the tracker in this browser to add or change them.',
     openTracker: 'Open Weekly Tracker',
     animeFeed: 'Anime Feed', showAnime: 'Show anime feed',
@@ -1970,11 +1968,10 @@ const I18N = {
     weatherHigh: 'Høj', weatherLow: 'Lav',
     countdown: 'Nedtælling', showCountdown: 'Vis nedtælling',
     countdowns: 'Nedtællinger', noCountdowns: 'Ingen nedtællinger tilføjet endnu',
-    countdownLabelField: 'Etiket', countdownLabelPh: 'Etiket (f.eks. Nytår)', countdownTarget: 'Måldato & -tid',
+    countdownLabelPh: 'Etiket (f.eks. Nytår)',
     countdownSet: 'Tilføj en nedtælling i indstillinger', countdownReached: 'Tiden er gået!',
-    cdDays: 'dage', cdHours: 'timer', cdMins: 'min', cdSecs: 'sek',
     weeklyTracker: 'Ugeplan', showTracker: 'Vis ugeplan',
-    trackerToday: 'I dag', trackerEmpty: 'Ingen ugentlige punkter endnu', trackerNoneToday: 'Ingenting planlagt i dag',
+    trackerEmpty: 'Ingen ugentlige punkter endnu', trackerNoneToday: 'Ingenting planlagt i dag',
     trackerHint: 'Læser dine Weekly-Tracker-punkter fra denne browser. Åbn traceren i denne browser for at tilføje eller ændre dem.',
     openTracker: 'Åbn ugeplan',
     animeFeed: 'Anime-feed', showAnime: 'Vis anime-feed',
@@ -2289,7 +2286,7 @@ function normalizeAnime(a) {
   // "HH:MM" overriding AniList's air time (day null = AniList). `blacklist` holds
   // hidden seasons { id, title, last }. The title is kept so settings can list them
   // offline; `last` (unix s) is when the season last aired an episode we've seen,
-  // which splits the settings lists into "airing" and "finished".
+  // which splits the Anime Manager into "Airing" and "Archived".
   const nowSec = Math.floor(Date.now() / 1000);
   const validId = x => (x && typeof x === 'object' && Number.isInteger(Number(x.id)) && Number(x.id) > 0) ? Number(x.id) : 0;
   const titleOf = x => typeof x.title === 'string' ? x.title.slice(0, 200) : '';
@@ -2365,7 +2362,7 @@ function migrateStored(s) {
 }
 // Defensive type-coercion for top-level scalars — fixes hand-edited or stale
 // backups before they get used or save()'d back. Object subfields are handled
-// by normalizeRss / normalizeNote / normalizeGroups separately.
+// separately by normalizeAllSubfields.
 function normalizeSettings(s) {
   const asBool = (v, dflt) => typeof v === 'boolean' ? v : dflt;
   s.newTab        = asBool(s.newTab,        false);
@@ -3240,6 +3237,7 @@ function importData(input) {
       applyCountdown();
       applyTracker();
       applyAnime();
+      trackedChanged();   // the imported tracked list → widget + Weekly-Tracker site
       buildEngineSelect($.searchEng, settings.engine);
       renderTiles(); applyHint(); tick(); updateGreeting();
       closeSettings();
@@ -4655,7 +4653,7 @@ function animeCtxTrack() {
   const it = animeCtxItem; closeAnimeCtx();
   if (it) toggleShowFlag(ensureShow(it.m, it.t).id, 'track');
 }
-// Flip a show's Tracked / Highlighted flag (right-click menu or the Shows chips)
+// Flip a show's Tracked / Highlighted flag (right-click menu or the Anime Manager's toggles)
 function toggleShowFlag(id, flag) {
   const s = animeShow(id); if (!s) return;
   s[flag] = !s[flag];
@@ -4693,7 +4691,7 @@ async function addShowFromInput() {
     const ended = md.status === 'FINISHED' || md.status === 'CANCELLED';
     if (fresh && ended) {
       const d = md.endDate || {};
-      s.last = d.year ? Math.floor(new Date(d.year, (d.month || 12) - 1, d.day || 28).getTime() / 1000) : 0;
+      s.last = d.year ? Math.floor(new Date(d.year, (d.month || 12) - 1, d.day || 28).getTime() / 1000) : 1;   // 1, not 0: 0 means "unset" and loads as now
     }
     animeFilterSel = 'all';      // it has nothing switched on yet, so make sure it's listed
     save(); renderAnimeSeasonList('shows');
@@ -4707,7 +4705,8 @@ async function addShowFromInput() {
 }
 $.animeShowAdd.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addShowFromInput(); } });
 // Track every currently airing season on the user's AniList lists, skipping any
-// whose list status is Dropped. Asks for confirmation with the count + titles.
+// whose list status is Dropped and any blacklisted season. Asks for confirmation
+// with the count + titles.
 const ANIME_MYLIST_Q = 'query($u:String){MediaListCollection(userName:$u,type:ANIME){lists{entries{status media{id status title{english romaji}}}}}}';
 async function trackMyAniList() {
   const t = L(), user = settings.anime.user;
@@ -4727,7 +4726,8 @@ async function trackMyAniList() {
       const title = ((md.title && (md.title.english || md.title.romaji)) || '').trim() || ('#' + md.id);
       airing.set(md.id, title);
     }
-    const toTrack = [...airing].filter(([id]) => !dropped.has(id) && !(animeShow(id) && animeShow(id).track));
+    const blocked = new Set(settings.anime.blacklist.map(b => b.id));
+    const toTrack = [...airing].filter(([id]) => !dropped.has(id) && !blocked.has(id) && !(animeShow(id) && animeShow(id).track));
     if (!toTrack.length) { msg(t.animeTrackListNone); return; }
     const names = toTrack.map(([, title]) => '• ' + title);
     const list = names.slice(0, 15).join('\n') + (names.length > 15 ? `\n… +${names.length - 15}` : '');
@@ -4747,7 +4747,7 @@ function animeSeasonLast(m) {
   const it = animeItems.find(x => x.m === m);   // items are newest-first
   return it ? it.at : Math.floor(Date.now() / 1000);
 }
-// Advance each listed season's `last` from the cached entries (drives the airing/finished split)
+// Advance each listed season's `last` from the cached entries (drives the Airing/Archived split)
 function touchAnimeSeasons() {
   const latest = new Map();
   for (const it of animeItems) if (!latest.has(it.m)) latest.set(it.m, it.at);
@@ -4759,7 +4759,7 @@ function touchAnimeSeasons() {
       if (at && at > e.last) { e.last = at; changed = true; }
     }
   }
-  if (changed) save();
+  if (changed) { save(); refreshAnimeManagerShows(); }
 }
 
 // ── Anime Manager: its own big window with Airing / Archived / Blacklist / Feed settings ──
