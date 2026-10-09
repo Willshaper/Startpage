@@ -5,9 +5,11 @@
 // Episodes that have aired, newest first: either everything on AniList ("all") or
 // only seasons on one user's AniList lists ("user"). Clicking a row opens that
 // season's link — a custom one set via right-click, else an r/anime search for its
-// discussion thread; the small button opens the AniList entry. AniList keeps the
-// full airing history, so the local cache only gives an instant first paint and
-// lets filter changes refill without a fetch; it can always be rebuilt.
+// discussion thread; the small button opens the AniList entry. A tracked season with
+// a custom day + time counts its episodes as out at that slot (earlier or later than
+// AniList's), like the tracker does.
+// AniList keeps the full airing history, so the local cache only gives an instant
+// first paint and lets filter changes refill without a fetch; it can always be rebuilt.
 const ANILIST_API      = 'https://graphql.anilist.co';
 const ANIME_CACHE_KEY  = 'startpage_animecache';
 const ANIME_REFRESH_MS = 15 * 60 * 1000;
@@ -23,6 +25,7 @@ const ANIME_SCHED_USER = 'query($p:Int,$to:Int,$ids:[Int]){Page(page:$p,perPage:
 
 let animeItems = [];         // cached entries, newest first: { id, m (media id), ep, at (unix s), t (title), f, c, u }
 let animeShown = [];         // rows currently rendered (context-menu lookup)
+let animeNextDue = Infinity; // earliest held-back episode (custom slot still ahead), unix s
 let animeSigLoaded = null;   // source signature the in-memory items belong to
 let animeFetchedSig = '';    // signature fetched this page load (applyAnime runs often; fetch once + timer)
 let animeUpdatedAt = 0;      // last successful fetch
@@ -93,6 +96,43 @@ function ensureShow(m, title) {
   return s;
 }
 function trackedShows() { return settings.anime.shows.filter(s => s.track); }
+// Tracked seasons with a custom day + time, by id (an untracked show's kept slot isn't in use)
+function customSlots() {
+  return new Map(trackedShows().filter(s => s.day !== null && s.time).map(s => [s.id, s]));
+}
+// When an episode is out for the user: AniList's time, or for a season in `slots` the
+// occurrence of its custom slot nearest AniList's time (the tracker pairs them the same way)
+function animeOutAt(it, slots) {
+  const s = slots.get(it.m);
+  if (!s) return it.at;
+  const [h, m] = s.time.split(':').map(Number), aired = it.at * 1000;
+  const slot = new Date(aired); slot.setHours(h, m, 0, 0);
+  slot.setDate(slot.getDate() + s.day - slot.getDay());   // the slot in that week (Sun–Sat)
+  let best = +slot;
+  for (const k of [-7, 7]) {
+    const c = new Date(slot); c.setDate(c.getDate() + k);
+    if (Math.abs(c - aired) < Math.abs(best - aired)) best = +c;
+  }
+  return Math.floor(best / 1000);
+}
+// A slot earlier than AniList's time can put an episode out before the feed's fetch
+// (aired episodes only) has it, so those come from the tracked schedule: entries newer
+// than anything fetched. The fetched entry takes over later (same id, so never both).
+function animeEarlyItems(slots) {
+  if (!slots.size || !trackSched || !animeItems.length) return [];
+  const a = settings.anime, newest = animeItems[0].at;
+  // A season the feed hasn't seen yet (e.g. a premiere) needs to be on the user's list in "user" mode
+  const onList = m => a.source !== 'user' ||
+    !!(animeUserIds && animeUserIds.user === a.user.toLowerCase() && animeUserIds.ids.includes(m));
+  const out = [];
+  for (const s of trackSched.items) {
+    if (!slots.has(s.m) || s.at <= newest) continue;
+    const ref = animeItems.find(x => x.m === s.m);   // same season: its title, format, country, link
+    if (ref) out.push({ ...ref, id: s.id, ep: s.ep, at: s.at });
+    else if (onList(s.m)) out.push({ id: s.id, m: s.m, ep: s.ep, at: s.at, t: slots.get(s.m).title, f: '', c: '', u: `https://anilist.co/anime/${s.m}` });
+  }
+  return out;
+}
 function animeAge(at) {
   const ms = Date.now() - at * 1000;
   return ms < 60000 ? L().feedJustNow : L().animeAgo.replace('{t}', relShort(ms));
@@ -112,8 +152,16 @@ function renderAnime() {
   const a = settings.anime;
   if (!a.enabled) return;
   renderAnimeUpdated();
+  animeNextDue = Infinity;
   if (a.source === 'user' && !a.user) { showAnimeState('animeSetUser'); return; }
-  const shown = animeVisible(animeItems).slice(0, ANIME_SHOW);
+  // Custom slots move episodes to their own time; one whose slot is still ahead is held back
+  const slots = customSlots(), nowS = Date.now() / 1000, out = [];
+  for (const it of animeVisible(animeItems.concat(animeEarlyItems(slots)))) {
+    const at = animeOutAt(it, slots);
+    if (at > nowS) { animeNextDue = Math.min(animeNextDue, at); continue; }
+    out.push(at === it.at ? it : { ...it, at });
+  }
+  const shown = out.sort((x, y) => y.at - x.at || y.id - x.id).slice(0, ANIME_SHOW);
   if (!shown.length) { showAnimeState(animeBusy ? 'feedLoading' : (animeErr || 'animeEmpty')); return; }
   const target  = settings.newTab ? ' target="_blank" rel="noopener"' : '';
   const phrases = highlightPhrases(a.highlight);
@@ -133,9 +181,11 @@ function renderAnime() {
   $.animeList.scrollTop = scroll;
   scheduleLayout();
 }
-// Keep the "3h ago" figures current without rebuilding the list
+// Keep the "3h ago" figures current without rebuilding the list (rebuilt once a
+// held-back episode reaches its custom slot)
 setInterval(() => {
   if (!settings.anime.enabled) return;
+  if (Date.now() / 1000 >= animeNextDue) { renderAnime(); return; }
   $.animeList.querySelectorAll('.anime-meta[data-at]').forEach(el => { el.textContent = animeAge(Number(el.dataset.at)); });
   renderAnimeUpdated();
 }, 30000);

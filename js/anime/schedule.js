@@ -21,7 +21,8 @@ function loadTrackCache() {
   } catch {}
 }
 // Runs whenever there are tracked shows (even with the tracker widget off): the
-// schedule also feeds the Weekly-Tracker site through exportAnimeWeek().
+// schedule also feeds the Weekly-Tracker site through exportAnimeWeek(), and the
+// Anime Feed's episodes out early at a custom slot (animeEarlyItems).
 async function fetchTracked(force) {
   if (trackBusy) { if (force) trackAgain = true; return; }   // a timer tick during a fetch needs no re-run
   const key = trackKey();
@@ -64,6 +65,7 @@ async function fetchTracked(force) {
   finally {
     trackBusy = false;
     if (settings.tracker.enabled) renderTracker();
+    renderAnime();   // episodes out early at a custom slot come from this schedule
     refreshAnimeManagerShows();   // air times / airing-vs-finished may have changed
     if (trackAgain) fetchTracked(true);
   }
@@ -184,7 +186,7 @@ function applyTrackerTimeEdits() {
 window.addEventListener('storage', e => { if (e.key === ANIME_TIME_EDITS_KEY && e.newValue) applyTrackerTimeEdits(); });
 // Startup: cached schedule → apply pending edits → export → fetch; then refresh every 10 min
 function initAnimeSync() {
-  if (!trackSched) loadTrackCache();
+  if (!trackSched) { loadTrackCache(); renderAnime(); }   // the feed was drawn before the cached schedule loaded
   applyTrackerTimeEdits();
   exportAnimeWeek();
   fetchTracked();
@@ -344,7 +346,7 @@ function setTrackSlot(id, day, time) {
   const tr = animeShow(id); if (!tr) return;
   tr.day  = day;
   tr.time = day === null ? '' : (TIME_RE.test(time) ? time : (tr.time || trackAniListTime(id)));
-  save(); renderAnimeSeasonList('shows'); trackedChanged();
+  save(); renderAnimeSeasonList('shows'); renderAnime(); trackedChanged();   // the feed times its episodes by the slot too
 }
 // "Edit time…" dialog (right-click on a tracked season in either widget, or the
 // Air time button in the Anime Manager)
